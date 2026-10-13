@@ -12,6 +12,7 @@ from werewolf.engine.actions import Agent, FatalAgentError
 from werewolf.engine.game import play_game
 from werewolf.engine.log import GameLog, replays_exactly, to_log
 from werewolf.engine.setup import new_game
+from werewolf.engine.state import Settings
 from werewolf.llm.cache import FileCache
 from werewolf.llm.client import LLMClient
 from werewolf.llm.ledger import Ledger
@@ -46,6 +47,8 @@ class FakeModel:
         self.raw: dict[str, str] = {}  # schema title -> exact text to return instead
         self.truncate = False
         self.beliefs_for: dict[str, list[dict[str, Any]]] = {}
+        self.plant = False  # write a unique code word into every private field
+        self.kill_last = False  # wolves pick the last option, so the Seer is not always the victim
 
     def provider(self, model: str) -> str:
         return "openai"
@@ -72,24 +75,43 @@ class FakeModel:
             truncated=self.truncate,
         )
 
+    def note(self, kind: str, me: str) -> str:
+        return f"SECRET-NOTE-{kind}-{me}-{len(self.calls)}" if self.plant else "n"
+
+    def beliefs(self, me: str, request: Request) -> list[dict[str, Any]]:
+        if not self.plant:
+            return self.beliefs_for.get(me, [])
+        match = re.search(r"8 players: ([^.]*)\.", request.messages[0]["content"])
+        assert match
+        others = [n.strip() for n in match.group(1).split(",") if n.strip() != me]
+        return [
+            {"player": o, "suspicion": 0.5, "reason": f"SECRET-BELIEF-{me}-{o}"} for o in others
+        ]
+
     def answer(self, title: str, request: Request) -> dict[str, Any]:
         me = player_of(request)
         if title == "WireChat":
-            return {"text": "let us hunt", "note": "n"}
+            text = f"SECRET-WOLFCHAT-{me}-{len(self.calls)}" if self.plant else "let us hunt"
+            return {"text": text, "note": self.note("chat", me)}
         if title == "WireTarget":
             purpose = request.messages[1]["content"]
-            pick = (
-                options_of(request)[0] if ("wolves kill" in purpose or "check" in purpose) else ""
-            )
-            return {"target": pick, "note": "n"}
+            options = options_of(request)
+            if "wolves kill" in purpose:
+                pick = options[-1] if self.kill_last else options[0]
+            else:
+                pick = options[0] if "check" in purpose else ""
+            return {"target": pick, "note": self.note("target", me)}
         if title == "WireBid":
             return {
-                "bid": 0, "message": "", "intent": "none", "target": "", "note": "n",
-                "beliefs": self.beliefs_for.get(me, []),
+                "bid": 0, "message": "", "intent": "none", "target": "",
+                "note": self.note("bid", me), "beliefs": self.beliefs(me, request),
             }  # fmt: skip
         assert title == "WireVote"
         pick = "" if is_wolf(request) else options_of(request)[0]
-        return {"target": pick, "reason": "r", "note": "n", "beliefs": []}
+        return {
+            "target": pick, "reason": "r", "note": self.note("vote", me),
+            "beliefs": self.beliefs(me, request),
+        }  # fmt: skip
 
 
 class Rig:
@@ -112,9 +134,15 @@ class Rig:
             for p in new_game(seed).players
         }
 
-    def play(self, seed: int = 1, salt: str = "", game_id: str = "g1") -> GameLog:
+    def play(
+        self,
+        seed: int = 1,
+        salt: str = "",
+        game_id: str = "g1",
+        settings: Settings | None = None,
+    ) -> GameLog:
         agents = self.agents(seed, salt, game_id)
-        return to_log(asyncio.run(play_game(seed, None, agents)))
+        return to_log(asyncio.run(play_game(seed, settings, agents)))
 
 
 def test_a_whole_game_plays_to_a_winner_with_model_players(tmp_path: Path) -> None:
