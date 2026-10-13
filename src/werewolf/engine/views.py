@@ -6,6 +6,8 @@ from werewolf.engine.events import Event
 from werewolf.engine.roles import Role
 from werewolf.engine.state import GameState
 
+__all__ = ["PlayerView", "Role", "make_view"]  # Role is part of what a view shows
+
 
 class PlayerView(BaseModel):
     model_config = ConfigDict(frozen=True)

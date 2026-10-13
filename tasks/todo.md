@@ -126,7 +126,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
 
 ## Phase 4: Replay and proof
 
-- [ ] **T9: Game log and exact replay** (M)
+- [x] **T9: Game log and exact replay** (M)
   - `engine/log.py` (canonical JSON writer and `GameLog`), `engine/replay.py` (`replay(log)`), `.gitattributes`.
   - Acceptance:
     - The log holds seed, settings, roles, every event, every raw agent response (including rejected ones), failure counts and the winner.

@@ -150,7 +150,7 @@ Build order: `engine`, `agents`, `strategy-tagger`, `experiments`, then `coach` 
 
 ### engine (M1) - DESIGN 2, 5.1, 5.4, 5.7, 7
 - **Scope:** repo and uv setup, CI (`ci.yml`), cost ledger, full rules including floor-token bidding plus the fixed-order and free-bid baselines, `PlayerView` builder, JSON game log, replay, scripted fake agents, safe-default handling.
-- **Interface:** `play_game(seed, settings, agents) -> GameLog`; `replay(log) -> GameLog`; `make_view(state, player) -> PlayerView`. Agents implement `async act(view, task) -> Action`.
+- **Interface:** `play_game(seed, settings, agents) -> GameState`; `to_log(state) -> GameLog`; `replay(log) -> GameLog`; `make_view(state, player) -> PlayerView`. Agents implement `async act(view, task) -> Action`.
 - **Success criteria:**
   - Rule tests pass for kills, saves, Seer checks, bid ties, free reply after an accusation, vote ties, win checks and the 6-round limit.
   - A scripted game ends with its predetermined winner.

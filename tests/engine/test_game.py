@@ -2,24 +2,15 @@ import asyncio
 
 import pytest
 
-from werewolf.agents.scripted import ScriptedAgent
+from werewolf.agents.scripted import policy as scripted_policy
 from werewolf.engine.actions import (
     Agent,
-    BidAction,
-    BidTask,
-    ChatAction,
-    NightTargetTask,
-    TargetAction,
-    Task,
-    VoteAction,
-    VoteTask,
 )
 from werewolf.engine.events import Death, GameOver, Removal
 from werewolf.engine.game import play_game
 from werewolf.engine.roles import Role, Team
 from werewolf.engine.setup import new_game
 from werewolf.engine.state import GameState, Settings, SpeakingMode
-from werewolf.engine.views import PlayerView
 
 SEED = 1
 
@@ -30,30 +21,9 @@ def policy(
     protect: bool = False,
     vote_wolves: bool = True,
 ) -> dict[str, Agent]:
-    """Scripted players. Wolves kill the first living non-wolf; the Doctor can protect that same
-    player; everyone else votes for a wolf (they cheat: they know who the wolves are)."""
     wolves = [p.name for p in new_game(seed).players if p.role is Role.WEREWOLF]
-
-    def respond(view: PlayerView, task: Task) -> object:
-        match task:
-            case _ if isinstance(task, BidTask):
-                return BidAction(bid=0, message="talk" if task.free else "")
-            case _ if isinstance(task, NightTargetTask):
-                prey = [n for n in task.options if n not in wolves]
-                if task.purpose == "kill":
-                    return TargetAction(target=prey[0] if kill else None)
-                if task.purpose == "protect":
-                    return TargetAction(target=prey[0] if protect else None)
-                return TargetAction(target=None)
-            case _ if isinstance(task, VoteTask):
-                living_wolves = [w for w in wolves if w in task.options]
-                if vote_wolves and view.role is not Role.WEREWOLF and living_wolves:
-                    return VoteAction(target=living_wolves[0], reason="wolf")
-                return VoteAction(target=None)
-            case _:
-                return ChatAction(text="grr")
-
-    return {p.name: ScriptedAgent(respond) for p in new_game(seed).players}
+    agent = scripted_policy(wolves, kill=kill, protect=protect, vote_wolves=vote_wolves)
+    return {p.name: agent for p in new_game(seed).players}
 
 
 def play(agents: dict[str, Agent], seed: int = SEED, settings: Settings | None = None) -> GameState:
