@@ -106,6 +106,9 @@ class FakeModel:
                 "bid": 0, "message": "", "intent": "none", "target": "",
                 "note": self.note("bid", me), "beliefs": self.beliefs(me, request),
             }  # fmt: skip
+        if title == "WireMemory":
+            text = f"SECRET-SUMMARY-{me}-{len(self.calls)}" if self.plant else "A short summary."
+            return {"summary": text}
         assert title == "WireVote"
         pick = "" if is_wolf(request) else options_of(request)[0]
         return {
@@ -121,7 +124,9 @@ class Rig:
         self.client = LLMClient(self.model, self.ledger, FileCache(tmp_path / "cache"))
         self.prompts: list[tuple[str, list[dict[str, str]]]] = []
 
-    def agents(self, seed: int = 1, salt: str = "", game_id: str = "g1") -> dict[str, Agent]:
+    def agents(
+        self, seed: int = 1, salt: str = "", game_id: str = "g1", summarize: bool = False
+    ) -> dict[str, Agent]:
         return {
             p.name: LLMAgent(
                 p.name,
@@ -129,6 +134,7 @@ class Rig:
                 MODEL,
                 cache_salt=salt,
                 game_id=game_id,
+                summarize=summarize,
                 on_prompt=lambda name, messages: self.prompts.append((name, messages)),
             )
             for p in new_game(seed).players
@@ -140,8 +146,11 @@ class Rig:
         salt: str = "",
         game_id: str = "g1",
         settings: Settings | None = None,
+        summarize: bool = False,
     ) -> GameLog:
-        agents = self.agents(seed, salt, game_id)
+        if summarize:
+            settings = (settings or Settings()).model_copy(update={"summarize_rounds": True})
+        agents = self.agents(seed, salt, game_id, summarize)
         return to_log(asyncio.run(play_game(seed, settings, agents)))
 
 
@@ -271,3 +280,11 @@ def test_the_same_salt_replays_a_game_from_the_cache_for_free(tmp_path: Path) ->
     assert again.events == first.events
     assert again.stats.cost == D("0")
     assert all(u.cache_hit for c in again.calls for u in c.usage if u is not None)
+
+
+def test_a_game_with_round_summaries_asks_for_them_and_replays_exactly(tmp_path: Path) -> None:
+    rig = Rig(tmp_path)
+    log = rig.play(seed=2, summarize=True)
+    memory = [c for c in log.calls if c.task["kind"] == "memory"]
+    assert memory and all(c.usage[0] is not None for c in memory)
+    assert replays_exactly(log)

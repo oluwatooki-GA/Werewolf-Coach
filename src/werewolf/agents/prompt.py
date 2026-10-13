@@ -11,6 +11,7 @@ from werewolf.agents.wire import NOTE_MAX, REASON_MAX
 from werewolf.engine.actions import (
     Belief,
     BidTask,
+    MemoryTask,
     NightTargetTask,
     Task,
     VoteTask,
@@ -239,6 +240,13 @@ def _task(view: PlayerView, task: Task) -> str:
         )
     if isinstance(task, BidTask):
         return _bid_ask(view, task)
+    if isinstance(task, MemoryTask):
+        return (
+            f"The round is over. Write a short summary (at most {task.max_chars} characters) of "
+            "everything that matters for winning: who died, who accused or defended whom, claims "
+            "about roles, how people voted, and your suspicions. It replaces your earlier summary, "
+            "so keep what is still important. JSON fields: summary."
+        )
     assert isinstance(task, VoteTask)
     return (
         f"Vote to remove one player. Options: {', '.join(task.options)}. Use an empty string to "

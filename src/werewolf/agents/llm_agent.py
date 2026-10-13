@@ -26,6 +26,7 @@ class LLMAgent:
         game_id: str = "",
         temperature: float = 0.7,
         max_tokens: int = 300,
+        summarize: bool = False,
         on_prompt: Callable[[str, list[dict[str, str]]], None] | None = None,
     ) -> None:
         self._name = name
@@ -37,10 +38,19 @@ class LLMAgent:
         self._temperature = temperature
         self._max_tokens = max_tokens
         self._on_prompt = on_prompt
+        self._summarize = summarize
         self._beliefs: dict[str, Belief] = {}
+        self._summary = ""
 
     async def act(self, view: PlayerView, task: Task) -> object:
-        messages = build_messages(view, task, card=self._card, beliefs=self._beliefs)
+        messages = build_messages(
+            view,
+            task,
+            card=self._card,
+            beliefs=self._beliefs,
+            summary=self._summary,
+            from_round=view.round if self._summarize else 1,  # older rounds live in the summary
+        )
         if self._on_prompt is not None:
             self._on_prompt(self._name, messages)
         request = Request(
@@ -74,9 +84,14 @@ class LLMAgent:
             except WireError:
                 pass  # hand the engine the raw text; it rejects it and asks again with the reason
             else:
-                self._remember_beliefs(text)
+                self._remember(task.kind, text)
         return Reply(text=text, usage=usage)
 
-    def _remember_beliefs(self, action_json: str) -> None:
-        for player, belief in json.loads(action_json).get("beliefs", {}).items():
+    def _remember(self, kind: str, action_json: str) -> None:
+        data = json.loads(action_json)
+        if kind == "memory":
+            summary = str(data.get("summary", "")).strip()
+            if summary:  # an empty summary keeps the old one
+                self._summary = summary
+        for player, belief in data.get("beliefs", {}).items():
             self._beliefs[player] = Belief(**belief)

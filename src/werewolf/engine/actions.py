@@ -40,7 +40,16 @@ class VoteTask(_Task):
     options: tuple[str, ...]
 
 
-Task = Annotated[WolfChatTask | NightTargetTask | BidTask | VoteTask, Field(discriminator="kind")]
+class MemoryTask(_Task):
+    """End of a round: write a short summary of everything that matters so far."""
+
+    kind: Literal["memory"] = "memory"
+    max_chars: int
+
+
+Task = Annotated[
+    WolfChatTask | NightTargetTask | BidTask | VoteTask | MemoryTask, Field(discriminator="kind")
+]
 
 
 class Belief(BaseModel):
@@ -75,13 +84,18 @@ class VoteAction(_Action):
     reason: str = ""
 
 
-Action = ChatAction | TargetAction | BidAction | VoteAction
+class MemoryAction(_Action):
+    summary: str
+
+
+Action = ChatAction | TargetAction | BidAction | VoteAction | MemoryAction
 
 ACTION_FOR: dict[str, type[Action]] = {
     "wolf_chat": ChatAction,
     "night_target": TargetAction,
     "bid": BidAction,
     "vote": VoteAction,
+    "memory": MemoryAction,
 }
 
 

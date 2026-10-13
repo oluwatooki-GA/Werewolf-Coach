@@ -13,6 +13,7 @@ from werewolf.engine.actions import (
     BidAction,
     ChatAction,
     FatalAgentError,
+    MemoryAction,
     Reply,
     TargetAction,
     Task,
@@ -45,10 +46,12 @@ def default_action(task: Task) -> Action:
             return BidAction(bid=0)
         case "vote":
             return VoteAction(target=None, reason="")
+        case "memory":
+            return MemoryAction(summary="")
 
 
 def _record(raw: object) -> Any:
-    if isinstance(raw, (ChatAction, TargetAction, BidAction, VoteAction)):
+    if isinstance(raw, (ChatAction, TargetAction, BidAction, VoteAction, MemoryAction)):
         return raw.model_dump(mode="json")
     if isinstance(raw, (str, dict)):
         return raw

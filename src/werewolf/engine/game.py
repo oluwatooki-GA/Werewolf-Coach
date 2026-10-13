@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from werewolf.engine.actions import Agent
 from werewolf.engine.day import run_day
 from werewolf.engine.events import GameOver
+from werewolf.engine.memory import run_memory
 from werewolf.engine.night import run_night
 from werewolf.engine.setup import new_game
 from werewolf.engine.state import GameState, Settings
@@ -20,6 +21,8 @@ async def play_game(seed: int, settings: Settings | None, agents: Mapping[str, A
             await run_day(state, agents)
             await run_vote(state, agents)
             result = winner(state, round_complete=True)
+            if result is None and state.settings.summarize_rounds:
+                await run_memory(state, agents)
         if result is not None:
             state.winner = result
             state.events.append(GameOver(round=state.round, winner=result))

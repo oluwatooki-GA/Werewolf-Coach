@@ -27,7 +27,10 @@ def games(tmp_path_factory: pytest.TempPathFactory) -> Played:
             rig = Rig(tmp_path_factory.mktemp(f"game-{seed}-{mode}"))
             rig.model.plant = True
             rig.model.kill_last = True
-            played[(seed, mode)] = (rig, rig.play(seed=seed, settings=Settings(speaking_mode=mode)))
+            played[(seed, mode)] = (
+                rig,
+                rig.play(seed=seed, settings=Settings(speaking_mode=mode), summarize=True),
+            )
     return played
 
 
@@ -124,3 +127,26 @@ def test_the_planted_secrets_really_do_reach_the_prompts_they_should(games: Play
             seen["seer"] += "You checked" in text
             seen["partner"] += "Your partner is" in text
     assert all(count > 0 for count in seen.values()), seen
+
+
+@pytest.mark.parametrize("mode", list(SpeakingMode))
+@pytest.mark.parametrize("seed", SEEDS)
+def test_round_summaries_reach_only_their_owner(
+    games: Played, seed: int, mode: SpeakingMode
+) -> None:
+    rig, _ = games[(seed, mode)]
+    for name, text in per_player_text(rig).items():
+        owners = set(re.findall(r"SECRET-SUMMARY-(\w+)-\d+", text))
+        assert owners <= {name}, (name, owners)
+
+
+def test_summaries_really_are_asked_for_and_shown_to_their_owner(games: Played) -> None:
+    asked = shown = 0
+    for seed in SEEDS:
+        rig, log = games[(seed, SpeakingMode.FLOOR_TOKENS)]
+        asked += sum(c.task["kind"] == "memory" for c in log.calls)
+        shown += sum(
+            f"Summary of earlier rounds: SECRET-SUMMARY-{name}-" in text
+            for name, text in per_player_text(rig).items()
+        )
+    assert asked > 0 and shown > 0, (asked, shown)

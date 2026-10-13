@@ -18,7 +18,7 @@ from werewolf.engine.roles import Role
 @dataclass(frozen=True)
 class Leak:
     player: str  # whose prompt held something it should not
-    kind: str  # wolf_chat, note, belief, seer_result, partner or role
+    kind: str  # wolf_chat, note, belief, summary, seer_result, partner or role
     detail: str  # a short excerpt, so the leak can be found
 
 
@@ -61,10 +61,14 @@ def find_leaks(
     ]
     notes: list[str] = []
     reasons: list[tuple[str, str]] = []  # (owner, reason)
+    summaries: list[tuple[str, str]] = []  # (owner, round summary)
     for owner, data in _answers(log):
         note = data.get("note")
         if isinstance(note, str) and len(note) >= min_length:
             notes.append(note)
+        summary = data.get("summary")
+        if isinstance(summary, str) and len(summary) >= min_length:
+            summaries.append((owner, summary))
         beliefs = data.get("beliefs")
         if isinstance(beliefs, dict):
             for belief in beliefs.values():
@@ -101,4 +105,7 @@ def find_leaks(
         for owner, reason in reasons:
             if owner != player and reason in text:
                 flag(player, "belief", reason)
+        for owner, summary in summaries:
+            if owner != player and summary in text:
+                flag(player, "summary", summary)
     return list(leaks.values())

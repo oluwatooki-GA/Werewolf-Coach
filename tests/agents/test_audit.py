@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from test_llm_agent import Rig
 
@@ -14,7 +16,7 @@ def game(tmp_path_factory: pytest.TempPathFactory) -> tuple[GameLog, Prompts]:
     rig = Rig(tmp_path_factory.mktemp("audit"))
     rig.model.plant = True
     rig.model.kill_last = True
-    log = rig.play(seed=1)
+    log = rig.play(seed=1, summarize=True)
     return log, rig.prompts
 
 
@@ -131,3 +133,16 @@ def test_short_texts_are_ignored_to_avoid_false_alarms(game: tuple[GameLog, Prom
 def test_no_prompts_means_no_leaks(game: tuple[GameLog, Prompts]) -> None:
     log, _ = game
     assert find_leaks(log, []) == []
+
+
+def test_a_round_summary_in_another_players_prompt_is_a_leak(game: tuple[GameLog, Prompts]) -> None:
+    log, prompts = game
+    owner, summary = next(
+        (c.player, json.loads(r)["summary"])
+        for c in log.calls
+        for r in c.responses
+        if isinstance(r, str) and "SECRET-SUMMARY-" in r
+    )
+    other = next(p.name for p in log.players if p.name != owner)
+    assert kinds(find_leaks(log, with_extra(prompts, other, summary))) == {"summary"}
+    assert find_leaks(log, with_extra(prompts, owner, summary)) == []

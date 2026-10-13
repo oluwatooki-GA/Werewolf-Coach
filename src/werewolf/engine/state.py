@@ -26,6 +26,8 @@ class Settings(BaseModel):
     max_rounds: int = 6
     tokens_per_day: int = 3
     max_message_chars: int = 300
+    summarize_rounds: bool = False  # ask every player for a summary at the end of each round
+    max_summary_chars: int = 800
     names: tuple[str, ...] = DEFAULT_NAMES
     cards: dict[str, str] = {}  # seat name -> strategy card id; logged, never shown to the engine
 

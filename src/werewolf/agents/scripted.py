@@ -6,6 +6,8 @@ from werewolf.engine.actions import (
     BidAction,
     BidTask,
     ChatAction,
+    MemoryAction,
+    MemoryTask,
     NightTargetTask,
     TargetAction,
     Task,
@@ -44,6 +46,8 @@ def policy(
     that same player; the village votes for a wolf. It knows who the wolves are, so it cheats."""
 
     def respond(view: PlayerView, task: Task) -> object:
+        if isinstance(task, MemoryTask):
+            return MemoryAction(summary="")
         if isinstance(task, BidTask):
             return BidAction(bid=0, message="talk" if task.free else "")
         if isinstance(task, NightTargetTask):
