@@ -5,7 +5,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
 
 ## Phase 1: Foundation
 
-- [ ] **T1: Project bootstrap, `.env` protection and architecture test** (S)
+- [x] **T1: Project bootstrap, `.env` protection and architecture test** (S)
   - Create `pyproject.toml` (Python 3.12, `pydantic`; dev `ruff`, `mypy`, `pytest`), `.python-version`, `uv.lock`, empty packages `engine/`, `agents/`, `llm/`, ruff (line length 100, import sorting) and mypy strict config, and `tests/test_architecture.py`.
   - `.env` before the first commit: `.gitignore` already exists with `.env` ignored (written during `/constraints`); T1 verifies it and adds `.env.example` (variable names only, no values). There is no secrets scanner (removed by the owner), so the floor guard's `.env` check is the protection.
   - Acceptance:
