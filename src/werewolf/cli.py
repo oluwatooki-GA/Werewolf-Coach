@@ -31,7 +31,7 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
         return 2
     spend = Decimal(args.max_spend) if args.max_spend is not None else None
     try:
-        client = runtime.build_client(args.model, spend)
+        client = runtime.build_client(args.model, spend, requests_per_minute=args.rpm)
     except RuntimeError as exc:
         print(f"cannot start: {exc}", file=sys.stderr)
         return 2
@@ -181,6 +181,9 @@ def main(argv: list[str] | None = None) -> int:
     play.add_argument("--model", help="needed with --agents llm")
     play.add_argument("--max-spend", help="dollars; required for paid models")
     play.add_argument("--cache", choices=["fresh", "shared"], default="fresh")
+    play.add_argument(
+        "--rpm", type=int, help="requests per minute to send (default: the provider's limit)"
+    )
     play.set_defaults(run=_play)
 
     many = commands.add_parser("batch", help="play several model-driven games and report")
@@ -201,6 +204,9 @@ def main(argv: list[str] | None = None) -> int:
         default=SpeakingMode.FLOOR_TOKENS.value,
     )
     many.add_argument("--data-dir", default="data/games")
+    many.add_argument(
+        "--rpm", type=int, help="requests per minute to send (default: the provider's limit)"
+    )
     many.set_defaults(run=_batch)
 
     again = commands.add_parser("replay", help="replay a saved log and check it matches")

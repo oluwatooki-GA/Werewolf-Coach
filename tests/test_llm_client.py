@@ -7,7 +7,7 @@ import pytest
 from werewolf.llm.cache import FileCache
 from werewolf.llm.client import LLMClient
 from werewolf.llm.ledger import Ledger, LedgerBlocked
-from werewolf.llm.types import Completion, Request, UnknownPrice
+from werewolf.llm.types import Completion, RateLimited, Request, UnknownPrice
 
 D = Decimal
 FREE = {"groq", "cerebras"}
@@ -258,3 +258,92 @@ def test_the_run_budget_counts_all_providers_together(tmp_path: Path) -> None:
     s.run(request())  # openai: fits, and spends first.cost
     with pytest.raises(LedgerBlocked, match="run budget"):
         s.run(request(model="anthropic/claude"))  # fits its own cap, but not the run budget
+
+
+class FakeClock:
+    """Time that only moves when something sleeps, so pacing can be tested instantly."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    async def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
+
+class StampedTransport(FakeTransport):
+    """Notes the (fake) time of every call that reaches the model."""
+
+    def __init__(self, clock: FakeClock) -> None:
+        super().__init__()
+        self.clock = clock
+        self.times: list[float] = []
+
+    async def call(self, request: Request) -> Completion:
+        self.times.append(self.clock.now)
+        return await super().call(request)
+
+
+class Paced:
+    def __init__(self, tmp_path: Path, limits: dict[str, int]) -> None:
+        self.clock = FakeClock()
+        self.transport = StampedTransport(self.clock)
+        ledger = Ledger(tmp_path / "ledger.json", {"openai": D("4.50"), "cerebras": D("0")})
+        self.client = LLMClient(
+            self.transport,
+            ledger,
+            FileCache(tmp_path / "cache"),
+            requests_per_minute=limits,
+            clock=self.clock,
+            sleep=self.clock.sleep,
+        )
+
+    def run(self, *requests: Request) -> None:
+        async def go() -> None:
+            await asyncio.gather(*(self.client.complete(r) for r in requests))
+
+        asyncio.run(go())
+
+
+def test_calls_are_paced_to_the_providers_requests_per_minute(tmp_path: Path) -> None:
+    paced = Paced(tmp_path, {"openai": 3})
+    paced.run(*(request(f"prompt {i}") for i in range(7)))
+    assert paced.transport.times == [0, 0, 0, 60, 60, 60, 120]  # never more than 3 in a minute
+
+
+def test_a_provider_with_no_limit_is_never_made_to_wait(tmp_path: Path) -> None:
+    paced = Paced(tmp_path, {"cerebras": 1})
+    paced.run(*(request(f"prompt {i}") for i in range(5)))  # openai calls, only cerebras limited
+    assert paced.transport.times == [0] * 5
+
+
+def test_each_provider_has_its_own_window(tmp_path: Path) -> None:
+    paced = Paced(tmp_path, {"openai": 1, "cerebras": 1})
+    paced.run(request("a"), request("b", model="cerebras/gpt-oss"), request("c"))
+    assert sorted(paced.transport.times) == [0, 0, 60]  # one of each at once, then the third waits
+
+
+def test_a_cache_hit_does_not_use_up_the_window(tmp_path: Path) -> None:
+    paced = Paced(tmp_path, {"openai": 1})
+    paced.run(request("same"))
+    for _ in range(5):
+        paced.run(request("same"))  # all hits
+    assert paced.transport.times == [0]
+    assert paced.clock.now == 0
+
+
+def test_a_call_that_fails_still_counts_because_it_was_sent(tmp_path: Path) -> None:
+    paced = Paced(tmp_path, {"openai": 1})
+    paced.transport.fail = RuntimeError("boom")
+    with pytest.raises(RuntimeError):
+        paced.run(request("a"))
+    paced.transport.fail = None
+    paced.run(request("b"))
+    assert paced.transport.times == [0, 60]
+
+
+def test_a_rate_limit_error_from_the_model_is_a_hard_stop_not_a_bad_answer() -> None:
+    assert issubclass(RateLimited, Exception)
+    assert not issubclass(RateLimited, LedgerBlocked)

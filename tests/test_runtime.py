@@ -57,3 +57,24 @@ def test_the_error_never_contains_a_key_value(
     with pytest.raises(RuntimeError) as caught:
         build_client("gpt-4.1-nano", max_spend=None, root=tmp_path)
     assert "secret" not in str(caught.value)
+
+
+def test_the_free_cerebras_key_is_paced_to_its_5_requests_a_minute_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CEREBRAS_API_KEY", "x")
+    client = build_client("cerebras/gpt-oss-120b", max_spend=None, root=tmp_path)
+    assert client.requests_per_minute == {"cerebras": 5}
+
+
+def test_the_pace_can_be_set_for_any_provider(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CEREBRAS_API_KEY", "x")
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    slower = build_client("cerebras/gpt-oss-120b", None, root=tmp_path, requests_per_minute=2)
+    assert slower.requests_per_minute == {"cerebras": 2}
+    paid = build_client("gpt-4.1-nano", Decimal("0.10"), root=tmp_path, requests_per_minute=60)
+    assert paid.requests_per_minute == {"openai": 60}
+    unpaced = build_client("gpt-4.1-nano", Decimal("0.10"), root=tmp_path)
+    assert unpaced.requests_per_minute == {}

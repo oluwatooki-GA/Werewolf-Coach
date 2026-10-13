@@ -6,6 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from werewolf.llm.ledger import LedgerBlocked
 
 
+class RateLimited(Exception):
+    """The provider's rate limit is used up. Retrying at once will not help: stop and wait."""
+
+
 class UnknownPrice(LedgerBlocked):
     """The model has no known price, so its cost cannot be limited. Refused."""
 

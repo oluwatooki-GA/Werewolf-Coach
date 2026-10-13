@@ -9,7 +9,7 @@ from werewolf.engine.actions import Belief, FatalAgentError, Reply, Task, Usage
 from werewolf.engine.views import PlayerView
 from werewolf.llm.client import LLMClient
 from werewolf.llm.ledger import LedgerBlocked, LedgerError
-from werewolf.llm.types import Request
+from werewolf.llm.types import RateLimited, Request
 
 
 class LLMAgent:
@@ -64,8 +64,8 @@ class LLMAgent:
         )
         try:
             done = await self._client.complete(request)
-        except (LedgerBlocked, LedgerError) as exc:
-            raise FatalAgentError(str(exc)) from exc  # the cap is a hard stop, not a bad answer
+        except (LedgerBlocked, LedgerError, RateLimited) as exc:
+            raise FatalAgentError(str(exc)) from exc  # a hard stop, not a bad answer
 
         usage = Usage(
             model=done.model,

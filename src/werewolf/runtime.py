@@ -17,6 +17,11 @@ KEY_FOR = {
 }
 
 
+# Requests per minute allowed by a free key. Cerebras reports 5 (and 150 an hour) in its
+# response headers; a paid provider is left unpaced unless asked.
+DEFAULT_RPM = {"cerebras": 5}
+
+
 def load_env(path: Path) -> list[str]:
     """Put KEY=VALUE lines from a .env file into the environment, keeping any value already
     set. Returns the names that were read; values are never returned or printed."""
@@ -35,7 +40,11 @@ def load_env(path: Path) -> list[str]:
 
 
 def build_client(
-    model: str, max_spend: Decimal | None, root: Path = Path("."), max_concurrency: int = 8
+    model: str,
+    max_spend: Decimal | None,
+    root: Path = Path("."),
+    max_concurrency: int = 8,
+    requests_per_minute: int | None = None,
 ) -> LLMClient:
     """A client for real calls. A paid model needs an explicit spending limit for this run."""
     transport = LiteLLMTransport()
@@ -46,10 +55,14 @@ def build_client(
     key = KEY_FOR.get(provider)
     if key is not None and not os.environ.get(key):
         raise RuntimeError(f"{key} is not set (add it to .env)")
+    pace = dict(DEFAULT_RPM)
+    if requests_per_minute is not None:
+        pace[provider] = requests_per_minute
     return LLMClient(
         transport,
         Ledger(root / "data" / "ledger.json"),
         FileCache(root / "data" / "cache" / "llm"),
         max_concurrency=max_concurrency,
         run_budget=max_spend,
+        requests_per_minute={p: n for p, n in pace.items() if p == provider},
     )

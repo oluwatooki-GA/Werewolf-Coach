@@ -16,7 +16,7 @@ from werewolf.engine.state import Settings
 from werewolf.llm.cache import FileCache
 from werewolf.llm.client import LLMClient
 from werewolf.llm.ledger import Ledger
-from werewolf.llm.types import Completion, Request
+from werewolf.llm.types import Completion, RateLimited, Request
 
 D = Decimal
 MODEL = "gpt-4.1-nano"
@@ -288,3 +288,13 @@ def test_a_game_with_round_summaries_asks_for_them_and_replays_exactly(tmp_path:
     memory = [c for c in log.calls if c.task["kind"] == "memory"]
     assert memory and all(c.usage[0] is not None for c in memory)
     assert replays_exactly(log)
+
+
+def test_an_exhausted_rate_limit_stops_the_game_instead_of_filling_it_with_fallbacks(
+    tmp_path: Path,
+) -> None:
+    rig = Rig(tmp_path)
+    rig.model.fail_with = RateLimited("cerebras rate limit reached")
+    with pytest.raises(FatalAgentError, match="rate limit"):
+        rig.play()
+    assert len(rig.model.calls) <= 8  # the first turn's calls, then it stopped

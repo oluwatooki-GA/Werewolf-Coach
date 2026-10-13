@@ -6,8 +6,9 @@ from decimal import Decimal
 from typing import Any
 
 import litellm
+from litellm.exceptions import RateLimitError
 
-from werewolf.llm.types import Completion, Request, UnknownPrice
+from werewolf.llm.types import Completion, RateLimited, Request, UnknownPrice
 
 FREE_PROVIDERS = frozenset({"groq", "cerebras"})  # free tiers: cost 0, limited by rate limits
 _ACCEPTS_CACHE_KEY = frozenset({"openai", "groq"})  # providers that take prompt_cache_key
@@ -67,7 +68,10 @@ class LiteLLMTransport:
             kwargs["reasoning_effort"] = "low"
 
         started = time.perf_counter()
-        response = await litellm.acompletion(**kwargs)
+        try:
+            response = await litellm.acompletion(**kwargs)
+        except RateLimitError as exc:  # still limited after LiteLLM's own retries
+            raise RateLimited(f"{provider} rate limit reached: {exc}") from exc
         latency = time.perf_counter() - started
         assert isinstance(response, litellm.ModelResponse)
 

@@ -7,7 +7,7 @@ import pytest
 from litellm import ModelResponse
 
 from werewolf.llm.transport import FREE_PROVIDERS, LiteLLMTransport
-from werewolf.llm.types import Request, UnknownPrice
+from werewolf.llm.types import RateLimited, Request, UnknownPrice
 
 D = Decimal
 SCHEMA = {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]}
@@ -196,3 +196,16 @@ def test_reasoning_models_are_asked_to_think_briefly_so_they_do_not_eat_the_outp
 def test_latency_is_measured() -> None:
     done, _ = call("gpt-4.1-nano", response())
     assert done.latency_s >= 0
+
+
+def test_a_rate_limit_error_becomes_a_hard_stop_with_a_clear_message() -> None:
+    async def refuse(**kwargs: Any) -> ModelResponse:
+        raise litellm.RateLimitError(
+            message="Requests per minute limit exceeded",
+            llm_provider="cerebras",
+            model="gpt-oss-120b",
+        )
+
+    litellm.acompletion = refuse
+    with pytest.raises(RateLimited, match="cerebras rate limit"):
+        asyncio.run(LiteLLMTransport().call(request("cerebras/gpt-oss-120b")))

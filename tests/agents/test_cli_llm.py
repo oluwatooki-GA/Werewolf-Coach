@@ -127,6 +127,21 @@ def test_the_model_and_spending_limit_reach_the_client_builder(
     assert built == [(MODEL, D("1.00"))]
 
 
+def test_the_requests_per_minute_option_reaches_the_client_builder(
+    rig: Rig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[object] = []
+
+    def capture(model: str, max_spend: Decimal | None, **kw: object) -> LLMClient:
+        seen.append(kw.get("requests_per_minute"))
+        return rig.client
+
+    monkeypatch.setattr(runtime, "build_client", capture)
+    batch(tmp_path, "--games", "1", "--rpm", "7")
+    batch(tmp_path, "--games", "1")
+    assert seen == [7, None]
+
+
 def test_a_spent_cap_stops_the_batch_reports_what_finished_and_exits_non_zero(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
