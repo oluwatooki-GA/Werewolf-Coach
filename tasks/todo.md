@@ -41,7 +41,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
 
 ## Phase 2: A game that can start and see
 
-- [ ] **T3: Seeded setup, state and first player views** (M)
+- [x] **T3: Seeded setup, state and first player views** (M)
   - `engine/state.py` (roles, players, settings, game state), `engine/events.py` (public and private event types), `engine/setup.py` (`new_game(seed, settings)`), `engine/views.py` (`PlayerView`, `make_view`).
   - Acceptance:
     - 8 players: 2 wolves, 1 Seer, 1 Doctor, 4 villagers, assigned from the seed.
