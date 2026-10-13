@@ -146,3 +146,15 @@ def test_a_round_summary_in_another_players_prompt_is_a_leak(game: tuple[GameLog
     other = next(p.name for p in log.players if p.name != owner)
     assert kinds(find_leaks(log, with_extra(prompts, other, summary))) == {"summary"}
     assert find_leaks(log, with_extra(prompts, owner, summary)) == []
+
+
+def test_players_who_wrote_the_same_generic_text_are_not_flagged_for_it(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    rig = Rig(tmp_path_factory.mktemp("generic"))  # every player writes "A short summary."
+    log = rig.play(seed=2, summarize=True)
+    summaries = {
+        r for c in log.calls for r in c.responses if isinstance(r, str) and "A short summary." in r
+    }
+    assert summaries and any("A short summary." in m[1]["content"] for _, m in rig.prompts)
+    assert find_leaks(log, rig.prompts) == []

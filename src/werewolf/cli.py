@@ -20,7 +20,45 @@ from werewolf.engine.setup import new_game
 from werewolf.engine.state import Settings, SpeakingMode
 
 
+def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
+    """Play model-driven games and print the report. Exit 1 if the run stopped or leaked."""
+    from decimal import Decimal
+
+    from werewolf import runner, runtime
+
+    if not args.model:
+        print("--model is required with --agents llm", file=sys.stderr)
+        return 2
+    spend = Decimal(args.max_spend) if args.max_spend is not None else None
+    try:
+        client = runtime.build_client(args.model, spend)
+    except RuntimeError as exc:
+        print(f"cannot start: {exc}", file=sys.stderr)
+        return 2
+    settings = Settings(speaking_mode=SpeakingMode(args.speaking_mode), summarize_rounds=True)
+    report = asyncio.run(
+        runner.run_batch(
+            client,
+            args.model,
+            seeds,
+            settings=settings,
+            parallel=getattr(args, "parallel", 1),
+            cache=args.cache,
+            data_dir=Path(args.data_dir),
+            announce=lambda played: print(runner.format_game(played), flush=True),
+        )
+    )
+    print(runner.format_report(report))
+    return 1 if report.stopped is not None or any(p.leaks for p in report.played) else 0
+
+
+def _batch(args: argparse.Namespace) -> int:
+    return _llm(args, list(range(args.first_seed, args.first_seed + args.games)))
+
+
 def _play(args: argparse.Namespace) -> int:
+    if args.agents == "llm":
+        return _llm(args, [args.seed])
     settings = Settings(speaking_mode=SpeakingMode(args.speaking_mode))
     players = new_game(args.seed, settings).players
     wolves = [p.name for p in players if p.role is Role.WEREWOLF]
@@ -136,11 +174,34 @@ def main(argv: list[str] | None = None) -> int:
 
     play = commands.add_parser("play", help="play one game and save the log")
     play.add_argument("--seed", type=int, default=1)
-    play.add_argument("--agents", choices=["scripted"], default="scripted")
+    play.add_argument("--agents", choices=["scripted", "llm"], default="scripted")
     play.add_argument("--speaking-mode", choices=[m.value for m in SpeakingMode],
                       default=SpeakingMode.FLOOR_TOKENS.value)  # fmt: skip
     play.add_argument("--data-dir", default="data/games")
+    play.add_argument("--model", help="needed with --agents llm")
+    play.add_argument("--max-spend", help="dollars; required for paid models")
+    play.add_argument("--cache", choices=["fresh", "shared"], default="fresh")
     play.set_defaults(run=_play)
+
+    many = commands.add_parser("batch", help="play several model-driven games and report")
+    many.add_argument("--games", type=int, default=1)
+    many.add_argument("--first-seed", type=int, default=1)
+    many.add_argument("--parallel", type=int, default=2)
+    many.add_argument("--model", required=True)
+    many.add_argument("--max-spend", help="dollars; required for paid models")
+    many.add_argument(
+        "--cache",
+        choices=["fresh", "shared"],
+        default="fresh",
+        help="fresh: every game asks the model anew; shared: reuse cached answers (development)",
+    )
+    many.add_argument(
+        "--speaking-mode",
+        choices=[m.value for m in SpeakingMode],
+        default=SpeakingMode.FLOOR_TOKENS.value,
+    )
+    many.add_argument("--data-dir", default="data/games")
+    many.set_defaults(run=_batch)
 
     again = commands.add_parser("replay", help="replay a saved log and check it matches")
     again.add_argument("path")

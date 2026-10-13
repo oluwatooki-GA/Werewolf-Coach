@@ -60,21 +60,23 @@ def find_leaks(
         if isinstance(e, SeerResult)
     ]
     notes: list[str] = []
-    reasons: list[tuple[str, str]] = []  # (owner, reason)
-    summaries: list[tuple[str, str]] = []  # (owner, round summary)
+    # Several players may write the same generic phrase: a text is private only to those who
+    # did not write it themselves.
+    reasons: dict[str, set[str]] = {}  # belief reason -> players who wrote it
+    summaries: dict[str, set[str]] = {}  # round summary -> players who wrote it
     for owner, data in _answers(log):
         note = data.get("note")
         if isinstance(note, str) and len(note) >= min_length:
             notes.append(note)
         summary = data.get("summary")
         if isinstance(summary, str) and len(summary) >= min_length:
-            summaries.append((owner, summary))
+            summaries.setdefault(summary, set()).add(owner)
         beliefs = data.get("beliefs")
         if isinstance(beliefs, dict):
             for belief in beliefs.values():
                 reason = belief.get("reason") if isinstance(belief, dict) else None
                 if isinstance(reason, str) and len(reason) >= min_length:
-                    reasons.append((owner, reason))
+                    reasons.setdefault(reason, set()).add(owner)
 
     leaks: dict[tuple[str, str, str], Leak] = {}
 
@@ -102,10 +104,10 @@ def find_leaks(
         for secret in notes:
             if secret in text:
                 flag(player, "note", secret)
-        for owner, reason in reasons:
-            if owner != player and reason in text:
+        for reason, writers in reasons.items():
+            if player not in writers and reason in text:
                 flag(player, "belief", reason)
-        for owner, summary in summaries:
-            if owner != player and summary in text:
+        for summary, writers in summaries.items():
+            if player not in writers and summary in text:
                 flag(player, "summary", summary)
     return list(leaks.values())
