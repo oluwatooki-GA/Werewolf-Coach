@@ -54,6 +54,82 @@ def _replay(args: argparse.Namespace) -> int:
     return 1
 
 
+SMOKE_PROMPTS = {
+    "wolf_chat": "You are Fay, a Werewolf. Your partner is Hal. It is night 1. Say one short "
+    "line to Hal about who to kill, and add a short private note.",
+    "night_target": "You are Fay, a Werewolf. Choose a victim from: Ada, Bo, Cy, Di, Eve. Use an "
+    "empty string for no target. Add a short private note.",
+    "bid": "You are Cy, a Villager. It is day 1. Bo said: 'I think Eve is suspicious.' Bid 0 to 3 "
+    "tokens to speak (0 means stay quiet), write a message under 200 characters, choose an "
+    "intent and a target name (or an empty string), add a short note, and give a belief about "
+    "each other player: Ada, Bo, Di, Eve, Fay, Gus, Hal.",
+    "vote": "You are Cy, a Villager. Vote for one of: Ada, Bo, Di, Eve, Fay, Gus, Hal. Give a "
+    "reason under 100 characters, a short note, and a belief about each of them.",
+    "memory": "Write a short summary of round 1: Ada was killed at night, Bo accused Eve, and "
+    "nobody was removed by the vote.",
+}
+
+
+def _smoke(args: argparse.Namespace) -> int:
+    from decimal import Decimal
+
+    from werewolf.agents.wire import WIRE_FOR, WireError, json_schema_for, to_action_json
+    from werewolf.engine.actions import ACTION_FOR
+    from werewolf.llm.types import Request
+    from werewolf.runtime import build_client
+
+    spend = Decimal(args.max_spend) if args.max_spend is not None else None
+    try:
+        client = build_client(args.model, spend)
+    except RuntimeError as exc:
+        print(f"cannot start: {exc}", file=sys.stderr)
+        return 2
+
+    async def run() -> int:
+        bad = 0
+        for kind in WIRE_FOR:
+            request = Request(
+                model=args.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You play Werewolf. Answer only with the JSON asked for.",
+                    },
+                    {"role": "user", "content": SMOKE_PROMPTS[kind]},
+                ],
+                schema=json_schema_for(kind),
+                max_tokens=300,
+            )
+            try:
+                done = await client.complete(request)
+            except Exception as exc:
+                print(f"{kind:13} FAILED  {type(exc).__name__}: {exc}")
+                bad += 1
+                continue
+            try:
+                converted = to_action_json(kind, done.text)
+                if kind in ACTION_FOR:
+                    ACTION_FOR[kind].model_validate_json(converted)
+                verdict = "ok"
+            except (WireError, ValueError) as exc:
+                verdict = f"BAD ANSWER: {exc}"
+                bad += 1
+            flags = ("cache-hit " if done.cache_hit else "") + (
+                "TRUNCATED " if done.truncated else ""
+            )
+            print(
+                f"{kind:13} {verdict}  tokens in/out/cached {done.prompt_tokens}/"
+                f"{done.completion_tokens}/{done.cached_tokens}  cost ${done.cost}  "
+                f"{done.latency_s:.1f}s  {flags}"
+            )
+            if args.show:
+                print(f"              {done.text}")
+        print("smoke test:", "all schemas worked" if bad == 0 else f"{bad} problem(s)")
+        return 0 if bad == 0 else 1
+
+    return asyncio.run(run())
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="werewolf")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -69,6 +145,12 @@ def main(argv: list[str] | None = None) -> int:
     again = commands.add_parser("replay", help="replay a saved log and check it matches")
     again.add_argument("path")
     again.set_defaults(run=_replay)
+
+    check = commands.add_parser("smoke", help="call a real model once per answer shape")
+    check.add_argument("--model", required=True)
+    check.add_argument("--max-spend", help="dollars; required for paid models")
+    check.add_argument("--show", action="store_true", help="print each raw model answer")
+    check.set_defaults(run=_smoke)
 
     args = parser.parse_args(argv)
     return int(args.run(args))

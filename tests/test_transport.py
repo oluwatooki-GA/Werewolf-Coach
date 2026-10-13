@@ -1,0 +1,198 @@
+import asyncio
+from decimal import Decimal
+from typing import Any
+
+import litellm
+import pytest
+from litellm import ModelResponse
+
+from werewolf.llm.transport import FREE_PROVIDERS, LiteLLMTransport
+from werewolf.llm.types import Request, UnknownPrice
+
+D = Decimal
+SCHEMA = {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]}
+
+
+def request(model: str = "gpt-4.1-nano", **kw: object) -> Request:
+    base: dict[str, object] = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "s" * 300},
+            {"role": "user", "content": "u" * 300},
+        ],
+        "schema": SCHEMA,
+        "max_tokens": 300,
+    }
+    return Request.model_validate({**base, **kw})
+
+
+def response(
+    content: str = '{"a":"x"}',
+    finish: str = "stop",
+    prompt: int = 1200,
+    completion: int = 300,
+    cached: int | None = 1024,
+) -> ModelResponse:
+    usage: dict[str, Any] = {
+        "prompt_tokens": prompt,
+        "completion_tokens": completion,
+        "total_tokens": prompt + completion,
+    }
+    if cached is not None:
+        usage["prompt_tokens_details"] = {"cached_tokens": cached}
+    return ModelResponse(
+        model="gpt-4.1-nano",
+        choices=[
+            {
+                "index": 0,
+                "finish_reason": finish,
+                "message": {"role": "assistant", "content": content},
+            }
+        ],
+        usage=usage,
+    )
+
+
+class Capture:
+    """Stands in for litellm.acompletion: records the call, returns a prepared response."""
+
+    def __init__(self, reply: ModelResponse) -> None:
+        self.reply, self.kwargs = reply, {}
+
+    async def __call__(self, **kwargs: Any) -> ModelResponse:
+        self.kwargs = kwargs
+        return self.reply
+
+
+def call(model: str, reply: ModelResponse, **kw: object) -> tuple[Any, Capture]:
+    capture = Capture(reply)
+    litellm.acompletion = capture  # restored by the fixture below
+    done = asyncio.run(LiteLLMTransport().call(request(model, **kw)))
+    return done, capture
+
+
+@pytest.fixture(autouse=True)
+def restore_litellm() -> Any:
+    original = litellm.acompletion
+    yield
+    litellm.acompletion = original
+
+
+def test_the_player_model_has_a_price() -> None:
+    entry = litellm.model_cost["gpt-4.1-nano"]
+    assert entry["input_cost_per_token"] > 0 and entry["output_cost_per_token"] > 0
+
+
+def test_a_model_the_price_list_lacks_is_refused_not_guessed() -> None:
+    # The bundled list has no Claude 5.5 entries yet: they stay blocked until a price is added.
+    with pytest.raises(UnknownPrice):
+        LiteLLMTransport().estimate(request("claude-haiku-5-5"))
+
+
+def test_nano_is_priced_as_planned() -> None:
+    entry = litellm.model_cost["gpt-4.1-nano"]
+    assert (entry["input_cost_per_token"], entry["output_cost_per_token"]) == (1e-07, 4e-07)
+    assert entry["cache_read_input_token_cost"] == 2.5e-08
+
+
+def test_the_provider_names_match_the_ledger_keys() -> None:
+    t = LiteLLMTransport()
+    assert t.provider("gpt-4.1-nano") == "openai"
+    assert t.provider("claude-haiku-5-5") == "anthropic"
+    assert t.provider("cerebras/gpt-oss-120b") == "cerebras"
+    assert t.provider("groq/openai/gpt-oss-120b") == "groq"
+    assert FREE_PROVIDERS == {"groq", "cerebras"}
+
+
+def test_tokens_cached_tokens_and_cost_come_back_exactly() -> None:
+    done, _ = call("gpt-4.1-nano", response())
+    assert (done.prompt_tokens, done.completion_tokens, done.cached_tokens) == (1200, 300, 1024)
+    # 176 fresh input + 1024 cached + 300 output tokens, priced per token
+    assert done.cost == D("176") * D("1e-07") + D("1024") * D("2.5e-08") + D("300") * D("4e-07")
+    assert done.cost == D("0.0001632")
+    assert done.text == '{"a":"x"}' and not done.truncated and not done.cache_hit
+
+
+def test_our_cost_agrees_with_litellms_own() -> None:
+    reply = response()
+    done, _ = call("gpt-4.1-nano", reply)
+    assert abs(float(done.cost) - litellm.completion_cost(completion_response=reply)) < 1e-12
+
+
+def test_a_response_without_cached_token_details_counts_none_cached() -> None:
+    done, _ = call("gpt-4.1-nano", response(cached=None, prompt=1000, completion=100))
+    assert done.cached_tokens == 0
+    assert done.cost == D("1000") * D("1e-07") + D("100") * D("4e-07")
+
+
+def test_a_cut_off_answer_is_flagged() -> None:
+    done, _ = call("gpt-4.1-nano", response(finish="length"))
+    assert done.truncated
+
+
+def test_an_empty_answer_comes_back_as_empty_text() -> None:
+    done, _ = call("gpt-4.1-nano", response(content=""))
+    assert done.text == ""
+
+
+def test_free_tier_providers_cost_nothing_even_though_the_price_map_has_a_price() -> None:
+    assert litellm.model_cost["cerebras/gpt-oss-120b"]["input_cost_per_token"] > 0
+    done, _ = call("cerebras/gpt-oss-120b", response(cached=None))
+    assert done.cost == D("0")
+    assert LiteLLMTransport().estimate(request("cerebras/gpt-oss-120b")) == D("0")
+
+
+def test_an_unknown_paid_model_fails_closed() -> None:
+    with pytest.raises(UnknownPrice, match="no price"):
+        LiteLLMTransport().estimate(request("gpt-9-imaginary"))
+    with pytest.raises(UnknownPrice):
+        call("gpt-9-imaginary", response())
+
+
+def test_the_estimate_is_a_worst_case_above_the_real_cost() -> None:
+    done, _ = call("gpt-4.1-nano", response(prompt=200, completion=60, cached=0))
+    assert LiteLLMTransport().estimate(request()) > done.cost
+    # with the output limit at 300 tokens the hold-back is about 300 * $0.0000004 plus the prompt
+    assert LiteLLMTransport().estimate(request()) < D("0.001")
+
+
+def test_a_smaller_output_limit_holds_back_less_money() -> None:
+    t = LiteLLMTransport()
+    assert t.estimate(request(max_tokens=300)) < t.estimate(request(max_tokens=600))
+
+
+def test_the_answer_is_requested_as_strict_json_with_our_schema_and_limits() -> None:
+    _, capture = call("gpt-4.1-nano", response(), temperature=0.4)
+    k = capture.kwargs
+    assert k["model"] == "gpt-4.1-nano" and k["max_tokens"] == 300 and k["temperature"] == 0.4
+    assert k["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "answer", "schema": SCHEMA, "strict": True},
+    }
+    assert k["timeout"] > 0
+
+
+def test_without_a_schema_no_response_format_is_sent() -> None:
+    _, capture = call("gpt-4.1-nano", response(), schema=None)
+    assert "response_format" not in capture.kwargs
+
+
+def test_the_prompt_cache_key_is_sent_only_where_the_provider_accepts_it() -> None:
+    _, openai = call("gpt-4.1-nano", response(), prompt_cache_key="game:Ada")
+    assert openai.kwargs["prompt_cache_key"] == "game:Ada"
+    _, cerebras = call("cerebras/gpt-oss-120b", response(), prompt_cache_key="game:Ada")
+    assert "prompt_cache_key" not in cerebras.kwargs
+    _, nokey = call("gpt-4.1-nano", response())
+    assert "prompt_cache_key" not in nokey.kwargs
+
+
+def test_reasoning_models_are_asked_to_think_briefly_so_they_do_not_eat_the_output_limit() -> None:
+    _, capture = call("cerebras/gpt-oss-120b", response())
+    assert capture.kwargs["reasoning_effort"] == "low"
+    _, plain = call("gpt-4.1-nano", response())
+    assert "reasoning_effort" not in plain.kwargs
+
+
+def test_latency_is_measured() -> None:
+    done, _ = call("gpt-4.1-nano", response())
+    assert done.latency_s >= 0
