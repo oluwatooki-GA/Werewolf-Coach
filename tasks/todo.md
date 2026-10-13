@@ -147,7 +147,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Files: `src/werewolf/cli.py`, `agents/scripted.py` (extend), `tests/scripted/test_games.py`, `tests/scripted/test_cli.py`
   - Depends on: T9
 
-- [ ] **T11: CI workflow** (S)
+- [x] **T11: CI workflow** (S)
   - `.github/workflows/ci.yml` on every push: install uv, `uv sync --locked`, floor guard (`--base origin/main`), ruff, mypy, pytest.
   - Acceptance:
     - YAML is valid; every command in it runs locally.
