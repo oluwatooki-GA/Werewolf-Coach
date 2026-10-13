@@ -1,0 +1,12 @@
+# Python packages the owner has approved. One lowercase name per line.
+# Only the owner (Tooki) adds lines here. An agent adding a dependency to
+# pyproject.toml that is not listed fails scripts/floor_guard.py.
+# Source: docs/decisions.md (Oct 13, 2026).
+litellm
+pydantic
+pytest
+ruff
+mypy
+# Milestone-gated: do not add before their milestone.
+langgraph
+fastapi
