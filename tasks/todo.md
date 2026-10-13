@@ -20,7 +20,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Files: `pyproject.toml`, `.python-version`, `.env.example`, `src/werewolf/{__init__,engine/__init__,agents/__init__,llm/__init__}.py`, `tests/test_architecture.py` (plus generated `uv.lock`; `.gitignore` already exists)
   - Depends on: none
 
-- [ ] **T2: Cost ledger** (S)
+- [x] **T2: Cost ledger** (S)
   - `llm/ledger.py`: `Ledger(path, caps)`, `reserve(key, estimate)`, `settle(reservation, actual)`, `release(reservation)`, `remaining(key)`.
   - Acceptance:
     - Default caps: `openai` $4.50, `anthropic` $4.50, `groq` and `cerebras` $0.
@@ -34,9 +34,9 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Depends on: T1
 
 ### Checkpoint 1: Foundation
-- [ ] `check.ps1 task` passes with real tools
-- [ ] Architecture test catches planted violations
-- [ ] Ledger blocks at $4.50 in tests
+- [x] `check.ps1 task` passes with real tools
+- [x] Architecture test catches planted violations
+- [x] Ledger blocks at $4.50 in tests
 - [ ] Review with human before proceeding
 
 ## Phase 2: A game that can start and see
