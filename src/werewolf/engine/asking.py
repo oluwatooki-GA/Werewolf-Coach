@@ -12,10 +12,13 @@ from werewolf.engine.actions import (
     Agent,
     BidAction,
     ChatAction,
+    FatalAgentError,
+    Reply,
     TargetAction,
     Task,
     VoteAction,
 )
+from werewolf.engine.usage import Usage
 from werewolf.engine.views import PlayerView
 
 EXCEPTION_KEY = "__exception__"  # how a raised error is stored in the log, so replay can repeat it
@@ -29,6 +32,7 @@ class Asked:
     attempts: int = 1
     rejected: int = 0
     failed: bool = False  # True when both answers were rejected and the default was used
+    usage: list[Usage | None] = field(default_factory=list)  # one per response, None if unknown
 
 
 def default_action(task: Task) -> Action:
@@ -76,19 +80,26 @@ async def ask(
     check: Callable[[Action], str | None],
 ) -> Asked:
     responses: list[Any] = []
+    usages: list[Usage | None] = []
     errors: list[str] = []
     current = task
     for attempt in (1, 2):
+        used: Usage | None = None
         try:
             raw = await agent.act(view, current)
+        except FatalAgentError:
+            raise  # for example the spending cap: stop the game, do not paper over it
         except Exception as exc:  # a broken agent must never crash the game
             raw = {EXCEPTION_KEY: f"{type(exc).__name__}: {exc}"}
+        if isinstance(raw, Reply):
+            used, raw = raw.usage, raw.text
         responses.append(_record(raw))
+        usages.append(used)
         action, error = _coerce(raw, task)
         if action is not None:
             error = check(action)
             if error is None:
-                return Asked(action, responses, errors, attempt, attempt - 1, False)
+                return Asked(action, responses, errors, attempt, attempt - 1, False, usages)
         errors.append(error or "rejected")
         current = task.model_copy(update={"error": error})
-    return Asked(default_action(task), responses, errors, 2, 2, True)
+    return Asked(default_action(task), responses, errors, 2, 2, True, usages)

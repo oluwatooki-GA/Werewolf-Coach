@@ -4,6 +4,7 @@ from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from werewolf.engine.usage import Usage as Usage
 from werewolf.engine.views import PlayerView
 
 Intent = Literal["accuse", "defend", "share_info", "ask"]
@@ -82,6 +83,17 @@ ACTION_FOR: dict[str, type[Action]] = {
     "bid": BidAction,
     "vote": VoteAction,
 }
+
+
+class Reply(BaseModel):
+    """An answer with what it cost. An agent may return this instead of a bare answer."""
+
+    text: str
+    usage: Usage | None = None
+
+
+class FatalAgentError(Exception):
+    """Stop the whole game, for example when the spending cap is reached. Never retried."""
 
 
 class Agent(Protocol):

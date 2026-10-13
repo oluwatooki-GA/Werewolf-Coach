@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 from werewolf.engine.events import Event
 from werewolf.engine.roles import Role, Team
+from werewolf.engine.usage import Usage
 
 DEFAULT_NAMES = ("Ada", "Bo", "Cy", "Di", "Eve", "Fay", "Gus", "Hal")
 
@@ -46,6 +47,7 @@ class CallRecord(BaseModel):
     errors: list[str]
     rejected: int
     failed: bool
+    usage: list[Usage | None] = []  # one per response; empty in logs from before usage existed
 
 
 @dataclass

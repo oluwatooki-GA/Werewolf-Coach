@@ -36,6 +36,7 @@ async def ask_many(
                 errors=asked.errors,
                 rejected=asked.rejected,
                 failed=asked.failed,
+                usage=asked.usage,
             )
         )
     return [asked.action for asked in results]
