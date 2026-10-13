@@ -54,7 +54,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Files: `engine/{state,events,setup,views}.py`, `tests/engine/test_setup.py`, `tests/engine/test_views.py`, `tests/engine/test_leak_views.py`
   - Depends on: T1
 
-- [ ] **T4: Action layer and scripted agents** (M)
+- [x] **T4: Action layer and scripted agents** (M)
   - `engine/actions.py`: tasks (wolf chat, night target, bid, vote), action models (optional `note`, `beliefs`), `Agent` protocol, `ask(agent, view, task, check)`. `agents/scripted.py`: scripted agents driven by a function or queue.
   - Acceptance:
     - A valid action passes through unchanged.
