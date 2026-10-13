@@ -160,7 +160,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
 ### Checkpoint 3: before the gate
 - [ ] Review with human before the gate run
 
-- [ ] **T12: M1 gate** (S)
+- [x] **T12: M1 gate** (S)
   - Run everything and write `docs/progress.md`.
   - Acceptance:
     - All rule tests, scripted games and the replay test pass.

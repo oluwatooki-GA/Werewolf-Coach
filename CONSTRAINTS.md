@@ -34,9 +34,9 @@ Levels: `powershell -File scripts/check.ps1 fast` (floor, ruff, mypy; seconds), 
 
 | Metric | Today | Direction |
 |--------|-------|-----------|
-| Line coverage, `engine/` and ledger | not measurable (no code) | record at M1's gate, then must not fall (0.5% tolerance). SPEC target stays 90%. |
+| Line coverage, `engine/` and ledger | measured at the M1 gate | must not fall (0.5% tolerance). SPEC target stays 90%. Baseline: 98.5%. |
 
-Coverage tooling (`pytest-cov`) is added only after the owner approves it.
+Coverage is measured with `uv run pytest -q --cov=werewolf.engine --cov=werewolf.llm` (`pytest-cov` approved by the owner on Oct 13, 2026).
 
 ## Not set up
 
