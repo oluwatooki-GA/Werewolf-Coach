@@ -137,7 +137,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Files: `engine/log.py`, `engine/replay.py`, `.gitattributes`, `tests/engine/test_replay.py`
   - Depends on: T8
 
-- [ ] **T10: Scripted-game suite and CLI** (M)
+- [x] **T10: Scripted-game suite and CLI** (M)
   - A set of scripted games with known outcomes, and `werewolf.cli` with `play` and `replay`.
   - Acceptance:
     - Scripted games cover: village win by votes, wolf win by kills, round-limit village win, Doctor save changing the outcome, a fake-Seer claim, a game with rejected actions.
