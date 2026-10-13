@@ -66,24 +66,20 @@ def find_leaks(
         for e in log.events
         if isinstance(e, Speech | VoteCast)
     )
-    notes: list[str] = []
-    # Several players may write the same generic phrase: a text is private only to those who
-    # did not write it themselves.
-    reasons: dict[str, set[str]] = {}  # belief reason -> players who wrote it
-    summaries: dict[str, set[str]] = {}  # round summary -> players who wrote it
+    # A player's belief reasons and summaries are its own memory, shown back to it in later
+    # prompts. Several players may also write the same generic phrase. So a private text is a
+    # leak only for a player who never wrote it as a belief reason or summary. Notes go to nobody,
+    # not even their author, so a note never counts as "written" here.
+    memory: dict[str, str] = {}
+    private: list[tuple[str, str]] = []  # (kind, text): notes, belief reasons, round summaries
     for owner, data in _answers(log):
-        note = data.get("note")
-        if isinstance(note, str) and len(note) >= min_length:
-            notes.append(note)
-        summary = data.get("summary")
-        if isinstance(summary, str) and len(summary) >= min_length:
-            summaries.setdefault(summary, set()).add(owner)
+        found = [("note", data.get("note")), ("summary", data.get("summary"))]
         beliefs = data.get("beliefs")
         if isinstance(beliefs, dict):
-            for belief in beliefs.values():
-                reason = belief.get("reason") if isinstance(belief, dict) else None
-                if isinstance(reason, str) and len(reason) >= min_length:
-                    reasons.setdefault(reason, set()).add(owner)
+            found += [("belief", b.get("reason")) for b in beliefs.values() if isinstance(b, dict)]
+        own = [t for kind, t in found if kind != "note" and isinstance(t, str)]
+        memory[owner] = memory.get(owner, "") + "\n".join(own) + "\n"
+        private += [(kind, t) for kind, t in found if isinstance(t, str) and len(t) >= min_length]
 
     leaks: dict[tuple[str, str, str], Leak] = {}
 
@@ -108,13 +104,8 @@ def find_leaks(
             for line in seer_lines:
                 if line in text:
                     flag(player, "seer_result", line)
-        for secret in notes:
-            if secret in text and secret not in public:
-                flag(player, "note", secret)
-        for reason, writers in reasons.items():
-            if player not in writers and reason in text and reason not in public:
-                flag(player, "belief", reason)
-        for summary, writers in summaries.items():
-            if player not in writers and summary in text and summary not in public:
-                flag(player, "summary", summary)
+        mine = memory.get(player, "")
+        for kind, secret in private:
+            if secret in text and secret not in public and secret not in mine:
+                flag(player, kind, secret)
     return list(leaks.values())

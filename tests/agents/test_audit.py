@@ -173,3 +173,33 @@ def test_a_private_text_that_was_also_said_in_public_is_not_a_leak(
     others = [n for n, m in rig.prompts if n != "Cy" and shared in m[1]["content"]]
     assert others  # the phrase really is in other players' prompts, as a public vote reason
     assert find_leaks(log, rig.prompts) == []
+
+
+def test_a_private_text_a_player_wrote_itself_may_come_back_in_its_own_prompt(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    """Bo's private note happens to equal Cy's private belief reason. Cy's own memory shows its
+    belief reason, so Cy's prompt holds Bo's note text, and Cy wrote that very text itself."""
+    phrase = "Nervous and keeps changing the subject"
+    rig = Rig(tmp_path_factory.mktemp("selfwritten"))
+    rig.model.note_for["Bo"] = phrase
+    rig.model.beliefs_for["Cy"] = [{"player": "Eve", "suspicion": 0.5, "reason": phrase}]
+    log = rig.play(seed=1, summarize=True)
+    cy_prompts = [m[1]["content"] for n, m in rig.prompts if n == "Cy"]
+    assert any(phrase in text for text in cy_prompts)  # it really is in Cy's prompt
+    assert find_leaks(log, rig.prompts) == []
+
+
+def test_a_note_in_the_prompt_of_a_player_who_never_wrote_it_is_still_a_leak(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    phrase = "Nervous and keeps changing the subject"
+    rig = Rig(tmp_path_factory.mktemp("notwritten"))
+    rig.model.note_for["Bo"] = phrase
+    log = rig.play(seed=1)
+    other = next(p.name for p in log.players if p.name != "Bo")
+    messages = [
+        {"role": "system", "content": system_of(rig.prompts, other)},
+        {"role": "user", "content": f"## What has happened\n{phrase}"},
+    ]
+    assert kinds(find_leaks(log, [*rig.prompts, (other, messages)])) == {"note"}

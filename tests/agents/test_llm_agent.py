@@ -49,6 +49,7 @@ class FakeModel:
         self.beliefs_for: dict[str, list[dict[str, Any]]] = {}
         self.plant = False  # write a unique code word into every private field
         self.vote_reason_for: dict[str, str] = {}  # public reason each player gives when voting
+        self.note_for: dict[str, str] = {}  # a fixed private note for a player
         self.kill_last = False  # wolves pick the last option, so the Seer is not always the victim
 
     def provider(self, model: str) -> str:
@@ -77,6 +78,8 @@ class FakeModel:
         )
 
     def note(self, kind: str, me: str) -> str:
+        if me in self.note_for:
+            return self.note_for[me]
         return f"SECRET-NOTE-{kind}-{me}-{len(self.calls)}" if self.plant else "n"
 
     def beliefs(self, me: str, request: Request) -> list[dict[str, Any]]:
