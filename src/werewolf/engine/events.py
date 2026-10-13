@@ -30,4 +30,20 @@ class Death(_Event):
     player: str
 
 
-Event = Annotated[WolfChat | SeerResult | Death, Field(discriminator="kind")]
+class NoDeath(_Event):
+    kind: Literal["no_death"] = "no_death"
+
+
+class NightSummary(_Event):
+    """What really happened overnight. Kept for analysis; audience is empty, so nobody sees it."""
+
+    kind: Literal["night_summary"] = "night_summary"
+    kill: str | None
+    protect: str | None
+    check: str | None
+    saved: bool
+
+
+Event = Annotated[
+    WolfChat | SeerResult | Death | NoDeath | NightSummary, Field(discriminator="kind")
+]

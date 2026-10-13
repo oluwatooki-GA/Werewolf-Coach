@@ -1,6 +1,7 @@
 import random
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -35,6 +36,18 @@ class Settings(BaseModel):
         return names
 
 
+class CallRecord(BaseModel):
+    """One ask of one agent: the task, every raw answer, and how it went."""
+
+    round: int
+    player: str
+    task: dict[str, Any]
+    responses: list[Any]
+    errors: list[str]
+    rejected: int
+    failed: bool
+
+
 @dataclass
 class Player:
     name: str
@@ -51,4 +64,5 @@ class GameState:
     players: list[Player]
     rng: random.Random
     events: list[Event] = field(default_factory=list)
+    calls: list[CallRecord] = field(default_factory=list)
     round: int = 1

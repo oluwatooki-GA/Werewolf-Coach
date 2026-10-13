@@ -1,5 +1,6 @@
 """Hidden information: no PlayerView holds another player's role, the wolf chat (unless the
 viewer is a wolf), or Seer results (unless the viewer is the Seer)."""
+import asyncio
 import json
 import re
 from collections.abc import Iterator
@@ -7,11 +8,14 @@ from typing import Any
 
 import pytest
 
+from werewolf.agents.scripted import ScriptedAgent
+from werewolf.engine.actions import ChatAction, TargetAction, Task
 from werewolf.engine.events import Death, SeerResult, WolfChat
+from werewolf.engine.night import run_night
 from werewolf.engine.roles import Role
 from werewolf.engine.setup import new_game
 from werewolf.engine.state import GameState, Player
-from werewolf.engine.views import make_view
+from werewolf.engine.views import PlayerView, make_view
 
 WOLF_CODE = "CODEWORD-WOLFCHAT-7731"
 SEEDS = range(6)
@@ -106,3 +110,34 @@ def test_the_role_check_catches_a_planted_role_leak() -> None:
     others = [q for q in state.players if q.name != villager.name]
     leaked = f'{{"note": "{wolf.name} is secretly a {wolf.role.value}"}}'
     assert revealed_roles(villager, others, leaked) == [wolf.name]
+
+
+def played_night(seed: int) -> GameState:
+    """A real night: the wolves say the code word, the Seer checks the Doctor."""
+    state = new_game(seed)
+    doctor = next(p for p in state.players if p.role is Role.DOCTOR)
+    victim = next(p for p in state.players if p.role is Role.VILLAGER)
+
+    def respond(view: PlayerView, task: Task) -> object:
+        if task.kind == "wolf_chat":
+            return ChatAction(text=WOLF_CODE)
+        if task.kind == "night_target":
+            pick = {"kill": victim.name, "check": doctor.name, "protect": None}[task.purpose]
+            return TargetAction(target=pick)
+        raise AssertionError(task.kind)
+
+    agents = {p.name: ScriptedAgent(respond) for p in state.players}
+    asyncio.run(run_night(state, agents))
+    return state
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+def test_a_played_night_leaks_nothing_to_the_wrong_players(seed: int) -> None:
+    state = played_night(seed)
+    for p in state.players:
+        others = [q for q in state.players if q.name != p.name]
+        text = make_view(state, p.name).model_dump_json()
+        assert (WOLF_CODE in text) == (p.role is Role.WEREWOLF), p.name
+        assert ("seer_result" in text) == (p.role is Role.SEER), p.name
+        assert "night_summary" not in text, p.name
+        assert revealed_roles(p, others, text) == [], p.name

@@ -68,7 +68,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
 
 ## Phase 3: Rules, one phase at a time
 
-- [ ] **T5: Night phase** (M)
+- [x] **T5: Night phase** (M)
   - `engine/night.py`: wolf chat, targets, Seer check, Doctor protect, resolution, morning announcement.
   - Acceptance:
     - Unprotected target dies; protected target survives and the announcement says nobody died.
