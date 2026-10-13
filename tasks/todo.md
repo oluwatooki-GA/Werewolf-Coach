@@ -81,7 +81,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Files: `engine/night.py`, `tests/engine/test_night.py`, `tests/engine/test_leak_views.py`
   - Depends on: T4
 
-- [ ] **T6: Day discussion with floor tokens** (M, highest risk)
+- [x] **T6: Day discussion with floor tokens** (M, highest risk)
   - `engine/day.py`: sealed bids 0 to 3, highest speaks and pays, tie-breaks (least spoken today, then rng), listening notices, free reply, 8 turns or early stop, tokens reset each day.
   - Acceptance: each edge case below is its own named test in `tests/engine/test_day_tokens.py`, written before the code. All must pass.
     - `test_bid_ties_go_to_least_spoken`: with equal top bids, the player who has spoken least today speaks; a second tie among those is settled by the rng.

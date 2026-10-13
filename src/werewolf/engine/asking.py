@@ -1,4 +1,5 @@
 """Ask an agent for an action: check it, retry once with the reason, then fall back."""
+
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any

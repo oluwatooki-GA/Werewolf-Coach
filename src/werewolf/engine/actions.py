@@ -1,4 +1,5 @@
 """What the engine asks (tasks) and what an agent answers (actions). Agents may import this."""
+
 from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -29,6 +30,7 @@ class BidTask(_Task):
     kind: Literal["bid"] = "bid"
     max_bid: int
     max_chars: int
+    reply_to: str | None = None  # set for a free reply: the bid is ignored and costs nothing
 
 
 class VoteTask(_Task):

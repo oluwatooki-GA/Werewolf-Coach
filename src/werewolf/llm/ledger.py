@@ -2,6 +2,7 @@
 
 Every paid model call reserves its estimated cost first, then settles with the real cost.
 """
+
 import json
 import os
 from collections.abc import Mapping

@@ -1,4 +1,5 @@
 """Things that happen in a game. `audience` is who may see the event; None means everyone."""
+
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -30,6 +31,19 @@ class Death(_Event):
     player: str
 
 
+class Speech(_Event):
+    kind: Literal["speech"] = "speech"
+    speaker: str
+    text: str
+    paid: int  # floor tokens spent; 0 for a free reply
+    reply: bool = False
+
+
+class Listening(_Event):
+    kind: Literal["listening"] = "listening"
+    player: str
+
+
 class NoDeath(_Event):
     kind: Literal["no_death"] = "no_death"
 
@@ -45,5 +59,6 @@ class NightSummary(_Event):
 
 
 Event = Annotated[
-    WolfChat | SeerResult | Death | NoDeath | NightSummary, Field(discriminator="kind")
+    WolfChat | SeerResult | Death | NoDeath | NightSummary | Speech | Listening,
+    Field(discriminator="kind"),
 ]

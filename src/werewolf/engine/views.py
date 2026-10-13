@@ -1,4 +1,5 @@
 """What one player is allowed to know. This is the only way information reaches an agent."""
+
 from pydantic import BaseModel, ConfigDict
 
 from werewolf.engine.events import Event

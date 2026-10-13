@@ -1,4 +1,5 @@
 """The night: wolves chat and choose a victim, the Seer checks, the Doctor protects."""
+
 from collections.abc import Callable, Mapping
 
 from werewolf.engine.actions import (

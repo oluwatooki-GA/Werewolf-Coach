@@ -1,4 +1,5 @@
 """Fake agents for tests. They answer from a function or a fixed list, with no model."""
+
 from collections.abc import Callable
 
 from werewolf.engine.actions import Task

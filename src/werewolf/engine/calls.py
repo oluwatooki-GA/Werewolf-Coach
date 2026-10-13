@@ -1,4 +1,5 @@
 """Ask several players at once, and record the calls in a fixed order."""
+
 import asyncio
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
