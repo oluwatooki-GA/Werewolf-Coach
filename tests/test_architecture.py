@@ -5,6 +5,7 @@ B. agents/ may import from werewolf.engine only `views` and `actions`.
 C. litellm, openai and anthropic are imported only under llm/.
 D. No dynamic imports (`__import__`, importlib) outside llm/.
 """
+
 import ast
 import sys
 from pathlib import Path

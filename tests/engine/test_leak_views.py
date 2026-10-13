@@ -1,5 +1,6 @@
 """Hidden information: no PlayerView holds another player's role, the wolf chat (unless the
 viewer is a wolf), or Seer results (unless the viewer is the Seer)."""
+
 import asyncio
 import json
 import re

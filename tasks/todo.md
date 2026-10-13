@@ -96,7 +96,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Files: `engine/day.py`, `tests/engine/test_day_tokens.py`
   - Depends on: T5
 
-- [ ] **T7: Day baselines** (S)
+- [x] **T7: Day baselines** (S)
   - Fixed order and free bidding (0 to 4, no cost) as settings of the same day runner.
   - Acceptance:
     - Fixed order: living players speak in seat order, no bids, no free reply.

@@ -1,4 +1,4 @@
-"""The day: players bid floor tokens to speak, one speaker per turn."""
+"""The day: one speaker per turn, chosen by floor-token bids, free bids, or a fixed order."""
 
 from collections.abc import Callable, Mapping
 from random import Random
@@ -6,7 +6,9 @@ from random import Random
 from werewolf.engine.actions import Action, Agent, BidAction, BidTask
 from werewolf.engine.calls import Request, ask_many
 from werewolf.engine.events import Listening, Speech
-from werewolf.engine.state import GameState
+from werewolf.engine.state import GameState, SpeakingMode
+
+FREE_BID_MAX = 4  # Werewolf Arena's free bid: 0 to 4, no cost
 
 
 def resolve_bids(
@@ -30,7 +32,7 @@ def bid_check(
         if not isinstance(action, BidAction):
             return "expected a bid"
         if action.bid > max_bid:
-            return f"you can bid at most {max_bid} (the tokens you have left today)"
+            return f"you can bid at most {max_bid}"
         if len(action.message) > limit:
             return f"the message must be at most {limit} characters"
         if action.bid > 0 and not action.message.strip():
@@ -57,6 +59,7 @@ def _new_accusation(
 
 async def run_day(state: GameState, agents: Mapping[str, Agent]) -> None:
     settings = state.settings
+    floor = settings.speaking_mode is SpeakingMode.FLOOR_TOKENS
     alive = [p.name for p in state.players if p.alive]
     limit = settings.max_message_chars
     tokens = {n: settings.tokens_per_day for n in alive}  # fresh each day: leftovers are lost
@@ -67,34 +70,46 @@ async def run_day(state: GameState, agents: Mapping[str, Agent]) -> None:
     def listening(names: list[str]) -> None:
         state.events.extend(Listening(round=state.round, player=n) for n in names)
 
+    async def free_turn(speaker: str, reply_to: str | None) -> BidAction | None:
+        """Ask one player to speak at no cost. None means they stayed silent."""
+        task = BidTask(max_bid=0, max_chars=limit, free=True, reply_to=reply_to)
+        request = Request(speaker, task, bid_check(speaker, 0, limit, alive))
+        (answer,) = await ask_many(state, agents, [request])
+        action = _as_bid(answer)
+        if not action.message.strip():
+            listening([speaker])
+            return None
+        state.events.append(
+            Speech(
+                round=state.round,
+                speaker=speaker,
+                text=action.message,
+                paid=0,
+                reply=reply_to is not None,
+            )
+        )
+        spoken[speaker] += 1
+        return action
+
+    if settings.speaking_mode is SpeakingMode.FIXED_ORDER:
+        for turn in range(settings.speaking_turns):
+            await free_turn(alive[turn % len(alive)], None)
+        return
+
     for _ in range(settings.speaking_turns):
         if pending is not None:
             replier, accuser = pending
             pending = None
-            task = BidTask(max_bid=0, max_chars=limit, reply_to=accuser)
-            (answer,) = await ask_many(
-                state, agents, [Request(replier, task, bid_check(replier, 0, limit, alive))]
-            )
-            action = _as_bid(answer)
-            if not action.message.strip():
-                listening([replier])
-                continue
-            state.events.append(
-                Speech(round=state.round, speaker=replier, text=action.message, paid=0, reply=True)
-            )
-            spoken[replier] += 1
-            target = _new_accusation(action, replier, alive, replied)
+            action = await free_turn(replier, accuser)
+            target = _new_accusation(action, replier, alive, replied) if action else None
             if target:
                 replied.add(target)
                 pending = (target, replier)
             continue
 
+        cap = {n: tokens[n] if floor else FREE_BID_MAX for n in alive}
         requests = [
-            Request(
-                n,
-                BidTask(max_bid=tokens[n], max_chars=limit),
-                bid_check(n, tokens[n], limit, alive),
-            )
+            Request(n, BidTask(max_bid=cap[n], max_chars=limit), bid_check(n, cap[n], limit, alive))
             for n in alive
         ]
         actions = {
@@ -106,13 +121,14 @@ async def run_day(state: GameState, agents: Mapping[str, Agent]) -> None:
             listening(alive)
             return
         action = actions[speaker]
+        paid = action.bid if floor else 0
         state.events.append(
-            Speech(round=state.round, speaker=speaker, text=action.message, paid=action.bid)
+            Speech(round=state.round, speaker=speaker, text=action.message, paid=paid)
         )
-        tokens[speaker] -= action.bid
+        tokens[speaker] -= paid
         spoken[speaker] += 1
         listening([n for n in alive if actions[n].bid == 0])
-        target = _new_accusation(action, speaker, alive, replied)
+        target = _new_accusation(action, speaker, alive, replied) if floor else None
         if target:
             replied.add(target)
             pending = (target, speaker)

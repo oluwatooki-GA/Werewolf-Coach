@@ -30,7 +30,8 @@ class BidTask(_Task):
     kind: Literal["bid"] = "bid"
     max_bid: int
     max_chars: int
-    reply_to: str | None = None  # set for a free reply: the bid is ignored and costs nothing
+    free: bool = False  # a free turn: no bid, just post a message at no cost
+    reply_to: str | None = None  # set when the free turn is a reply to this accuser
 
 
 class VoteTask(_Task):
