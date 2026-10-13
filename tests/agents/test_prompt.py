@@ -1,6 +1,10 @@
 """Seed 1 seats: Di Seer, Gus, Bo, Fay (wolf), Hal (wolf), Ada Doctor, Eve, Cy."""
 
-from werewolf.agents.prompt import build_messages, estimate_tokens
+import json
+import re
+
+from werewolf.agents.prompt import EXAMPLES, QUIET_BID_EXAMPLE, build_messages, estimate_tokens
+from werewolf.agents.wire import WIRE_FOR, json_schema_for
 from werewolf.engine.actions import (
     Belief,
     BidTask,
@@ -364,3 +368,50 @@ def test_a_full_round_one_prompt_stays_under_three_thousand_tokens() -> None:
     }
     messages = build(state_with(*events), beliefs=beliefs, summary="s" * 800)
     assert estimate_tokens(messages) < 3000
+
+
+# --- clearer rules, answer examples, and a prompt long enough to be cached ----------------------
+
+
+def test_a_bid_above_zero_must_come_with_a_message_and_the_task_says_so() -> None:
+    text = user(state_with(), task=BidTask(max_bid=3, max_chars=300))
+    assert "must write a message" in text and "nothing to say, bid 0" in text
+
+
+def test_with_no_tokens_left_the_task_says_you_cannot_speak() -> None:
+    text = user(state_with(), task=BidTask(max_bid=0, max_chars=300))
+    assert "no floor tokens left" in text and "bid 0" in text
+    assert "Bid 0 to 0" not in text
+
+
+def test_the_vote_task_says_who_you_cannot_vote_for() -> None:
+    text = user(state_with(), task=VoteTask(options=("Bo", "Eve")))
+    assert "cannot vote for yourself or for a dead player" in text
+
+
+def test_there_is_a_valid_example_for_every_kind_of_question() -> None:
+    assert set(EXAMPLES) == set(WIRE_FOR)
+    for kind, example in EXAMPLES.items():
+        WIRE_FOR[kind].model_validate_json(example)  # raises if an example would not be accepted
+        assert example in system(state_with())
+
+
+def test_the_quiet_example_is_a_valid_bid_of_zero_with_an_empty_message() -> None:
+    quiet = WIRE_FOR["bid"].model_validate_json(QUIET_BID_EXAMPLE)
+    assert (quiet.bid, quiet.message) == (0, "") and QUIET_BID_EXAMPLE in system(state_with())
+
+
+def test_the_examples_name_no_real_player_and_give_no_strategy() -> None:
+    text = " ".join([*EXAMPLES.values(), QUIET_BID_EXAMPLE])
+    for name in ("Di", "Gus", "Bo", "Fay", "Hal", "Ada", "Eve", "Cy"):
+        assert not re.search(rf"\b{name}\b", text), name
+    for word in ("wolves rarely", "lie low", "should accuse", "best strategy"):
+        assert word not in system(state_with()).lower()
+
+
+def test_the_constant_part_of_the_prompt_is_long_enough_for_the_providers_cache() -> None:
+    # OpenAI only caches a prefix of 1,024 tokens or more. The system message and the answer
+    # schema together must clear that, with room to spare (a rough count: characters / 4).
+    schema_tokens = len(json.dumps(json_schema_for("bid"), separators=(",", ":"))) // 4
+    system_tokens = estimate_tokens([build(state_with())[0]])
+    assert system_tokens + schema_tokens >= 1100

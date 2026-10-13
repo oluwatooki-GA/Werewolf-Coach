@@ -10,7 +10,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from werewolf.engine.events import SeerResult, WolfChat
+from werewolf.engine.events import SeerResult, Speech, VoteCast, WolfChat
 from werewolf.engine.log import GameLog
 from werewolf.engine.roles import Role
 
@@ -59,6 +59,13 @@ def find_leaks(
         for e in log.events
         if isinstance(e, SeerResult)
     ]
+    # Said out loud, a text is public whatever else it also was: models often reuse a phrase as
+    # both a private belief reason and a public vote reason.
+    public = "\n".join(
+        e.text if isinstance(e, Speech) else e.reason
+        for e in log.events
+        if isinstance(e, Speech | VoteCast)
+    )
     notes: list[str] = []
     # Several players may write the same generic phrase: a text is private only to those who
     # did not write it themselves.
@@ -102,12 +109,12 @@ def find_leaks(
                 if line in text:
                     flag(player, "seer_result", line)
         for secret in notes:
-            if secret in text:
+            if secret in text and secret not in public:
                 flag(player, "note", secret)
         for reason, writers in reasons.items():
-            if player not in writers and reason in text:
+            if player not in writers and reason in text and reason not in public:
                 flag(player, "belief", reason)
         for summary, writers in summaries.items():
-            if player not in writers and summary in text:
+            if player not in writers and summary in text and summary not in public:
                 flag(player, "summary", summary)
     return list(leaks.values())

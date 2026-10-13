@@ -48,6 +48,7 @@ class FakeModel:
         self.truncate = False
         self.beliefs_for: dict[str, list[dict[str, Any]]] = {}
         self.plant = False  # write a unique code word into every private field
+        self.vote_reason_for: dict[str, str] = {}  # public reason each player gives when voting
         self.kill_last = False  # wolves pick the last option, so the Seer is not always the victim
 
     def provider(self, model: str) -> str:
@@ -112,9 +113,11 @@ class FakeModel:
         assert title == "WireVote"
         pick = "" if is_wolf(request) else options_of(request)[0]
         return {
-            "target": pick, "reason": "r", "note": self.note("vote", me),
+            "target": pick,
+            "reason": self.vote_reason_for.get(me, "r"),
+            "note": self.note("vote", me),
             "beliefs": self.beliefs(me, request),
-        }  # fmt: skip
+        }
 
 
 class Rig:

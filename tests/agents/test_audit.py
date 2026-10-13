@@ -7,6 +7,7 @@ from werewolf.audit import Leak, find_leaks
 from werewolf.engine.events import SeerResult, WolfChat
 from werewolf.engine.log import GameLog
 from werewolf.engine.roles import Role
+from werewolf.engine.setup import new_game
 
 Prompts = list[tuple[str, list[dict[str, str]]]]
 
@@ -157,4 +158,18 @@ def test_players_who_wrote_the_same_generic_text_are_not_flagged_for_it(
         r for c in log.calls for r in c.responses if isinstance(r, str) and "A short summary." in r
     }
     assert summaries and any("A short summary." in m[1]["content"] for _, m in rig.prompts)
+    assert find_leaks(log, rig.prompts) == []
+
+
+def test_a_private_text_that_was_also_said_in_public_is_not_a_leak(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    """Models reuse a phrase as both a private belief reason and a public vote reason."""
+    shared = "Quiet and suspicious, could be wolf"
+    rig = Rig(tmp_path_factory.mktemp("public"))
+    rig.model.beliefs_for["Cy"] = [{"player": "Bo", "suspicion": 0.5, "reason": shared}]
+    rig.model.vote_reason_for = {p.name: shared for p in new_game(1).players}
+    log = rig.play(seed=1, summarize=True)
+    others = [n for n, m in rig.prompts if n != "Cy" and shared in m[1]["content"]]
+    assert others  # the phrase really is in other players' prompts, as a public vote reason
     assert find_leaks(log, rig.prompts) == []

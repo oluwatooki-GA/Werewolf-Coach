@@ -5,6 +5,7 @@ you are, your strategy card), then a user message with what has happened, the pl
 memory, and the task. The log is append-only text, so each prompt begins with the previous one.
 """
 
+import json
 from collections.abc import Mapping
 
 from werewolf.agents.wire import NOTE_MAX, REASON_MAX
@@ -33,6 +34,58 @@ from werewolf.engine.views import (
 )
 
 DEFAULT_CARD = "Play to win for your team. Think about who is telling the truth and who is lying."
+
+
+# One valid answer for each kind of question, with <name> standing in for a player. Mechanical
+# only: they show the shape, never a strategy. A test checks each one against the answer models.
+def _example(**fields: object) -> str:
+    return json.dumps(fields, separators=(",", ":"))
+
+
+EXAMPLES = {
+    "wolf_chat": _example(
+        text="Let us take <name> tonight; they argue too well.", note="<name> may be the Seer."
+    ),
+    "night_target": _example(target="<name>", note="Most dangerous player left."),
+    "bid": _example(
+        bid=1,
+        message="<name>, why did you vote with the majority both days?",
+        intent="ask",
+        target="<name>",
+        note="<name> follows the crowd.",
+        beliefs=[
+            {"player": "<name>", "suspicion": 0.6, "reason": "follows the crowd"},
+            {"player": "<name>", "suspicion": 0.2, "reason": "open and consistent"},
+        ],
+    ),
+    "vote": _example(
+        target="<name>",
+        reason="Dodged my question and changed votes.",
+        note="Likely a wolf.",
+        beliefs=[{"player": "<name>", "suspicion": 0.7, "reason": "dodged my question"}],
+    ),
+    "memory": _example(
+        summary="Round 1: <name> was killed. <name> accused <name>, who denied it. "
+        "Votes split, nobody removed. I trust <name>; <name> worries me."
+    ),
+}
+
+QUIET_BID_EXAMPLE = _example(
+    bid=0,
+    message="",
+    intent="none",
+    target="",
+    note="Nothing to add yet.",
+    beliefs=[{"player": "<name>", "suspicion": 0.3, "reason": "no strong sign yet"}],
+)
+
+LEGEND = (
+    'READING THE LOG: "X says (2 tokens): ..." means X won the turn by bidding 2 tokens; '
+    '"X says: ..." is a message at no cost; "X replies (free): ..." is a free reply to an '
+    'accusation; "Listening: A, B" means those players bid 0 on that turn; "Vote: A voted for B '
+    '(reason: ...)" is a vote cast; "Morning: ..." says who died in the night; lines marked '
+    "[Private] or [Wolf chat] are seen only by you (or by the two werewolves)."
+)
 
 ROLE_TEXT = {
     Role.WEREWOLF: "You are on the wolf team. Each night you and your partner choose one player "
@@ -111,6 +164,23 @@ def _system(view: PlayerView, card: str) -> str:
             f"to read, at most {r.max_message_chars} characters. Notes and belief reasons are "
             "private: nobody else will ever see them. You may lie or claim any role; that is part "
             "of the game.",
+            "",
+            LEGEND,
+            "",
+            "ANSWER EXAMPLES (use real player names in place of <name>; yours will differ):",
+            f"- Night message from one werewolf to the other: {EXAMPLES['wolf_chat']}",
+            f"- Choosing a night target (an empty string means none): {EXAMPLES['night_target']}",
+            f"- Your turn to bid or speak: {EXAMPLES['bid']}",
+            f"- Staying quiet this turn (bid 0, empty message): {QUIET_BID_EXAMPLE}",
+            f"- Voting (an empty string means abstain): {EXAMPLES['vote']}",
+            f"- End-of-round summary: {EXAMPLES['memory']}",
+            "",
+            "RULE REMINDERS: never bid more than the limit named in the question. A bid above 0 "
+            "needs a message; with a bid of 0 leave the message empty. You can only target or "
+            "vote for players who are alive, never for yourself. Give a belief for every other "
+            "living player: a suspicion from 0 (trust) to 1 (sure they are a wolf) and a reason "
+            f"of at most {REASON_MAX} characters. Keep notes to {NOTE_MAX} characters. Write like "
+            "a person at the table: short, direct sentences, no speeches.",
         ]
     )
 
@@ -204,18 +274,25 @@ def _bid_ask(view: PlayerView, task: BidTask) -> str:
             "It is your turn to speak (a free turn, so use bid 0). Write your message (at most "
             f"{task.max_chars} characters), or leave it empty to stay silent."
         )
+    elif view.rules.speaking_mode == "floor_tokens" and task.max_bid == 0:
+        head = (
+            "You have no floor tokens left today, so you cannot speak this turn: bid 0 and leave "
+            "the message empty."
+        )
     elif view.rules.speaking_mode == "floor_tokens":
         tokens = _plural(task.max_bid, "floor token")
         head = (
             f"You have {tokens} left today. Bid 0 to {task.max_bid}: 0 means you stay quiet and "
             "listen; the highest bid speaks and pays what it bid. Your message (at most "
-            f"{task.max_chars} characters) is posted only if you win the turn."
+            f"{task.max_chars} characters) is posted only if you win the turn. If you bid above 0 "
+            "you must write a message; if you have nothing to say, bid 0."
         )
     else:
         head = (
             f"Bid 0 to {task.max_bid}: bids cost nothing; 0 means you stay quiet and listen; the "
             f"highest bid speaks. Your message (at most {task.max_chars} characters) is posted "
-            "only if you win the turn."
+            "only if you win the turn. If you bid above 0 you must write a message; if you have "
+            "nothing to say, bid 0."
         )
     return f"{head} {intents} {_beliefs_ask()} {fields}"
 
@@ -249,8 +326,9 @@ def _task(view: PlayerView, task: Task) -> str:
         )
     assert isinstance(task, VoteTask)
     return (
-        f"Vote to remove one player. Options: {', '.join(task.options)}. Use an empty string to "
-        f"abstain. Give a reason of at most 100 characters. {_beliefs_ask()} "
+        f"Vote to remove one player. Options: {', '.join(task.options)}. You cannot vote for "
+        "yourself or for a dead player. Use an empty string to abstain. Give a reason of at most "
+        f"100 characters. {_beliefs_ask()} "
         "JSON fields: target, reason, note, beliefs."
     )
 
