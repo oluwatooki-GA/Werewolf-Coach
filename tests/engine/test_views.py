@@ -62,5 +62,18 @@ def test_a_view_cannot_be_changed() -> None:
 
 def test_the_view_fields_are_the_whole_public_surface() -> None:
     assert set(PlayerView.model_fields) == {
-        "name", "role", "round", "seats", "alive", "dead", "partner", "events",
+        "name", "role", "round", "seats", "alive", "dead", "partner", "events", "rules",
     }  # fmt: skip
+
+
+def test_the_view_carries_the_public_rules_of_the_game() -> None:
+    from werewolf.engine.state import Settings, SpeakingMode
+
+    state = new_game(
+        seed=1, settings=Settings(speaking_mode=SpeakingMode.FREE_BID, speaking_turns=5)
+    )
+    rules = make_view(state, state.players[0].name).rules
+    assert rules.speaking_mode == SpeakingMode.FREE_BID
+    assert (rules.speaking_turns, rules.max_rounds, rules.tokens_per_day) == (5, 6, 3)
+    assert rules.max_message_chars == 300
+    assert all(make_view(state, p.name).rules == rules for p in state.players)
