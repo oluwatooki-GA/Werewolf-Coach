@@ -106,7 +106,7 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Files: `engine/day.py`, `tests/engine/test_day_modes.py`
   - Depends on: T6
 
-- [ ] **T8: Vote, win check, round limit, `play_game`** (M)
+- [x] **T8: Vote, win check, round limit, `play_game`** (M)
   - `engine/vote.py`, `engine/win.py`, `engine/game.py` (`play_game(seed, settings, agents) -> GameLog`).
   - Acceptance:
     - Sealed simultaneous votes with a one-line reason, revealed together; self-vote is illegal.
@@ -119,9 +119,9 @@ Every task ends with `check.ps1 task` passing. Tests come first (red, then green
   - Depends on: T5, T7
 
 ### Checkpoint 2: Full game
-- [ ] A scripted game plays start to finish with the right winner
-- [ ] Every row in the plan's rule-to-test map has a passing test
-- [ ] `check.ps1 task` passes and runs under 90 seconds
+- [x] A scripted game plays start to finish with the right winner
+- [x] Every row in the plan's rule-to-test map has a passing test
+- [x] `check.ps1 task` passes and runs under 90 seconds
 - [ ] Review with human before proceeding
 
 ## Phase 4: Replay and proof

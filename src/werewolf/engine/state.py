@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from werewolf.engine.events import Event
-from werewolf.engine.roles import Role
+from werewolf.engine.roles import Role, Team
 
 DEFAULT_NAMES = ("Ada", "Bo", "Cy", "Di", "Eve", "Fay", "Gus", "Hal")
 
@@ -66,3 +66,4 @@ class GameState:
     events: list[Event] = field(default_factory=list)
     calls: list[CallRecord] = field(default_factory=list)
     round: int = 1
+    winner: Team | None = None

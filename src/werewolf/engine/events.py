@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from werewolf.engine.roles import Role
+from werewolf.engine.roles import Role, Team
 
 
 class _Event(BaseModel):
@@ -44,6 +44,27 @@ class Listening(_Event):
     player: str
 
 
+class VoteCast(_Event):
+    kind: Literal["vote_cast"] = "vote_cast"
+    voter: str
+    target: str | None  # None means abstained
+    reason: str
+
+
+class Removal(_Event):
+    kind: Literal["removal"] = "removal"
+    player: str
+
+
+class NoRemoval(_Event):
+    kind: Literal["no_removal"] = "no_removal"
+
+
+class GameOver(_Event):
+    kind: Literal["game_over"] = "game_over"
+    winner: Team
+
+
 class NoDeath(_Event):
     kind: Literal["no_death"] = "no_death"
 
@@ -59,6 +80,16 @@ class NightSummary(_Event):
 
 
 Event = Annotated[
-    WolfChat | SeerResult | Death | NoDeath | NightSummary | Speech | Listening,
+    WolfChat
+    | SeerResult
+    | Death
+    | NoDeath
+    | NightSummary
+    | Speech
+    | Listening
+    | VoteCast
+    | Removal
+    | NoRemoval
+    | GameOver,
     Field(discriminator="kind"),
 ]
