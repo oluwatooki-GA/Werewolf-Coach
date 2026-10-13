@@ -111,4 +111,4 @@ def test_the_prompt_stops_growing_once_older_rounds_are_summarised() -> None:
     windowed = [size(r, True) for r in range(2, 6)]
     whole = [size(r, False) for r in range(2, 6)]
     assert max(windowed) - min(windowed) < 0.1 * min(windowed)  # flat
-    assert whole[-1] > 2 * whole[0]  # without it, the prompt keeps growing
+    assert whole[-1] - whole[0] >= 2500  # without it, every extra round adds about 1,000 tokens
