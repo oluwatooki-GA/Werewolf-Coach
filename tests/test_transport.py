@@ -6,6 +6,7 @@ import litellm
 import pytest
 from litellm import ModelResponse
 
+from werewolf.llm.prices import EXTRA_PRICES
 from werewolf.llm.transport import FREE_PROVIDERS, LiteLLMTransport
 from werewolf.llm.types import RateLimited, Request, UnknownPrice
 
@@ -84,9 +85,9 @@ def test_the_player_model_has_a_price() -> None:
 
 
 def test_a_model_the_price_list_lacks_is_refused_not_guessed() -> None:
-    # The bundled list has no Claude 5.5 entries yet: they stay blocked until a price is added.
+    # A model that is in neither the bundled list nor our own price table has no known cost.
     with pytest.raises(UnknownPrice):
-        LiteLLMTransport().estimate(request("claude-haiku-5-5"))
+        LiteLLMTransport().estimate(request("claude-imaginary-9"))
 
 
 def test_nano_is_priced_as_planned() -> None:
@@ -209,3 +210,39 @@ def test_a_rate_limit_error_becomes_a_hard_stop_with_a_clear_message() -> None:
     litellm.acompletion = refuse
     with pytest.raises(RateLimited, match="cerebras rate limit"):
         asyncio.run(LiteLLMTransport().call(request("cerebras/gpt-oss-120b")))
+
+
+# --- Claude: priced from Anthropic's own pricing page --------------------------------------
+
+
+def test_claude_haiku_5_5_is_priced_from_our_table_because_the_bundled_list_lacks_it() -> None:
+    assert "claude-haiku-5-5" not in litellm.model_cost  # why the table exists
+    assert EXTRA_PRICES["claude-haiku-5-5"] == (
+        D("1e-07"),
+        D("5e-07"),
+        D("1e-08"),
+    )  # $0.10 / $0.50 per M
+    done, _ = call("claude-haiku-5-5", response(prompt=1000, completion=100, cached=None))
+    assert done.cost == D("1000") * D("1e-07") + D("100") * D("5e-07") == D("0.00015")
+
+
+def test_the_price_works_with_or_without_the_provider_prefix() -> None:
+    t = LiteLLMTransport()
+    assert t.estimate(request("claude-haiku-5-5")) == t.estimate(
+        request("anthropic/claude-haiku-5-5")
+    )
+    assert t.provider("claude-haiku-5-5") == "anthropic"
+
+
+def test_a_haiku_call_is_cheap_to_hold_back() -> None:
+    assert LiteLLMTransport().estimate(request("claude-haiku-5-5")) < D("0.001")
+
+
+def test_sonnet_5_5_in_the_bundled_list_agrees_with_anthropics_page() -> None:
+    entry = litellm.model_cost["claude-sonnet-5-5"]
+    assert (entry["input_cost_per_token"], entry["output_cost_per_token"]) == (2e-06, 1e-05)
+
+
+def test_the_bundled_list_wins_when_it_has_the_model() -> None:
+    done, _ = call("gpt-4.1-nano", response(prompt=1000, completion=100, cached=None))
+    assert done.cost == D("1000") * D("1e-07") + D("100") * D("4e-07")  # not from our table

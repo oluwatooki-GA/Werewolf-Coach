@@ -8,6 +8,7 @@ from typing import Any
 import litellm
 from litellm.exceptions import RateLimitError
 
+from werewolf.llm.prices import EXTRA_PRICES
 from werewolf.llm.types import Completion, RateLimited, Request, UnknownPrice
 
 FREE_PROVIDERS = frozenset({"groq", "cerebras"})  # free tiers: cost 0, limited by rate limits
@@ -28,7 +29,10 @@ class LiteLLMTransport:
     def _prices(self, model: str) -> tuple[Decimal, Decimal, Decimal]:
         entry = litellm.model_cost.get(model)
         if entry is None or not entry.get("input_cost_per_token"):
-            raise UnknownPrice(f"no price for model '{model}' in LiteLLM's price list")
+            bare = model.split("/")[-1]  # "anthropic/claude-haiku-5-5" -> "claude-haiku-5-5"
+            if bare in EXTRA_PRICES:
+                return EXTRA_PRICES[bare]
+            raise UnknownPrice(f"no price for model '{model}' in LiteLLM's list or our own table")
         price_in = Decimal(str(entry["input_cost_per_token"]))
         price_out = Decimal(str(entry["output_cost_per_token"]))
         cached = entry.get("cache_read_input_token_cost")

@@ -442,3 +442,27 @@ def test_without_notes_the_prompt_is_exactly_as_before() -> None:
 def test_notes_alone_are_enough_to_leave_the_nothing_yet_message() -> None:
     text = build_messages(make_view(state_with(), "Cy"), BID, notes=["a thought"])[1]["content"]
     assert "Nothing yet" not in memory_section(text)
+
+
+# --- do not invent events; a free reply is a chance to answer --------------------------------
+
+
+def test_the_rules_tell_players_to_use_only_what_the_log_shows() -> None:
+    text = system(state_with())
+    assert "Use only what the log shows" in text
+    assert "do not invent" in text.lower()
+    assert "nobody has spoken yet" in text.lower()
+
+
+def test_the_rule_is_about_facts_and_gives_no_strategy() -> None:
+    text = system(state_with()).lower()
+    for advice in ("you should accuse", "do not accuse", "avoid accusing", "ask questions first"):
+        assert advice not in text
+
+
+def test_a_free_reply_is_described_as_the_chance_to_answer_the_accusation() -> None:
+    text = user(state_with(), task=BidTask(max_bid=0, max_chars=300, free=True, reply_to="Bo"))
+    assert "Bo accused you" in text
+    assert "message is in the log" in text
+    assert "chance to answer" in text
+    assert "no answer" in text.lower()  # silence means giving no answer

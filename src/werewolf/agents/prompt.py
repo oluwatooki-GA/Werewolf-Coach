@@ -179,8 +179,10 @@ def _system(view: PlayerView, card: str) -> str:
             "needs a message; with a bid of 0 leave the message empty. You can only target or "
             "vote for players who are alive, never for yourself. Give a belief for every other "
             "living player: a suspicion from 0 (trust) to 1 (sure they are a wolf) and a reason "
-            f"of at most {REASON_MAX} characters. Keep notes to {NOTE_MAX} characters. Write like "
-            "a person at the table: short, direct sentences, no speeches.",
+            f"of at most {REASON_MAX} characters. Keep notes to {NOTE_MAX} characters. Use only "
+            "what the log shows: do not invent events, earlier days, or things people did not "
+            "say. At the start of day 1 nobody has spoken yet. Write like a person at the "
+            "table: short, direct sentences, no speeches.",
         ]
     )
 
@@ -270,9 +272,10 @@ def _bid_ask(view: PlayerView, task: BidTask) -> str:
     fields = "JSON fields: bid, message, intent, target, note, beliefs."
     if task.reply_to:
         head = (
-            f"{task.reply_to} accused you. You get a free reply: write your message (at most "
-            f"{task.max_chars} characters), or leave it empty to stay silent. It is a free turn, "
-            "so use bid 0."
+            f"{task.reply_to} accused you (their message is in the log above). This free reply is "
+            f"your chance to answer the accusation: write your message (at most {task.max_chars} "
+            "characters). Leaving it empty means you give no answer. It is a free turn, so use "
+            "bid 0."
         )
     elif task.free:
         head = (
