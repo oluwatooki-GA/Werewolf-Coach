@@ -106,7 +106,7 @@ def test_the_provider_names_match_the_ledger_keys() -> None:
 
 
 def test_tokens_cached_tokens_and_cost_come_back_exactly() -> None:
-    done, _ = call("gpt-4.1-nano", response())
+    done, _ = call("gpt-4.1-nano", response(), max_tokens=500)
     assert (done.prompt_tokens, done.completion_tokens, done.cached_tokens) == (1200, 300, 1024)
     # 176 fresh input + 1024 cached + 300 output tokens, priced per token
     assert done.cost == D("176") * D("1e-07") + D("1024") * D("2.5e-08") + D("300") * D("4e-07")
@@ -246,3 +246,30 @@ def test_sonnet_5_5_in_the_bundled_list_agrees_with_anthropics_page() -> None:
 def test_the_bundled_list_wins_when_it_has_the_model() -> None:
     done, _ = call("gpt-4.1-nano", response(prompt=1000, completion=100, cached=None))
     assert done.cost == D("1000") * D("1e-07") + D("100") * D("4e-07")  # not from our table
+
+
+def test_claude_5_models_are_not_sent_a_temperature_because_they_refuse_one() -> None:
+    for model in ("claude-haiku-5-5", "anthropic/claude-haiku-5-5", "claude-sonnet-5-5"):
+        _, capture = call(model, response(), temperature=0.7)
+        assert "temperature" not in capture.kwargs, model
+
+
+def test_other_models_still_get_their_temperature() -> None:
+    for model in ("gpt-4.1-nano", "cerebras/gpt-oss-120b"):
+        _, capture = call(model, response(), temperature=0.4)
+        assert capture.kwargs["temperature"] == 0.4, model
+
+
+def test_an_answer_that_used_its_whole_output_budget_counts_as_cut_off() -> None:
+    # Claude reports a cut-off tool answer as an ordinary "stop"; the token count gives it away.
+    done, _ = call("claude-haiku-5-5", response(finish="stop", completion=300, cached=None))
+    assert done.truncated
+    fine, _ = call("claude-haiku-5-5", response(finish="stop", completion=299, cached=None))
+    assert not fine.truncated
+
+
+def test_a_larger_output_budget_is_respected_when_judging_a_cut_off() -> None:
+    done, _ = call(
+        "claude-haiku-5-5", response(finish="stop", completion=300, cached=None), max_tokens=500
+    )
+    assert not done.truncated

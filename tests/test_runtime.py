@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from werewolf.runtime import build_client, load_env
+from werewolf.runtime import build_client, default_max_tokens, load_env
 
 
 def test_load_env_reads_keys_without_overriding_existing_ones(
@@ -78,3 +78,10 @@ def test_the_pace_can_be_set_for_any_provider(
     assert paid.requests_per_minute == {"openai": 60}
     unpaced = build_client("gpt-4.1-nano", Decimal("0.10"), root=tmp_path)
     assert unpaced.requests_per_minute == {}
+
+
+def test_claude_models_get_a_larger_output_budget_because_they_write_longer_answers() -> None:
+    assert default_max_tokens("claude-haiku-5-5") == 700
+    assert default_max_tokens("anthropic/claude-sonnet-5-5") == 700
+    assert default_max_tokens("gpt-4.1-nano") == 300
+    assert default_max_tokens("cerebras/gpt-oss-120b") == 300

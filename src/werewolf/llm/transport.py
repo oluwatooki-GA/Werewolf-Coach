@@ -13,6 +13,8 @@ from werewolf.llm.types import Completion, RateLimited, Request, UnknownPrice
 
 FREE_PROVIDERS = frozenset({"groq", "cerebras"})  # free tiers: cost 0, limited by rate limits
 _ACCEPTS_CACHE_KEY = frozenset({"openai", "groq"})  # providers that take prompt_cache_key
+# Claude 5 models reject the temperature setting ("`temperature` is deprecated for this model").
+_NO_TEMPERATURE = ("claude-haiku-5", "claude-sonnet-5", "claude-opus-5")
 
 
 class LiteLLMTransport:
@@ -56,11 +58,12 @@ class LiteLLMTransport:
         kwargs: dict[str, Any] = {
             "model": request.model,
             "messages": request.messages,
-            "temperature": request.temperature,
             "max_tokens": request.max_tokens,
             "timeout": self._timeout,
             "num_retries": self._retries,
         }
+        if not request.model.split("/")[-1].startswith(_NO_TEMPERATURE):
+            kwargs["temperature"] = request.temperature
         if request.schema_ is not None:
             kwargs["response_format"] = {
                 "type": "json_schema",
@@ -97,5 +100,7 @@ class LiteLLMTransport:
             cached_tokens=cached,
             cost=cost,
             latency_s=latency,
-            truncated=choice.finish_reason == "length",
+            # Claude reports a cut-off tool answer as a plain "stop", so also count an answer
+            # that used the whole output budget as cut off.
+            truncated=choice.finish_reason == "length" or completion >= request.max_tokens,
         )

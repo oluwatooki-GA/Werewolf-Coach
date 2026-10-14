@@ -60,6 +60,7 @@ async def run_batch(
     data_dir: Path,
     announce: Callable[[Played], None] | None = None,
     keep_notes: int = 0,
+    max_tokens: int = 300,
 ) -> BatchReport:
     """Play one game per seed, `parallel` at a time. A hard stop (the spending cap) ends the
     run: games not yet started are skipped and a game under way is dropped, not saved."""
@@ -88,6 +89,7 @@ async def run_batch(
                     game_id=run_id if cache == "fresh" else f"seed{seed}",
                     summarize=settings.summarize_rounds,
                     keep_notes=keep_notes,
+                    max_tokens=max_tokens,
                     on_prompt=record,
                 )
                 for p in new_game(seed, settings).players

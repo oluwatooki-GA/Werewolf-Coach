@@ -219,3 +219,11 @@ def test_each_finished_game_says_where_it_was_saved_and_how_to_read_it(
     (path,) = (tmp_path / "games").glob("5-*.json")
     assert f"saved to {path}" in out
     assert "werewolf.cli show" in out
+
+
+def test_the_output_budget_defaults_by_model_and_can_be_set(rig: Rig, tmp_path: Path) -> None:
+    batch(tmp_path, "--games", "1")
+    assert {r.max_tokens for r in rig.model.calls} == {300}  # gpt-4.1-nano
+    rig.model.calls.clear()
+    batch(tmp_path, "--games", "1", "--max-tokens", "420")
+    assert {r.max_tokens for r in rig.model.calls} == {420}

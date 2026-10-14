@@ -48,6 +48,7 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
             data_dir=Path(args.data_dir),
             announce=lambda played: print(runner.format_game(played), flush=True),
             keep_notes=args.notes,
+            max_tokens=args.max_tokens or runtime.default_max_tokens(args.model),
         )
     )
     print(runner.format_report(report))
@@ -129,6 +130,7 @@ SMOKE_PROMPTS = {
 def _smoke(args: argparse.Namespace) -> int:
     from decimal import Decimal
 
+    from werewolf import runtime
     from werewolf.agents.wire import WIRE_FOR, WireError, json_schema_for, to_action_json
     from werewolf.engine.actions import ACTION_FOR
     from werewolf.llm.types import Request
@@ -154,7 +156,7 @@ def _smoke(args: argparse.Namespace) -> int:
                     {"role": "user", "content": SMOKE_PROMPTS[kind]},
                 ],
                 schema=json_schema_for(kind),
-                max_tokens=300,
+                max_tokens=args.max_tokens or runtime.default_max_tokens(args.model),
             )
             try:
                 done = await client.complete(request)
@@ -205,6 +207,9 @@ def main(argv: list[str] | None = None) -> int:
     play.add_argument(
         "--rpm", type=int, help="requests per minute to send (default: the provider's limit)"
     )
+    play.add_argument(
+        "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
+    )
     play.set_defaults(run=_play)
 
     many = commands.add_parser("batch", help="play several model-driven games and report")
@@ -231,6 +236,9 @@ def main(argv: list[str] | None = None) -> int:
     many.add_argument(
         "--rpm", type=int, help="requests per minute to send (default: the provider's limit)"
     )
+    many.add_argument(
+        "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
+    )
     many.set_defaults(run=_batch)
 
     again = commands.add_parser("replay", help="replay a saved log and check it matches")
@@ -247,6 +255,9 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--model", required=True)
     check.add_argument("--max-spend", help="dollars; required for paid models")
     check.add_argument("--show", action="store_true", help="print each raw model answer")
+    check.add_argument(
+        "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
+    )
     check.set_defaults(run=_smoke)
 
     args = parser.parse_args(argv)

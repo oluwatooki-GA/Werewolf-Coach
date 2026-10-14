@@ -22,6 +22,12 @@ KEY_FOR = {
 DEFAULT_RPM = {"cerebras": 5}
 
 
+def default_max_tokens(model: str) -> int:
+    """Output budget per answer. Claude models write longer answers (notes, belief reasons), and
+    at 300 tokens a bid answer was cut off before its belief table."""
+    return 700 if model.split("/")[-1].startswith("claude") else 300
+
+
 def load_env(path: Path) -> list[str]:
     """Put KEY=VALUE lines from a .env file into the environment, keeping any value already
     set. Returns the names that were read; values are never returned or printed."""
