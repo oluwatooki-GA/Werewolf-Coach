@@ -5,7 +5,9 @@ Every paid model call reserves its estimated cost first, then settles with the r
 
 import json
 import os
-from collections.abc import Mapping
+import time
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from decimal import Decimal
 from itertools import count
@@ -17,6 +19,10 @@ DEFAULT_CAPS: dict[str, Decimal] = {
     "groq": Decimal("0"),
     "cerebras": Decimal("0"),
 }
+
+
+LOCK_WAIT_S = 10.0  # how long to wait for another process to finish writing the file
+LOCK_STALE_S = 10.0  # a lock this old was left behind by a crashed process
 
 
 class LedgerBlocked(Exception):
@@ -42,15 +48,50 @@ def _check_amount(amount: Decimal) -> None:
 
 
 class Ledger:
-    # ponytail: reservations live in memory per Ledger; separate processes share only settled
-    # spend. Fine for one machine running games in one process; add file locking if that changes.
+    # Reservations live in memory per Ledger, so separate processes share only settled spend (one
+    # process cannot see another's in-flight calls). The file itself is locked, so no process
+    # loses another's settled spend or trips on its temporary file.
     def __init__(self, path: Path, caps: Mapping[str, Decimal] | None = None) -> None:
         self._path = path
         self._caps = dict(DEFAULT_CAPS if caps is None else caps)
         self._open: dict[int, Reservation] = {}
         self._ids = count(1)
 
+    @contextmanager
+    def _locked(self) -> Iterator[None]:
+        """One process at a time reads or writes the file (a plain lock file, no new library)."""
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        lock = self._path.with_suffix(".lock")
+        deadline = time.monotonic() + LOCK_WAIT_S
+        while True:
+            try:
+                os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+                break
+            except (
+                FileExistsError,
+                PermissionError,
+            ):  # Windows: PermissionError while it is deleted
+                try:
+                    if time.time() - lock.stat().st_mtime > LOCK_STALE_S:
+                        lock.unlink()
+                        continue
+                except FileNotFoundError:
+                    continue  # released between our two looks
+                except PermissionError:
+                    pass  # being removed right now: wait and look again
+                if time.monotonic() > deadline:
+                    raise LedgerError(f"ledger file {self._path} is locked by another process")
+                time.sleep(0.01)
+        try:
+            yield
+        finally:
+            lock.unlink(missing_ok=True)
+
     def _load(self) -> dict[str, Decimal]:
+        with self._locked():
+            return self._read()
+
+    def _read(self) -> dict[str, Decimal]:
         if not self._path.exists():
             return {}
         try:
@@ -61,7 +102,7 @@ class Ledger:
 
     def _save(self, spent: dict[str, Decimal]) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        temp = self._path.with_suffix(".tmp")
+        temp = self._path.with_suffix(f".{os.getpid()}.tmp")
         body = json.dumps({"spent": {k: str(v) for k, v in spent.items()}}, sort_keys=True)
         temp.write_text(body, encoding="utf-8")
         os.replace(temp, self._path)
@@ -96,9 +137,10 @@ class Ledger:
         """Record the real cost, even if it is above the estimate or the cap."""
         _check_amount(actual)
         self._close(reservation)
-        spent = self._load()
-        spent[reservation.key] = spent.get(reservation.key, Decimal("0")) + actual
-        self._save(spent)
+        with self._locked():
+            spent = self._read()
+            spent[reservation.key] = spent.get(reservation.key, Decimal("0")) + actual
+            self._save(spent)
 
     def release(self, reservation: Reservation) -> None:
         """Give the reservation back after a call that failed and cost nothing."""
