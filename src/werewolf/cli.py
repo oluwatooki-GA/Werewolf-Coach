@@ -46,6 +46,7 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
             cache=args.cache,
             data_dir=Path(args.data_dir),
             announce=lambda played: print(runner.format_game(played), flush=True),
+            keep_notes=args.notes,
         )
     )
     print(runner.format_report(report))
@@ -182,6 +183,9 @@ def main(argv: list[str] | None = None) -> int:
     play.add_argument("--max-spend", help="dollars; required for paid models")
     play.add_argument("--cache", choices=["fresh", "shared"], default="fresh")
     play.add_argument(
+        "--notes", type=int, default=0, help="show each player its last N private notes"
+    )
+    play.add_argument(
         "--rpm", type=int, help="requests per minute to send (default: the provider's limit)"
     )
     play.set_defaults(run=_play)
@@ -204,6 +208,9 @@ def main(argv: list[str] | None = None) -> int:
         default=SpeakingMode.FLOOR_TOKENS.value,
     )
     many.add_argument("--data-dir", default="data/games")
+    many.add_argument(
+        "--notes", type=int, default=0, help="show each player its last N private notes"
+    )
     many.add_argument(
         "--rpm", type=int, help="requests per minute to send (default: the provider's limit)"
     )

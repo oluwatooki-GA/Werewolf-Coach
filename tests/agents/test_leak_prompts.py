@@ -150,3 +150,21 @@ def test_summaries_really_are_asked_for_and_shown_to_their_owner(games: Played) 
             for name, text in per_player_text(rig).items()
         )
     assert asked > 0 and shown > 0, (asked, shown)
+
+
+def test_with_the_scratchpad_on_a_note_reaches_only_its_author(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    seen = 0
+    for seed in SEEDS:
+        rig = Rig(tmp_path_factory.mktemp(f"notes-{seed}"))
+        rig.model.plant = True
+        rig.model.kill_last = True
+        log = rig.play(seed=seed, summarize=True, keep_notes=3)
+        for name, text in per_player_text(rig).items():
+            authors = set(re.findall(r"SECRET-NOTE-\w+-(\w+)-\d+", text))
+            assert authors <= {name}, (seed, name, authors)
+            seen += bool(authors)
+        assert find_leaks(log, rig.prompts, own_notes_ok=True) == []
+        assert find_leaks(log, rig.prompts) != []  # strict mode would flag them: the flag matters
+    assert seen > 0  # authors really were shown their own notes

@@ -44,9 +44,11 @@ def find_leaks(
     log: GameLog,
     prompts: Sequence[tuple[str, Sequence[Mapping[str, str]]]],
     min_length: int = 12,
+    own_notes_ok: bool = False,
 ) -> list[Leak]:
     """Look for private texts in prompts they should never be in. Texts shorter than
-    `min_length` are skipped: a short phrase could match by chance."""
+    `min_length` are skipped: a short phrase could match by chance. Private notes go to nobody,
+    unless `own_notes_ok` (the notes scratchpad is on): then an author may see its own."""
     roles = {p.name: p.role for p in log.players}
     wolves = {n for n, r in roles.items() if r is Role.WEREWOLF}
     seer = next((n for n, r in roles.items() if r is Role.SEER), None)
@@ -71,8 +73,11 @@ def find_leaks(
     # leak only for a player who never wrote it as a belief reason or summary. Notes go to nobody,
     # not even their author, so a note never counts as "written" here.
     memory: dict[str, str] = {}
+    authored: dict[str, set[str]] = {}  # player -> the notes that player wrote
     private: list[tuple[str, str]] = []  # (kind, text): notes, belief reasons, round summaries
     for owner, data in _answers(log):
+        if isinstance(data.get("note"), str):
+            authored.setdefault(owner, set()).add(data["note"])
         found = [("note", data.get("note")), ("summary", data.get("summary"))]
         beliefs = data.get("beliefs")
         if isinstance(beliefs, dict):
@@ -106,6 +111,8 @@ def find_leaks(
                     flag(player, "seer_result", line)
         mine = memory.get(player, "")
         for kind, secret in private:
+            if kind == "note" and own_notes_ok and secret in authored.get(player, ()):
+                continue
             if secret in text and secret not in public and secret not in mine:
                 flag(player, kind, secret)
     return list(leaks.values())

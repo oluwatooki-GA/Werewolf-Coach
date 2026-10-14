@@ -1,11 +1,11 @@
 """A player that is a language model: builds a prompt from its view, calls the client, answers."""
 
-import json
 from collections.abc import Callable
 
+from werewolf.agents.memory import PlayerMemory
 from werewolf.agents.prompt import build_messages
 from werewolf.agents.wire import WireError, json_schema_for, to_action_json
-from werewolf.engine.actions import Belief, FatalAgentError, Reply, Task, Usage
+from werewolf.engine.actions import FatalAgentError, Reply, Task, Usage
 from werewolf.engine.views import PlayerView
 from werewolf.llm.client import LLMClient
 from werewolf.llm.ledger import LedgerBlocked, LedgerError
@@ -27,6 +27,7 @@ class LLMAgent:
         temperature: float = 0.7,
         max_tokens: int = 300,
         summarize: bool = False,
+        keep_notes: int = 0,
         on_prompt: Callable[[str, list[dict[str, str]]], None] | None = None,
     ) -> None:
         self._name = name
@@ -39,16 +40,16 @@ class LLMAgent:
         self._max_tokens = max_tokens
         self._on_prompt = on_prompt
         self._summarize = summarize
-        self._beliefs: dict[str, Belief] = {}
-        self._summary = ""
+        self._memory = PlayerMemory(keep_notes)
 
     async def act(self, view: PlayerView, task: Task) -> object:
         messages = build_messages(
             view,
             task,
             card=self._card,
-            beliefs=self._beliefs,
-            summary=self._summary,
+            beliefs=self._memory.beliefs,
+            summary=self._memory.summary,
+            notes=list(self._memory.notes),
             from_round=view.round if self._summarize else 1,  # older rounds live in the summary
         )
         if self._on_prompt is not None:
@@ -84,14 +85,5 @@ class LLMAgent:
             except WireError:
                 pass  # hand the engine the raw text; it rejects it and asks again with the reason
             else:
-                self._remember(task.kind, text)
+                self._memory.remember(task.kind, text)
         return Reply(text=text, usage=usage)
-
-    def _remember(self, kind: str, action_json: str) -> None:
-        data = json.loads(action_json)
-        if kind == "memory":
-            summary = str(data.get("summary", "")).strip()
-            if summary:  # an empty summary keeps the old one
-                self._summary = summary
-        for player, belief in data.get("beliefs", {}).items():
-            self._beliefs[player] = Belief(**belief)

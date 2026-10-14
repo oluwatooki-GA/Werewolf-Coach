@@ -15,13 +15,14 @@ MEMORY = MemoryTask(max_chars=800)
 BID = BidTask(max_bid=3, max_chars=300)
 
 
-def agent_in(tmp_path: Path, summarize: bool = True) -> tuple[LLMAgent, Rig]:
+def agent_in(tmp_path: Path, summarize: bool = True, keep_notes: int = 0) -> tuple[LLMAgent, Rig]:
     rig = Rig(tmp_path)
     agent = LLMAgent(
         "Cy",
         rig.client,
         MODEL,
         summarize=summarize,
+        keep_notes=keep_notes,
         on_prompt=lambda name, messages: rig.prompts.append((name, messages)),
     )
     return agent, rig
@@ -112,3 +113,32 @@ def test_the_prompt_stops_growing_once_older_rounds_are_summarised() -> None:
     whole = [size(r, False) for r in range(2, 6)]
     assert max(windowed) - min(windowed) < 0.1 * min(windowed)  # flat
     assert whole[-1] - whole[0] >= 2500  # without it, every extra round adds about 1,000 tokens
+
+
+def think(agent: LLMAgent, rig: Rig, note: str) -> None:
+    rig.model.note_for["Cy"] = note
+    asyncio.run(agent.act(view_in_round(1), BID))
+
+
+def test_with_notes_on_the_agent_is_shown_its_own_last_notes(tmp_path: Path) -> None:
+    agent, rig = agent_in(tmp_path, keep_notes=2)
+    for note in ("first thought", "second thought", "third thought"):
+        think(agent, rig, note)
+    text = next_prompt(agent, rig)
+    assert "second thought" in text and "third thought" in text
+    assert "first thought" not in text  # only the last two are kept
+    assert text.index("second thought") < text.index("third thought")
+
+
+def test_with_notes_off_the_prompt_has_no_notes_section(tmp_path: Path) -> None:
+    agent, rig = agent_in(tmp_path)
+    think(agent, rig, "a private thought")
+    assert "Your recent private notes" not in next_prompt(agent, rig)
+
+
+def test_the_note_of_an_unreadable_answer_is_not_kept(tmp_path: Path) -> None:
+    agent, rig = agent_in(tmp_path, keep_notes=2)
+    rig.model.raw["WireBid"] = '{"note": "kept? no", "bid":'
+    asyncio.run(agent.act(view_in_round(1), BID))
+    rig.model.raw.clear()
+    assert "kept? no" not in next_prompt(agent, rig)

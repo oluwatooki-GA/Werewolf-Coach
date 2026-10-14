@@ -131,7 +131,12 @@ class Rig:
         self.prompts: list[tuple[str, list[dict[str, str]]]] = []
 
     def agents(
-        self, seed: int = 1, salt: str = "", game_id: str = "g1", summarize: bool = False
+        self,
+        seed: int = 1,
+        salt: str = "",
+        game_id: str = "g1",
+        summarize: bool = False,
+        keep_notes: int = 0,
     ) -> dict[str, Agent]:
         return {
             p.name: LLMAgent(
@@ -141,6 +146,7 @@ class Rig:
                 cache_salt=salt,
                 game_id=game_id,
                 summarize=summarize,
+                keep_notes=keep_notes,
                 on_prompt=lambda name, messages: self.prompts.append((name, messages)),
             )
             for p in new_game(seed).players
@@ -153,10 +159,11 @@ class Rig:
         game_id: str = "g1",
         settings: Settings | None = None,
         summarize: bool = False,
+        keep_notes: int = 0,
     ) -> GameLog:
         if summarize:
             settings = (settings or Settings()).model_copy(update={"summarize_rounds": True})
-        agents = self.agents(seed, salt, game_id, summarize)
+        agents = self.agents(seed, salt, game_id, summarize, keep_notes)
         return to_log(asyncio.run(play_game(seed, settings, agents)))
 
 

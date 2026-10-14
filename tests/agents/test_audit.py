@@ -203,3 +203,32 @@ def test_a_note_in_the_prompt_of_a_player_who_never_wrote_it_is_still_a_leak(
         {"role": "user", "content": f"## What has happened\n{phrase}"},
     ]
     assert kinds(find_leaks(log, [*rig.prompts, (other, messages)])) == {"note"}
+
+
+def own_note(log: GameLog) -> tuple[str, str]:
+    """(author, text) of one planted private note."""
+    for call in log.calls:
+        for response in call.responses:
+            if isinstance(response, str) and "SECRET-NOTE-" in response:
+                return call.player, json.loads(response)["note"]
+    raise AssertionError("no planted note found")
+
+
+def test_with_the_scratchpad_on_a_players_own_note_may_be_in_its_own_prompt(
+    game: tuple[GameLog, Prompts],
+) -> None:
+    log, prompts = game
+    author, note = own_note(log)
+    extra = with_extra(prompts, author, note)
+    assert kinds(find_leaks(log, extra)) == {"note"}  # by default notes go to nobody
+    assert find_leaks(log, extra, own_notes_ok=True) == []
+
+
+def test_even_with_the_scratchpad_on_a_note_in_someone_elses_prompt_is_a_leak(
+    game: tuple[GameLog, Prompts],
+) -> None:
+    log, prompts = game
+    author, note = own_note(log)
+    other = next(p.name for p in log.players if p.name != author)
+    leaks = find_leaks(log, with_extra(prompts, other, note), own_notes_ok=True)
+    assert kinds(leaks) == {"note"} and leaks[0].player == other

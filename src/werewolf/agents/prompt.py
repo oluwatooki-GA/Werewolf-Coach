@@ -6,7 +6,7 @@ memory, and the task. The log is append-only text, so each prompt begins with th
 """
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from werewolf.agents.wire import NOTE_MAX, REASON_MAX
 from werewolf.engine.actions import (
@@ -239,7 +239,9 @@ def _events(view: PlayerView, from_round: int) -> str:
     return "\n".join(lines) if lines else "Nothing yet."
 
 
-def _memory(view: PlayerView, beliefs: Mapping[str, Belief], summary: str) -> str:
+def _memory(
+    view: PlayerView, beliefs: Mapping[str, Belief], summary: str, notes: Sequence[str]
+) -> str:
     parts = []
     if summary:
         parts.append(f"Summary of earlier rounds: {summary}")
@@ -247,6 +249,9 @@ def _memory(view: PlayerView, beliefs: Mapping[str, Belief], summary: str) -> st
     if known:
         parts.append("Your suspicions (0 = trust, 1 = sure they are a wolf):")
         parts += [f"- {n}: {beliefs[n].suspicion:g} ({beliefs[n].reason})" for n in known]
+    if notes:
+        parts.append("Your recent private notes (oldest first):")
+        parts += [f"- {note}" for note in notes]
     return "\n".join(parts) if parts else "Nothing yet."
 
 
@@ -340,6 +345,7 @@ def build_messages(
     card: str = "",
     beliefs: Mapping[str, Belief] | None = None,
     summary: str = "",
+    notes: Sequence[str] = (),
     from_round: int = 1,
 ) -> list[dict[str, str]]:
     dead = ", ".join(view.dead) or "nobody"
@@ -349,7 +355,7 @@ def build_messages(
     user = "\n\n".join(
         [
             f"## What has happened\n{_events(view, from_round)}",
-            f"## Your private memory\n{_memory(view, beliefs or {}, summary)}",
+            f"## Your private memory\n{_memory(view, beliefs or {}, summary, notes)}",
             f"## Now\n{now}",
         ]
     )

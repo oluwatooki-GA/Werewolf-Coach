@@ -170,7 +170,9 @@ def test_a_paid_model_without_a_spending_limit_is_refused_before_any_call(
 def test_any_leak_makes_the_batch_fail(
     rig: Rig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(runner, "find_leaks", lambda log, prompts: [Leak("Cy", "note", "x" * 20)])
+    monkeypatch.setattr(
+        runner, "find_leaks", lambda log, prompts, **kw: [Leak("Cy", "note", "x" * 20)]
+    )
     code = batch(tmp_path, "--games", "1")
     out = capsys.readouterr().out
     assert code == 1 and "leaks: 1" in out and "note" in out and "Cy" in out
@@ -193,3 +195,17 @@ def test_play_with_llm_agents_needs_a_model(
 ) -> None:
     assert main(["play", "--agents", "llm", "--data-dir", str(tmp_path)]) == 2
     assert "--model" in capsys.readouterr().err
+
+
+def test_notes_option_turns_on_the_scratchpad_and_keeps_the_audit_clean(
+    rig: Rig, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert batch(tmp_path, "--games", "1", "--notes", "3") == 0
+    assert "leaks: 0" in capsys.readouterr().out
+    shown = [r for r in rig.model.calls if "Your recent private notes" in r.messages[1]["content"]]
+    assert shown
+
+
+def test_without_the_notes_option_no_prompt_has_a_notes_section(rig: Rig, tmp_path: Path) -> None:
+    batch(tmp_path, "--games", "1")
+    assert not [r for r in rig.model.calls if "private notes" in r.messages[1]["content"]]

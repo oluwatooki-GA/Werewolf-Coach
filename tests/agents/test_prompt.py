@@ -415,3 +415,30 @@ def test_the_constant_part_of_the_prompt_is_long_enough_for_the_providers_cache(
     schema_tokens = len(json.dumps(json_schema_for("bid"), separators=(",", ":"))) // 4
     system_tokens = estimate_tokens([build(state_with())[0]])
     assert system_tokens + schema_tokens >= 1100
+
+
+# --- the optional private notes -------------------------------------------------------------
+
+
+def memory_section(text: str) -> str:
+    return text[text.index("## Your private memory") : text.index("## Now")]
+
+
+def test_recent_private_notes_are_shown_oldest_first_in_the_memory_section() -> None:
+    text = build_messages(
+        make_view(state_with(), "Cy"), BID, notes=["Bo went quiet", "Eve changed her story"]
+    )[1]["content"]
+    memory = memory_section(text)
+    assert "Your recent private notes" in memory
+    assert memory.index("Bo went quiet") < memory.index("Eve changed her story")
+
+
+def test_without_notes_the_prompt_is_exactly_as_before() -> None:
+    state = state_with(Death(round=1, player="Gus"))
+    assert build(state) == build_messages(make_view(state, "Cy"), BID, notes=[])
+    assert "private notes" not in memory_section(user(state)).lower()
+
+
+def test_notes_alone_are_enough_to_leave_the_nothing_yet_message() -> None:
+    text = build_messages(make_view(state_with(), "Cy"), BID, notes=["a thought"])[1]["content"]
+    assert "Nothing yet" not in memory_section(text)
