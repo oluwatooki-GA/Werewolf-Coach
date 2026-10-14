@@ -289,9 +289,12 @@ def _beliefs_ask() -> str:
 def _bid_ask(view: PlayerView, task: BidTask) -> str:
     intents = (
         "Choose an intent (private): accuse, defend, share_info, ask, or none, and a target "
-        "name or an empty string."
+        "name (leave the target blank if there is none)."
     )
-    fields = "JSON fields: bid, message, intent, target, note, beliefs."
+    fields = (
+        "JSON fields: bid, message, intent, target, note, beliefs, cites (a list of cited "
+        "lines; [] when you cite nothing)."
+    )
     if task.reply_to:
         head = (
             f"{task.reply_to} accused you (their message is in the log above). This free reply is "
@@ -315,14 +318,16 @@ def _bid_ask(view: PlayerView, task: BidTask) -> str:
             f"You have {tokens} left today. Bid 0 to {task.max_bid}: 0 means you stay quiet and "
             "listen; the highest bid speaks and pays what it bid. Your message (at most "
             f"{task.max_chars} characters) is posted only if you win the turn. If you bid above 0 "
-            "you must write a message; if you have nothing to say, bid 0."
+            "you must write a message; if you have nothing to say, bid 0 and leave the message "
+            "and target blank (write nothing between the quotes)."
         )
     else:
         head = (
             f"Bid 0 to {task.max_bid}: bids cost nothing; 0 means you stay quiet and listen; the "
             f"highest bid speaks. Your message (at most {task.max_chars} characters) is posted "
             "only if you win the turn. If you bid above 0 you must write a message; if you have "
-            "nothing to say, bid 0."
+            "nothing to say, bid 0 and leave the message and target blank (write nothing between "
+            "the quotes)."
         )
     return f"{head} {intents} {_beliefs_ask()} {fields}"
 
