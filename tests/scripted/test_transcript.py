@@ -118,3 +118,44 @@ def test_the_show_command_reports_an_unreadable_file(
 ) -> None:
     assert main(["show", str(tmp_path / "nope.json")]) == 2
     assert "cannot read" in capsys.readouterr().err
+
+
+def test_talk_only_shows_just_the_messages_and_the_votes() -> None:
+    text = render(story(), talk_only=True)
+    for line in (
+        "Bo says (2 tokens): Who is the wolf?",
+        "Fay replies (free): Not me, Bo.",
+        "Ada says: Hmm.",
+        "Vote: Bo voted for Fay (reason: defensive).",
+        "Vote: Cy abstained.",
+        "Fay was removed by the vote.",
+        "Nobody was removed by the vote.",
+    ):
+        assert line in text, line
+
+
+def test_talk_only_leaves_out_everything_else() -> None:
+    text = render(story(), talk_only=True)
+    for left_out in ("Morning", "Listening", "Game:", "Players:", "calls", "Game over", "cost $"):
+        assert left_out not in text, left_out
+    assert "wolf chat" not in text and "Take Di tonight" not in text
+
+
+def test_talk_only_keeps_the_round_headings() -> None:
+    text = render(story(), talk_only=True)
+    assert text.startswith("=== Round 1 ===") and "=== Round 2 ===" in text
+
+
+def test_talk_only_stays_public_even_when_private_is_asked_for() -> None:
+    text = render(story(), private=True, talk_only=True)
+    assert "Take Di tonight" not in text and "Werewolf" not in text
+
+
+def test_the_show_command_has_a_talk_option(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "g.json"
+    path.write_bytes(story().to_json().encode())
+    assert main(["show", str(path), "--talk"]) == 0
+    out = capsys.readouterr().out
+    assert "Bo says (2 tokens): Who is the wolf?" in out and "Players:" not in out

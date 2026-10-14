@@ -93,7 +93,7 @@ def _show(args: argparse.Namespace) -> int:
         sys.stdout.reconfigure(
             errors="replace"
         )  # a model's odd characters must not crash a Windows console
-    print(render(log, private=args.private))
+    print(render(log, private=args.private, talk_only=args.talk))
     return 0
 
 
@@ -240,6 +240,7 @@ def main(argv: list[str] | None = None) -> int:
     shown = commands.add_parser("show", help="print a saved game as readable text")
     shown.add_argument("path")
     shown.add_argument("--private", action="store_true", help="include roles, wolf chat and notes")
+    shown.add_argument("--talk", action="store_true", help="only the messages and the votes")
     shown.set_defaults(run=_show)
 
     check = commands.add_parser("smoke", help="call a real model once per answer shape")

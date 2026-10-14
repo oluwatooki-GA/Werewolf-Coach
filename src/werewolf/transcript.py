@@ -41,15 +41,21 @@ def _notes(log: GameLog) -> list[str]:
     return lines
 
 
-def render(log: GameLog, private: bool = False) -> str:
+def render(log: GameLog, private: bool = False, talk_only: bool = False) -> str:
     """The public view hides roles, wolf chat, the Seer's checks and the night's real events.
-    `private` shows them, plus every player's private notes."""
+    `private` shows them, plus every player's private notes. `talk_only` is always public: just
+    the messages and the votes (with their outcome), under round headings."""
     roles = {p.name: p.role.value for p in log.players}
     seats = ", ".join(f"{n}={r}" for n, r in roles.items()) if private else ", ".join(roles)
-    lines = [
-        f"Game: seed {log.seed}, run {log.run_id or '-'}, {log.settings.speaking_mode.value}",
-        f"Players: {seats}",
-    ]
+    private = private and not talk_only
+    lines = (
+        []
+        if talk_only
+        else [
+            f"Game: seed {log.seed}, run {log.run_id or '-'}, {log.settings.speaking_mode.value}",
+            f"Players: {seats}",
+        ]
+    )
     quiet: list[str] = []
     last_round = 0
 
@@ -59,13 +65,15 @@ def render(log: GameLog, private: bool = False) -> str:
             quiet.clear()
 
     for event in log.events:
+        if talk_only and not isinstance(event, Speech | VoteCast | Removal | NoRemoval):
+            continue
         if isinstance(event, Listening):
             quiet.append(event.player)
             continue
         flush()
         if event.round != last_round:
             last_round = event.round
-            lines += ["", f"=== Round {event.round} ==="]
+            lines += ([""] if lines else []) + [f"=== Round {event.round} ==="]
         if isinstance(event, NightSummary):
             if private:
                 saved = " (the kill was saved)" if event.saved else ""
@@ -106,6 +114,8 @@ def render(log: GameLog, private: bool = False) -> str:
         elif isinstance(event, GameOver):
             lines.append(f"  Game over: {event.winner.value} wins.")
     flush()
+    if talk_only:
+        return "\n".join(lines)
 
     s = log.stats
     lines += [
