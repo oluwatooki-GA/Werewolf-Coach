@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from werewolf.agents.llm_agent import LLMAgent
+from werewolf.agents.prompter import Layout
 from werewolf.engine.actions import Agent, FatalAgentError
 from werewolf.engine.game import play_game
 from werewolf.engine.log import GameLog, replays_exactly, to_log
@@ -29,7 +30,7 @@ def player_of(request: Request) -> str:
 
 
 def options_of(request: Request) -> list[str]:
-    match = re.search(r"Options: ([^.]*)\.", request.messages[1]["content"])
+    match = re.search(r"Options: ([^.]*)\.", request.messages[-1]["content"])
     assert match
     return [name.strip() for name in match.group(1).split(",")]
 
@@ -98,7 +99,7 @@ class FakeModel:
             text = f"SECRET-WOLFCHAT-{me}-{len(self.calls)}" if self.plant else "let us hunt"
             return {"text": text, "note": self.note("chat", me)}
         if title == "WireTarget":
-            purpose = request.messages[1]["content"]
+            purpose = request.messages[-1]["content"]
             options = options_of(request)
             if "wolves kill" in purpose:
                 pick = options[-1] if self.kill_last else options[0]
@@ -137,6 +138,7 @@ class Rig:
         game_id: str = "g1",
         summarize: bool = False,
         keep_notes: int = 0,
+        layout: Layout = "stateless",
     ) -> dict[str, Agent]:
         return {
             p.name: LLMAgent(
@@ -147,6 +149,7 @@ class Rig:
                 game_id=game_id,
                 summarize=summarize,
                 keep_notes=keep_notes,
+                layout=layout,
                 on_prompt=lambda name, messages: self.prompts.append((name, messages)),
             )
             for p in new_game(seed).players
@@ -160,10 +163,11 @@ class Rig:
         settings: Settings | None = None,
         summarize: bool = False,
         keep_notes: int = 0,
+        layout: Layout = "stateless",
     ) -> GameLog:
         if summarize:
             settings = (settings or Settings()).model_copy(update={"summarize_rounds": True})
-        agents = self.agents(seed, salt, game_id, summarize, keep_notes)
+        agents = self.agents(seed, salt, game_id, summarize, keep_notes, layout)
         return to_log(asyncio.run(play_game(seed, settings, agents)))
 
 

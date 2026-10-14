@@ -198,10 +198,11 @@ def _system(view: PlayerView, card: str) -> str:
     )
 
 
-def _events(view: PlayerView, from_round: int) -> str:
+def _events(view: PlayerView, from_round: int, start: int | None = None) -> str:
+    """The log as text. `start` (a continuing chat) skips the events already shown."""
     lines: list[str] = []
     quiet: list[str] = []
-    last_round = 0
+    last_round = view.round if start is not None else 0  # a continuing chat has its heading
     numbers = {id(speech): line for line, speech in numbered_speeches(view.events)}
 
     def flush() -> None:
@@ -209,7 +210,7 @@ def _events(view: PlayerView, from_round: int) -> str:
             lines.append(f"Listening: {', '.join(quiet)}")
             quiet.clear()
 
-    for event in view.events:
+    for event in view.events[start or 0 :]:
         if event.round < from_round:
             continue
         if isinstance(event, Listening):
@@ -251,7 +252,9 @@ def _events(view: PlayerView, from_round: int) -> str:
         elif isinstance(event, GameOver):
             lines.append(f"The game is over: {event.winner.value} wins.")
     flush()
-    return "\n".join(lines) if lines else "Nothing yet."
+    if lines:
+        return "\n".join(lines)
+    return "Nothing yet." if start is None else "Nothing new."
 
 
 def _record(view: PlayerView, from_round: int) -> str:
@@ -368,6 +371,38 @@ def _task(view: PlayerView, task: Task) -> str:
         f"100 characters. {_beliefs_ask()} "
         "JSON fields: target, reason, note, beliefs."
     )
+
+
+def system_message(view: PlayerView, card: str = "") -> str:
+    return _system(view, card)
+
+
+def build_turn(
+    view: PlayerView,
+    task: Task,
+    *,
+    summary: str = "",
+    from_round: int = 1,
+    seen: int | None = None,
+) -> str:
+    """The next user message of a conversation. `seen` is how many events the conversation has
+    shown so far: None for the first message of a round, which carries the whole picture;
+    after that only what is new. The model's own past answers are the earlier turns, so its beliefs
+    and notes are not repeated here."""
+    if task.error:
+        return f"Your last answer was rejected: {task.error}. Answer again and fix that."
+    dead = ", ".join(view.dead) or "nobody"
+    now = f"Round {view.round}. Alive: {', '.join(view.alive)}. Dead: {dead}.\n{_task(view, task)}"
+    if seen is not None:
+        news = _events(view, from_round, seen)
+        return f"## New since your last answer\n{news}\n\n## Now\n{now}"
+    record = _record(view, from_round)
+    parts = [record] if record else []
+    parts.append(f"## What has happened\n{_events(view, from_round)}")
+    if summary:
+        parts.append(f"## Your private memory\nSummary of earlier rounds: {summary}")
+    parts.append(f"## Now\n{now}")
+    return "\n\n".join(parts)
 
 
 def build_messages(

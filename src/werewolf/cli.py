@@ -93,6 +93,7 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
             data_dir=Path(args.data_dir),
             announce=lambda played: print(runner.format_game(played), flush=True),
             keep_notes=args.notes,
+            layout=args.layout,
             max_tokens=args.max_tokens
             or runtime.default_max_tokens(args.model, args.message_chars),
         )
@@ -144,7 +145,7 @@ def _show(args: argparse.Namespace) -> int:
         from werewolf.promptview import rebuild
         from werewolf.promptview import render as render_prompts
 
-        items = rebuild(log, keep_notes=args.notes)
+        items = rebuild(log, keep_notes=args.notes, layout=args.layout)
         print(render_prompts(items, args.prompt, args.round, args.kind, args.spoke))
         return 0
     print(render(log, private=args.private, talk_only=args.talk))
@@ -264,6 +265,12 @@ def main(argv: list[str] | None = None) -> int:
     play.add_argument(
         "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
     )
+    play.add_argument(
+        "--layout",
+        choices=["stateless", "conversation"],
+        default="stateless",
+        help="stateless: rebuild the prompt every call; conversation: one chat per round",
+    )
     play.set_defaults(run=_play)
 
     many = commands.add_parser("batch", help="play several model-driven games and report")
@@ -294,6 +301,12 @@ def main(argv: list[str] | None = None) -> int:
     many.add_argument(
         "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
     )
+    many.add_argument(
+        "--layout",
+        choices=["stateless", "conversation"],
+        default="stateless",
+        help="stateless: rebuild the prompt every call; conversation: one chat per round",
+    )
     many.set_defaults(run=_batch)
 
     again = commands.add_parser("replay", help="replay a saved log and check it matches")
@@ -314,6 +327,12 @@ def main(argv: list[str] | None = None) -> int:
     shown.add_argument("--spoke", action="store_true", help="with --prompt: only posted messages")
     shown.add_argument(
         "--notes", type=int, default=0, help="with --prompt: the --notes value the game used"
+    )
+    shown.add_argument(
+        "--layout",
+        choices=["stateless", "conversation"],
+        default="stateless",
+        help="with --prompt: the --layout the game used",
     )
     shown.set_defaults(run=_show)
 

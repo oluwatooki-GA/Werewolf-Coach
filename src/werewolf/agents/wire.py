@@ -127,3 +127,38 @@ def to_action_json(kind: str, text: str) -> str:
         assert isinstance(wire, WireMemory)
         action = {"summary": wire.summary[:SUMMARY_MAX]}
     return json.dumps(action)
+
+
+def to_wire_json(kind: str, action_json: str) -> str:
+    """The reverse of `to_action_json`: an accepted action written the way the model writes
+    answers, so a past answer can be shown back to it as one of its own turns."""
+    data = json.loads(action_json)
+    beliefs = [
+        {"player": player, "suspicion": b["suspicion"], "reason": b.get("reason", "")}
+        for player, b in data.get("beliefs", {}).items()
+    ]
+    wire: _Wire
+    if kind == "wolf_chat":
+        wire = WireChat(text=data["text"], note=data.get("note", ""))
+    elif kind == "night_target":
+        wire = WireTarget(target=data["target"] or "", note=data.get("note", ""))
+    elif kind == "bid":
+        wire = WireBid(
+            bid=data["bid"],
+            message=data.get("message", ""),
+            intent=data.get("intent") or "none",
+            target=data.get("target") or "",
+            note=data.get("note", ""),
+            beliefs=[WireBelief(**b) for b in beliefs],
+            cites=[WireCite(**c) for c in data.get("cites", [])],
+        )
+    elif kind == "vote":
+        wire = WireVote(
+            target=data["target"] or "",
+            reason=data.get("reason", ""),
+            note=data.get("note", ""),
+            beliefs=[WireBelief(**b) for b in beliefs],
+        )
+    else:
+        wire = WireMemory(summary=data["summary"])
+    return wire.model_dump_json()
