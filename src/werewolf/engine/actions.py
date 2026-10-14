@@ -4,6 +4,7 @@ from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from werewolf.engine.events import Cite
 from werewolf.engine.usage import Usage as Usage
 from werewolf.engine.views import PlayerView
 
@@ -77,6 +78,7 @@ class BidAction(_Action):
     message: str = ""
     intent: Intent | None = None
     target: str | None = None
+    cites: tuple[Cite, ...] = ()  # earlier lines the message points at; checked, never rejected
 
 
 class VoteAction(_Action):

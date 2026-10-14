@@ -6,6 +6,7 @@ from random import Random
 from werewolf.engine.actions import Action, Agent, BidAction, BidTask
 from werewolf.engine.calls import Request, ask_many
 from werewolf.engine.events import Listening, Speech
+from werewolf.engine.record import check_cites
 from werewolf.engine.state import GameState, SpeakingMode
 
 FREE_BID_MAX = 4  # Werewolf Arena's free bid: 0 to 4, no cost
@@ -77,6 +78,19 @@ class DayRound:
     def listening(self, names: list[str]) -> None:
         self.state.events.extend(Listening(round=self.state.round, player=n) for n in names)
 
+    def speech(self, speaker: str, action: BidAction, paid: int, reply: bool) -> Speech:
+        """The posted message. Its cites are checked here: a wrong one is logged, not refused."""
+        cites, invented = check_cites(action.cites, self.state.events)
+        return Speech(
+            round=self.state.round,
+            speaker=speaker,
+            text=action.message,
+            paid=paid,
+            reply=reply,
+            cites=cites,
+            invented=invented,
+        )
+
     def accuse(self, action: BidAction, speaker: str) -> None:
         """If this message accused someone who has not had their reply yet, they get it next."""
         target = _new_accusation(action, speaker, self.alive, self.replied)
@@ -93,15 +107,7 @@ class DayRound:
         if not action.message.strip():
             self.listening([speaker])
             return None
-        self.state.events.append(
-            Speech(
-                round=self.state.round,
-                speaker=speaker,
-                text=action.message,
-                paid=0,
-                reply=reply_to is not None,
-            )
-        )
+        self.state.events.append(self.speech(speaker, action, 0, reply_to is not None))
         self.spoken[speaker] += 1
         return action
 
@@ -133,9 +139,7 @@ class DayRound:
             return False
         action = actions[speaker]
         paid = action.bid if self.floor else 0
-        self.state.events.append(
-            Speech(round=self.state.round, speaker=speaker, text=action.message, paid=paid)
-        )
+        self.state.events.append(self.speech(speaker, action, paid, False))
         self.tokens[speaker] -= paid
         self.spoken[speaker] += 1
         self.listening([n for n in self.alive if actions[n].bid == 0])

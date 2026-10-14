@@ -94,6 +94,13 @@ def _show(args: argparse.Namespace) -> int:
         sys.stdout.reconfigure(
             errors="replace"
         )  # a model's odd characters must not crash a Windows console
+    if args.prompt:
+        from werewolf.promptview import rebuild
+        from werewolf.promptview import render as render_prompts
+
+        items = rebuild(log, keep_notes=args.notes)
+        print(render_prompts(items, args.prompt, args.round, args.kind, args.spoke))
+        return 0
     print(render(log, private=args.private, talk_only=args.talk))
     return 0
 
@@ -249,6 +256,17 @@ def main(argv: list[str] | None = None) -> int:
     shown.add_argument("path")
     shown.add_argument("--private", action="store_true", help="include roles, wolf chat and notes")
     shown.add_argument("--talk", action="store_true", help="only the messages and the votes")
+    shown.add_argument("--prompt", metavar="PLAYER", help="rebuild the prompts this player saw")
+    shown.add_argument("--round", type=int, help="with --prompt: only this round")
+    shown.add_argument(
+        "--kind",
+        choices=["wolf_chat", "night_target", "bid", "vote", "memory"],
+        help="with --prompt: only this kind of question",
+    )
+    shown.add_argument("--spoke", action="store_true", help="with --prompt: only posted messages")
+    shown.add_argument(
+        "--notes", type=int, default=0, help="with --prompt: the --notes value the game used"
+    )
     shown.set_defaults(run=_show)
 
     check = commands.add_parser("smoke", help="call a real model once per answer shape")

@@ -31,6 +31,8 @@ from werewolf.engine.views import (
     Speech,
     VoteCast,
     WolfChat,
+    numbered_speeches,
+    round_record,
 )
 
 DEFAULT_CARD = "Play to win for your team. Think about who is telling the truth and who is lying."
@@ -57,6 +59,7 @@ EXAMPLES = {
             {"player": "<name>", "suspicion": 0.6, "reason": "follows the crowd"},
             {"player": "<name>", "suspicion": 0.2, "reason": "open and consistent"},
         ],
+        cites=[{"line": "R1-2", "speaker": "<name>"}],
     ),
     "vote": _example(
         target="<name>",
@@ -65,8 +68,8 @@ EXAMPLES = {
         beliefs=[{"player": "<name>", "suspicion": 0.7, "reason": "dodged my question"}],
     ),
     "memory": _example(
-        summary="Round 1: <name> was killed. <name> accused <name>, who denied it. "
-        "Votes split, nobody removed. I trust <name>; <name> worries me."
+        summary="<name> answered every question and I trust them. <name> dodged twice and "
+        "worries me. Next: ask <name> why they stayed quiet."
     ),
 }
 
@@ -77,6 +80,7 @@ QUIET_BID_EXAMPLE = _example(
     target="",
     note="Nothing to add yet.",
     beliefs=[{"player": "<name>", "suspicion": 0.3, "reason": "no strong sign yet"}],
+    cites=[],
 )
 
 LEGEND = (
@@ -84,7 +88,14 @@ LEGEND = (
     '"X says: ..." is a message at no cost; "X replies (free): ..." is a free reply to an '
     'accusation; "Listening: A, B" means those players bid 0 on that turn; "Vote: A voted for B '
     '(reason: ...)" is a vote cast; "Morning: ..." says who died in the night; lines marked '
-    "[Private] or [Wolf chat] are seen only by you (or by the two werewolves)."
+    "[Private] or [Wolf chat] are seen only by you (or by the two werewolves). Each message "
+    "starts with its number, such as [R2-4] (round 2, message 4). The game record, when there is "
+    "one, was written by the game and is always accurate; role claims in it are what players said "
+    "about themselves, not proof.\n\n"
+    "CITING: when your message points at something a player "
+    'said, add it to "cites" as {"line": "R2-4", "speaker": "Bo"}: the number and the player '
+    "who wrote that line. The game checks every cite and marks a wrong one as invented. Cite only "
+    "lines you can see. Use [] when you cite nothing."
 )
 
 ROLE_TEXT = {
@@ -191,6 +202,7 @@ def _events(view: PlayerView, from_round: int) -> str:
     lines: list[str] = []
     quiet: list[str] = []
     last_round = 0
+    numbers = {id(speech): line for line, speech in numbered_speeches(view.events)}
 
     def flush() -> None:
         if quiet:
@@ -218,13 +230,14 @@ def _events(view: PlayerView, from_round: int) -> str:
         elif isinstance(event, NoDeath):
             lines.append("Morning: nobody died in the night.")
         elif isinstance(event, Speech):
+            number = f"[{numbers[id(event)]}] " if id(event) in numbers else ""
             if event.reply:
-                lines.append(f"{event.speaker} replies (free): {event.text}")
+                lines.append(f"{number}{event.speaker} replies (free): {event.text}")
             elif event.paid:
                 paid = _plural(event.paid, "token")
-                lines.append(f"{event.speaker} says ({paid}): {event.text}")
+                lines.append(f"{number}{event.speaker} says ({paid}): {event.text}")
             else:
-                lines.append(f"{event.speaker} says: {event.text}")
+                lines.append(f"{number}{event.speaker} says: {event.text}")
         elif isinstance(event, VoteCast):
             if event.target is None:
                 lines.append(f"Vote: {event.voter} abstained.")
@@ -239,6 +252,15 @@ def _events(view: PlayerView, from_round: int) -> str:
             lines.append(f"The game is over: {event.winner.value} wins.")
     flush()
     return "\n".join(lines) if lines else "Nothing yet."
+
+
+def _record(view: PlayerView, from_round: int) -> str:
+    """What the game wrote down about the rounds whose log is no longer shown."""
+    rounds = range(1, min(from_round, view.round))
+    if not rounds:
+        return ""
+    lines = [round_record(view.events, r) for r in rounds]
+    return "## Game record (written by the game; always accurate)\n" + "\n".join(lines)
 
 
 def _memory(
@@ -328,9 +350,10 @@ def _task(view: PlayerView, task: Task) -> str:
     if isinstance(task, MemoryTask):
         return (
             f"The round is over. Write a short summary (at most {task.max_chars} characters) of "
-            "everything that matters for winning: who died, who accused or defended whom, claims "
-            "about roles, how people voted, and your suspicions. It replaces your earlier summary, "
-            "so keep what is still important. JSON fields: summary."
+            "your own reads: who you trust and who you suspect, and why, what you noticed that "
+            "is not plain fact, and what you plan to do next. The game keeps the facts (who died, "
+            "how people voted, role claims) in its record, so do not copy them. It replaces your "
+            "earlier summary, so keep what is still important. JSON fields: summary."
         )
     assert isinstance(task, VoteTask)
     return (
@@ -355,8 +378,10 @@ def build_messages(
     now = f"Round {view.round}. Alive: {', '.join(view.alive)}. Dead: {dead}.\n{_task(view, task)}"
     if task.error:
         now += f"\n\nYour last answer was rejected: {task.error}. Answer again and fix that."
+    record = _record(view, from_round)
     user = "\n\n".join(
-        [
+        ([record] if record else [])
+        + [
             f"## What has happened\n{_events(view, from_round)}",
             f"## Your private memory\n{_memory(view, beliefs or {}, summary, notes)}",
             f"## Now\n{now}",

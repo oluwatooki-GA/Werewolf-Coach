@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from werewolf.engine.actions import Reply, Task
+from werewolf.engine.actions import Agent, Reply, Task
 from werewolf.engine.events import Event
 from werewolf.engine.game import play_game
 from werewolf.engine.roles import Role, Team
@@ -99,14 +99,18 @@ class _Replayer:
         return response
 
 
-def replay(log: GameLog) -> GameLog:
-    """Play the game again from the seed, feeding each player its recorded answers."""
+def replayers(log: GameLog) -> dict[str, Agent]:
+    """One agent per player that hands back that player's recorded answers. Needs no model."""
     answers: dict[str, list[tuple[Any, Usage | None]]] = {p.name: [] for p in log.players}
     for call in log.calls:
         usage = call.usage or [None] * len(call.responses)  # logs from before usage existed
         answers[call.player].extend(zip(call.responses, usage, strict=True))
-    agents = {name: _Replayer(recorded) for name, recorded in answers.items()}
-    state = asyncio.run(play_game(log.seed, log.settings, agents))
+    return {name: _Replayer(recorded) for name, recorded in answers.items()}
+
+
+def replay(log: GameLog) -> GameLog:
+    """Play the game again from the seed, feeding each player its recorded answers."""
+    state = asyncio.run(play_game(log.seed, log.settings, replayers(log)))
     return to_log(state, run_id=log.run_id)
 
 

@@ -2,8 +2,7 @@
 
 from collections.abc import Callable
 
-from werewolf.agents.memory import PlayerMemory
-from werewolf.agents.prompt import build_messages
+from werewolf.agents.prompter import Prompter
 from werewolf.agents.wire import WireError, json_schema_for, to_action_json
 from werewolf.engine.actions import FatalAgentError, Reply, Task, Usage
 from werewolf.engine.views import PlayerView
@@ -33,25 +32,15 @@ class LLMAgent:
         self._name = name
         self._client = client
         self._model = model
-        self._card = card
         self._salt = cache_salt
         self._game_id = game_id
         self._temperature = temperature
         self._max_tokens = max_tokens
         self._on_prompt = on_prompt
-        self._summarize = summarize
-        self._memory = PlayerMemory(keep_notes)
+        self._prompter = Prompter(card=card, summarize=summarize, keep_notes=keep_notes)
 
     async def act(self, view: PlayerView, task: Task) -> object:
-        messages = build_messages(
-            view,
-            task,
-            card=self._card,
-            beliefs=self._memory.beliefs,
-            summary=self._memory.summary,
-            notes=list(self._memory.notes),
-            from_round=view.round if self._summarize else 1,  # older rounds live in the summary
-        )
+        messages = self._prompter.messages(view, task)
         if self._on_prompt is not None:
             self._on_prompt(self._name, messages)
         request = Request(
@@ -85,5 +74,5 @@ class LLMAgent:
             except WireError:
                 pass  # hand the engine the raw text; it rejects it and asks again with the reason
             else:
-                self._memory.remember(task.kind, text)
+                self._prompter.learn(task.kind, text)
         return Reply(text=text, usage=usage)

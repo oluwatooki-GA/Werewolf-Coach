@@ -15,6 +15,24 @@ FREE_PROVIDERS = frozenset({"groq", "cerebras"})  # free tiers: cost 0, limited 
 _ACCEPTS_CACHE_KEY = frozenset({"openai", "groq"})  # providers that take prompt_cache_key
 # Claude 5 models reject the temperature setting ("`temperature` is deprecated for this model").
 _NO_TEMPERATURE = ("claude-haiku-5", "claude-sonnet-5", "claude-opus-5")
+# Anthropic charges 1.25x the input price to write a 5-minute cache entry.
+CACHE_WRITE_MULTIPLIER = Decimal("1.25")
+
+
+def _mark_system_for_cache(messages: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """Anthropic only caches a prompt prefix that ends at a `cache_control` marker (OpenAI does
+    it by itself). The system message never changes during a game, so it ends the cached prefix."""
+    return [
+        {
+            **m,
+            "content": [
+                {"type": "text", "text": m["content"], "cache_control": {"type": "ephemeral"}}
+            ],
+        }
+        if m["role"] == "system"
+        else m
+        for m in messages
+    ]
 
 
 class LiteLLMTransport:
@@ -57,7 +75,9 @@ class LiteLLMTransport:
 
         kwargs: dict[str, Any] = {
             "model": request.model,
-            "messages": request.messages,
+            "messages": _mark_system_for_cache(request.messages)
+            if provider == "anthropic"
+            else request.messages,
             "max_tokens": request.max_tokens,
             "timeout": self._timeout,
             "num_retries": self._retries,
@@ -88,10 +108,16 @@ class LiteLLMTransport:
         completion = int(usage.completion_tokens)
         details = getattr(usage, "prompt_tokens_details", None)
         cached = int(getattr(details, "cached_tokens", 0) or 0)
+        written = int(getattr(details, "cache_creation_tokens", 0) or 0)  # billed at a premium
         cost = Decimal("0")
         if prices is not None:
             price_in, price_out, price_cached = prices
-            cost = (prompt - cached) * price_in + cached * price_cached + completion * price_out
+            cost = (
+                (prompt - cached - written) * price_in
+                + cached * price_cached
+                + written * price_in * CACHE_WRITE_MULTIPLIER
+                + completion * price_out
+            )
         return Completion(
             model=request.model,
             text=choice.message.content or "",

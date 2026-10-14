@@ -14,6 +14,7 @@ from typing import Literal
 from werewolf.agents.llm_agent import LLMAgent
 from werewolf.audit import Leak, find_leaks
 from werewolf.engine.actions import FatalAgentError
+from werewolf.engine.events import Speech
 from werewolf.engine.game import play_game
 from werewolf.engine.log import GameLog, to_log
 from werewolf.engine.setup import new_game
@@ -119,12 +120,27 @@ async def run_batch(
     return report
 
 
+def cite_counts(logs: Sequence[GameLog]) -> tuple[int, int, int]:
+    """(messages posted, cites made, cites that were invented), added up over the games."""
+    speeches = [e for log in logs for e in log.events if isinstance(e, Speech)]
+    cited = sum(len(e.cites) for e in speeches)
+    return len(speeches), cited, sum(len(e.invented) for e in speeches)
+
+
+def cite_text(logs: Sequence[GameLog]) -> str:
+    messages, cited, invented = cite_counts(logs)
+    if not cited:
+        return f"no cites in {messages} messages"
+    rate = 100 * invented / cited
+    return f"{cited} cites in {messages} messages, invented {invented} ({rate:.1f}%)"
+
+
 def format_game(p: Played) -> str:
     s = p.log.stats
     return (
         f"seed {p.seed}: {p.log.winner.value} won in {p.log.rounds} rounds, "
         f"rejected {s.rejected} of {s.responses}, cost ${s.cost:.6f}, {p.seconds:.1f} s, "
-        f"leaks {len(p.leaks)}, run {p.run_id}\n"
+        f"leaks {len(p.leaks)}, {cite_text([p.log])}, run {p.run_id}\n"
         f"  saved to {p.path}\n"
         f"  read it:  uv run python -m werewolf.cli show {p.path}"
     )
@@ -150,6 +166,7 @@ def format_report(report: BatchReport) -> str:
         f"fallbacks {sum(g.stats.failed_calls for g in games)}, "
         f"clean games {sum(g.stats.clean for g in games)} of {n}, "
         f"cut off {sum(g.stats.truncated for g in games)}",
+        f"cites: {cite_text(games)}",
         f"tokens: input {prompt:,} ({share}% cached), output {completion:,}",
         f"cost: ${cost:.6f} total, ${cost / n if n else Decimal('0'):.6f} per game",
         f"time: {sum(p.seconds for p in report.played) / n if n else 0.0:.1f} s per game",

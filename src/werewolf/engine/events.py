@@ -1,8 +1,14 @@
 """Things that happen in a game. `audience` is who may see the event; None means everyone."""
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+)
 
 from werewolf.engine.roles import Role, Team
 
@@ -31,12 +37,31 @@ class Death(_Event):
     player: str
 
 
+class Cite(BaseModel):
+    """A message points at an earlier line: its number, and who the message says wrote it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    line: str  # such as "R2-4": round 2, public message 4
+    speaker: str
+
+
 class Speech(_Event):
     kind: Literal["speech"] = "speech"
     speaker: str
     text: str
     paid: int  # floor tokens spent; 0 for a free reply
     reply: bool = False
+    cites: tuple[Cite, ...] = ()
+    invented: tuple[str, ...] = ()  # the cited lines that are not real: missing, or by someone else
+
+    @model_serializer(mode="wrap")
+    def _leave_out_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        for key in ("cites", "invented"):  # so a log without cites keeps its exact old bytes
+            if not data.get(key):
+                data.pop(key, None)
+        return data
 
 
 class Listening(_Event):

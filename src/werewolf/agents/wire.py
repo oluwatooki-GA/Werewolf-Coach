@@ -29,6 +29,11 @@ class WireBelief(_Wire):
     reason: str
 
 
+class WireCite(_Wire):
+    line: str  # such as "R2-4"
+    speaker: str  # the player who wrote that line
+
+
 class WireChat(_Wire):
     text: str
     note: str
@@ -46,6 +51,7 @@ class WireBid(_Wire):
     target: str  # "" means none
     note: str
     beliefs: list[WireBelief]
+    cites: list[WireCite] = []  # optional when reading an answer; the schema still lists it
 
 
 class WireVote(_Wire):
@@ -69,7 +75,11 @@ WIRE_FOR: dict[str, type[_Wire]] = {
 
 
 def json_schema_for(kind: str) -> dict[str, Any]:
-    return WIRE_FOR[kind].model_json_schema()
+    schema = WIRE_FOR[kind].model_json_schema()
+    schema["required"] = list(schema["properties"])  # strict mode wants every field required
+    for field in schema["properties"].values():
+        field.pop("default", None)  # and refuses "default"
+    return schema
 
 
 def _beliefs(items: list[WireBelief]) -> dict[str, dict[str, Any]]:
@@ -104,6 +114,7 @@ def to_action_json(kind: str, text: str) -> str:
             "target": wire.target or None,
             "note": wire.note[:NOTE_MAX],
             "beliefs": _beliefs(wire.beliefs),
+            "cites": [{"line": c.line, "speaker": c.speaker} for c in wire.cites],
         }
     elif isinstance(wire, WireVote):
         action = {

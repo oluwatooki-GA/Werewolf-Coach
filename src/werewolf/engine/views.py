@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, ConfigDict
 
+from werewolf.engine.events import Cite as Cite
 from werewolf.engine.events import Death as Death
 from werewolf.engine.events import Event as Event
 from werewolf.engine.events import GameOver as GameOver
@@ -13,10 +14,13 @@ from werewolf.engine.events import SeerResult as SeerResult
 from werewolf.engine.events import Speech as Speech
 from werewolf.engine.events import VoteCast as VoteCast
 from werewolf.engine.events import WolfChat as WolfChat
+from werewolf.engine.record import numbered_speeches as numbered_speeches
+from werewolf.engine.record import round_record as round_record
 from werewolf.engine.roles import Role
 from werewolf.engine.state import GameState, SpeakingMode
 
 __all__ = [  # what a view shows, so agents never need to reach into the rest of the engine
+    "Cite",
     "Death",
     "Event",
     "GameOver",
@@ -32,6 +36,8 @@ __all__ = [  # what a view shows, so agents never need to reach into the rest of
     "VoteCast",
     "WolfChat",
     "make_view",
+    "numbered_speeches",
+    "round_record",
 ]
 
 
