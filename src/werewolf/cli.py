@@ -7,6 +7,7 @@ uv run python -m werewolf.cli replay data/games/<id>.json
 import argparse
 import asyncio
 import hashlib
+import io
 import sys
 from pathlib import Path
 
@@ -77,6 +78,22 @@ def _play(args: argparse.Namespace) -> int:
     print(f"answers: rejected {s.rejected} of {s.responses} ({rate:.1%}), "
           f"fallbacks: {s.failed_calls}, clean: {'yes' if s.clean else 'no'}")  # fmt: skip
     print(f"saved to {path}")
+    return 0
+
+
+def _show(args: argparse.Namespace) -> int:
+    from werewolf.transcript import render
+
+    try:
+        log = GameLog.from_json(Path(args.path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, ValidationError) as exc:
+        print(f"cannot read {args.path}: {exc}", file=sys.stderr)
+        return 2
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(
+            errors="replace"
+        )  # a model's odd characters must not crash a Windows console
+    print(render(log, private=args.private))
     return 0
 
 
@@ -219,6 +236,11 @@ def main(argv: list[str] | None = None) -> int:
     again = commands.add_parser("replay", help="replay a saved log and check it matches")
     again.add_argument("path")
     again.set_defaults(run=_replay)
+
+    shown = commands.add_parser("show", help="print a saved game as readable text")
+    shown.add_argument("path")
+    shown.add_argument("--private", action="store_true", help="include roles, wolf chat and notes")
+    shown.set_defaults(run=_show)
 
     check = commands.add_parser("smoke", help="call a real model once per answer shape")
     check.add_argument("--model", required=True)
