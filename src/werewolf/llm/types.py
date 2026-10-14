@@ -26,7 +26,6 @@ class Request(BaseModel):
     max_tokens: int = 300
     cache_salt: str = ""  # same prompt + different salt = a fresh answer, not a cache hit
     prompt_cache_key: str | None = None  # routing hint for the provider's prompt cache only
-    cache_tail: bool = False  # Anthropic: also cache up to the last message (a growing chat)
 
 
 class Completion(BaseModel):

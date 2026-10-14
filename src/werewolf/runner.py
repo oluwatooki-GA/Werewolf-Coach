@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Literal
 
 from werewolf.agents.llm_agent import LLMAgent
-from werewolf.agents.prompter import Layout
 from werewolf.audit import Leak, find_leaks
 from werewolf.engine.actions import FatalAgentError
 from werewolf.engine.events import Speech
@@ -63,7 +62,6 @@ async def run_batch(
     announce: Callable[[Played], None] | None = None,
     keep_notes: int = 0,
     max_tokens: int = 300,
-    layout: Layout = "stateless",
 ) -> BatchReport:
     """Play one game per seed, `parallel` at a time. A hard stop (the spending cap) ends the
     run: games not yet started are skipped and a game under way is dropped, not saved."""
@@ -92,7 +90,6 @@ async def run_batch(
                     game_id=run_id if cache == "fresh" else f"seed{seed}",
                     summarize=settings.summarize_rounds,
                     keep_notes=keep_notes,
-                    layout=layout,
                     max_tokens=max_tokens,
                     on_prompt=record,
                 )
@@ -111,9 +108,7 @@ async def run_batch(
                 run_id=run_id,
                 log=log,
                 seconds=time.perf_counter() - started,
-                leaks=find_leaks(
-                    log, prompts, own_notes_ok=keep_notes > 0 or layout == "conversation"
-                ),
+                leaks=find_leaks(log, prompts, own_notes_ok=keep_notes > 0),
                 path=save_log(log, data_dir),
             )
             report.played.append(played)

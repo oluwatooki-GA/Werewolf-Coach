@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from werewolf.agents.prompter import Layout, Prompter
+from werewolf.agents.prompter import Prompter
 from werewolf.agents.wire import WireError, json_schema_for, to_action_json
 from werewolf.engine.actions import FatalAgentError, Reply, Task, Usage
 from werewolf.engine.views import PlayerView
@@ -27,7 +27,6 @@ class LLMAgent:
         max_tokens: int = 300,
         summarize: bool = False,
         keep_notes: int = 0,
-        layout: Layout = "stateless",
         on_prompt: Callable[[str, list[dict[str, str]]], None] | None = None,
     ) -> None:
         self._name = name
@@ -38,10 +37,7 @@ class LLMAgent:
         self._temperature = temperature
         self._max_tokens = max_tokens
         self._on_prompt = on_prompt
-        self._layout = layout
-        self._prompter = Prompter(
-            card=card, summarize=summarize, keep_notes=keep_notes, layout=layout
-        )
+        self._prompter = Prompter(card=card, summarize=summarize, keep_notes=keep_notes)
 
     async def act(self, view: PlayerView, task: Task) -> object:
         messages = self._prompter.messages(view, task)
@@ -55,7 +51,6 @@ class LLMAgent:
             max_tokens=self._max_tokens,
             cache_salt=self._salt,
             prompt_cache_key=f"{self._game_id}:{self._name}" if self._game_id else None,
-            cache_tail=self._layout == "conversation",
         )
         try:
             done = await self._client.complete(request)
@@ -80,5 +75,4 @@ class LLMAgent:
                 pass  # hand the engine the raw text; it rejects it and asks again with the reason
             else:
                 self._prompter.learn(task.kind, text)
-        self._prompter.answered(task.kind, text)
         return Reply(text=text, usage=usage)

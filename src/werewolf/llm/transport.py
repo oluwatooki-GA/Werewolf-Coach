@@ -19,11 +19,9 @@ _NO_TEMPERATURE = ("claude-haiku-5", "claude-sonnet-5", "claude-opus-5")
 CACHE_WRITE_MULTIPLIER = Decimal("1.25")
 
 
-def _mark_for_cache(messages: list[dict[str, str]], tail: bool) -> list[dict[str, Any]]:
+def _mark_system_for_cache(messages: list[dict[str, str]]) -> list[dict[str, Any]]:
     """Anthropic only caches a prompt prefix that ends at a `cache_control` marker (OpenAI does
-    it by itself). The system message never changes during a game, so it ends one cached prefix;
-    with `tail`, the last message ends another, so a growing chat is read back from the cache."""
-    last = len(messages) - 1
+    it by itself). The system message never changes during a game, so it ends the cached prefix."""
     return [
         {
             **m,
@@ -31,9 +29,9 @@ def _mark_for_cache(messages: list[dict[str, str]], tail: bool) -> list[dict[str
                 {"type": "text", "text": m["content"], "cache_control": {"type": "ephemeral"}}
             ],
         }
-        if m["role"] == "system" or (tail and i == last)
+        if m["role"] == "system"
         else m
-        for i, m in enumerate(messages)
+        for m in messages
     ]
 
 
@@ -77,7 +75,7 @@ class LiteLLMTransport:
 
         kwargs: dict[str, Any] = {
             "model": request.model,
-            "messages": _mark_for_cache(request.messages, request.cache_tail)
+            "messages": _mark_system_for_cache(request.messages)
             if provider == "anthropic"
             else request.messages,
             "max_tokens": request.max_tokens,

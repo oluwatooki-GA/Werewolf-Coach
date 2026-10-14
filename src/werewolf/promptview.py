@@ -10,7 +10,7 @@ import asyncio
 import json
 from dataclasses import dataclass
 
-from werewolf.agents.prompter import Layout, Prompter
+from werewolf.agents.prompter import Prompter
 from werewolf.engine.actions import ACTION_FOR, Agent, Reply, Task
 from werewolf.engine.events import Speech
 from werewolf.engine.game import play_game
@@ -46,8 +46,6 @@ class _Rebuilder:
         self._sink.append(
             Rebuilt(self._name, view.round, task.kind, messages, text, task.error is not None)
         )
-        if isinstance(raw, str):  # a raised error was never an answer the agent saw
-            self._prompter.answered(task.kind, raw)
         try:  # the live agent only remembers answers it could read
             ACTION_FOR[task.kind].model_validate_json(text)
             self._prompter.learn(task.kind, text)
@@ -56,15 +54,14 @@ class _Rebuilder:
         return out
 
 
-def rebuild(log: GameLog, keep_notes: int = 0, layout: Layout = "stateless") -> list[Rebuilt]:
-    """Every prompt of the game in the order it was sent. `keep_notes` and `layout` must match
-    the run."""
+def rebuild(log: GameLog, keep_notes: int = 0) -> list[Rebuilt]:
+    """Every prompt of the game in the order it was sent. `keep_notes` must match the run."""
     found: list[Rebuilt] = []
     agents = {
         name: _Rebuilder(
             name,
             inner,
-            Prompter(summarize=log.settings.summarize_rounds, keep_notes=keep_notes, layout=layout),
+            Prompter(summarize=log.settings.summarize_rounds, keep_notes=keep_notes),
             found,
         )
         for name, inner in replayers(log).items()
