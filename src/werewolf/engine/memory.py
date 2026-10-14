@@ -19,6 +19,6 @@ def memory_check(limit: int) -> Callable[[Action], str | None]:
 async def run_memory(state: GameState, agents: Mapping[str, Agent]) -> None:
     """The answers stay with the agents (private memory); the engine only asks and logs."""
     limit = state.settings.max_summary_chars
-    alive = [p.name for p in state.players if p.alive]
+    alive = state.alive_names()
     task = MemoryTask(max_chars=limit)
     await ask_many(state, agents, [Request(name, task, memory_check(limit)) for name in alive])

@@ -23,7 +23,7 @@ def vote_check(options: tuple[str, ...], limit: int) -> Callable[[Action], str |
 
 
 async def run_vote(state: GameState, agents: Mapping[str, Agent]) -> None:
-    alive = [p.name for p in state.players if p.alive]
+    alive = state.alive_names()
     limit = state.settings.max_message_chars
     requests = []
     for name in alive:
@@ -43,7 +43,7 @@ async def run_vote(state: GameState, agents: Mapping[str, Agent]) -> None:
     top = tally.most_common(2)
     if top and (len(top) == 1 or top[0][1] > top[1][1]):
         out = top[0][0]
-        next(p for p in state.players if p.name == out).alive = False
+        state.player(out).alive = False
         state.events.append(Removal(round=state.round, player=out))
     else:
         state.events.append(NoRemoval(round=state.round))

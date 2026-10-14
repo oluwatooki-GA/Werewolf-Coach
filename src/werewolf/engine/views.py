@@ -62,7 +62,7 @@ class PlayerView(BaseModel):
 
 
 def make_view(state: GameState, name: str) -> PlayerView:
-    me = next(p for p in state.players if p.name == name)
+    me = state.player(name)
     partner = next(
         (p.name for p in state.players if p.role is Role.WEREWOLF and p.name != name),
         None,
@@ -72,7 +72,7 @@ def make_view(state: GameState, name: str) -> PlayerView:
         role=me.role,
         round=state.round,
         seats=tuple(p.name for p in state.players),
-        alive=tuple(p.name for p in state.players if p.alive),
+        alive=tuple(state.alive_names()),
         dead=tuple(p.name for p in state.players if not p.alive),
         partner=partner if me.role is Role.WEREWOLF else None,
         events=tuple(e for e in state.events if e.audience is None or name in e.audience),

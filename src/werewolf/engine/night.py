@@ -40,7 +40,7 @@ def _target(action: Action) -> str | None:
 
 async def run_night(state: GameState, agents: Mapping[str, Agent]) -> None:
     alive = [p for p in state.players if p.alive]
-    wolves = tuple(p.name for p in alive if p.role is Role.WEREWOLF)
+    wolves = tuple(state.wolf_names(alive_only=True))
     seer = next((p.name for p in alive if p.role is Role.SEER), None)
     doctor = next((p.name for p in alive if p.role is Role.DOCTOR), None)
     limit = state.settings.max_message_chars
@@ -78,7 +78,7 @@ async def run_night(state: GameState, agents: Mapping[str, Agent]) -> None:
     protect = _target(answers[-1]) if doctor else None
 
     if seer and check:
-        found = next(p for p in state.players if p.name == check)
+        found = state.player(check)
         result = SeerResult(round=state.round, target=check, role=found.role, audience=(seer,))
         state.events.append(result)
 
@@ -89,7 +89,7 @@ async def run_night(state: GameState, agents: Mapping[str, Agent]) -> None:
         )
     )
     if kill is not None and not saved:
-        next(p for p in state.players if p.name == kill).alive = False
+        state.player(kill).alive = False
         state.events.append(Death(round=state.round, player=kill))
     else:
         state.events.append(NoDeath(round=state.round))

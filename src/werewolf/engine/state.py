@@ -71,3 +71,18 @@ class GameState:
     calls: list[CallRecord] = field(default_factory=list)
     round: int = 1
     winner: Team | None = None
+
+    def player(self, name: str) -> Player:
+        for p in self.players:
+            if p.name == name:
+                return p
+        raise KeyError(name)
+
+    def alive_names(self) -> list[str]:
+        """Living players, in seat order."""
+        return [p.name for p in self.players if p.alive]
+
+    def wolf_names(self, alive_only: bool = False) -> list[str]:
+        return [
+            p.name for p in self.players if p.role is Role.WEREWOLF and (p.alive or not alive_only)
+        ]

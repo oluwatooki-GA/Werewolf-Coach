@@ -60,7 +60,7 @@ def _new_accusation(
 async def run_day(state: GameState, agents: Mapping[str, Agent]) -> None:
     settings = state.settings
     floor = settings.speaking_mode is SpeakingMode.FLOOR_TOKENS
-    alive = [p.name for p in state.players if p.alive]
+    alive = state.alive_names()
     limit = settings.max_message_chars
     tokens = {n: settings.tokens_per_day for n in alive}  # fresh each day: leftovers are lost
     spoken = {n: 0 for n in alive}
