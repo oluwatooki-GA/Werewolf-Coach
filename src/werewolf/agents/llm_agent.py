@@ -11,6 +11,14 @@ from werewolf.llm.ledger import LedgerBlocked, LedgerError
 from werewolf.llm.types import RateLimited, Request
 
 
+def _action_json(kind: str, text: str) -> str | None:
+    """The engine's action JSON for the model's answer, or None if it cannot be read."""
+    try:
+        return to_action_json(kind, text)
+    except WireError:
+        return None
+
+
 class LLMAgent:
     """One player in one game. It keeps its own belief table between calls."""
 
@@ -70,12 +78,9 @@ class LLMAgent:
             cache_hit=done.cache_hit,
             truncated=done.truncated,
         )
-        text = done.text
-        if not done.truncated:
-            try:
-                text = to_action_json(task.kind, done.text)
-            except WireError:
-                pass  # hand the engine the raw text; it rejects it and asks again with the reason
-            else:
-                self._prompter.learn(task.kind, text)
+        text = done.text  # an unreadable answer goes to the engine as it came; it asks again
+        action = None if done.truncated else _action_json(task.kind, done.text)
+        if action is not None:
+            text = action
+            self._prompter.learn(task.kind, action)
         return Reply(text=text, usage=usage)

@@ -25,6 +25,15 @@ LOCK_WAIT_S = 10.0  # how long to wait for another process to finish writing the
 LOCK_STALE_S = 10.0  # a lock this old was left behind by a crashed process
 
 
+def _is_stale(lock: Path) -> bool:
+    """A lock left behind by a process that died. One that is gone, or being removed right now,
+    is not stale: the caller simply looks again."""
+    try:
+        return time.time() - lock.stat().st_mtime > LOCK_STALE_S
+    except OSError:
+        return False
+
+
 class LedgerBlocked(Exception):
     """The call would pass the cap, or the provider is unknown."""
 
@@ -67,18 +76,10 @@ class Ledger:
             try:
                 os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
                 break
-            except (
-                FileExistsError,
-                PermissionError,
-            ):  # Windows: PermissionError while it is deleted
-                try:
-                    if time.time() - lock.stat().st_mtime > LOCK_STALE_S:
-                        lock.unlink()
-                        continue
-                except FileNotFoundError:
-                    continue  # released between our two looks
-                except PermissionError:
-                    pass  # being removed right now: wait and look again
+            except (FileExistsError, PermissionError):  # Windows: PermissionError while deleted
+                if _is_stale(lock):
+                    lock.unlink(missing_ok=True)
+                    continue
                 if time.monotonic() > deadline:
                     raise LedgerError(f"ledger file {self._path} is locked by another process")
                 time.sleep(0.01)

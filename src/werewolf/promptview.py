@@ -34,6 +34,14 @@ class Rebuilt:
     spoke: bool = False  # this answer's message was posted to the table
 
 
+def _readable(kind: str, text: str) -> bool:
+    try:
+        ACTION_FOR[kind].model_validate_json(text)
+    except ValueError:
+        return False
+    return True
+
+
 class _Rebuilder:
     def __init__(self, name: str, inner: Agent, prompter: Prompter, sink: list[Rebuilt]) -> None:
         self._name, self._inner, self._prompter, self._sink = name, inner, prompter, sink
@@ -46,11 +54,8 @@ class _Rebuilder:
         self._sink.append(
             Rebuilt(self._name, view.round, task.kind, messages, text, task.error is not None)
         )
-        try:  # the live agent only remembers answers it could read
-            ACTION_FOR[task.kind].model_validate_json(text)
+        if _readable(task.kind, text):  # the live agent only remembers answers it could read
             self._prompter.learn(task.kind, text)
-        except ValueError:
-            pass
         return out
 
 
