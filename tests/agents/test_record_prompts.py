@@ -12,7 +12,7 @@ from werewolf.agents.prompt import EXAMPLES, LEGEND
 from werewolf.agents.prompter import Prompter
 from werewolf.agents.wire import json_schema_for, to_action_json
 from werewolf.cli import main
-from werewolf.engine.actions import MemoryTask
+from werewolf.engine.actions import Belief, MemoryTask
 from werewolf.engine.events import Death, Removal, Speech, VoteCast, WolfChat
 from werewolf.engine.log import GameLog
 from werewolf.engine.record import numbered_speeches
@@ -227,3 +227,21 @@ def test_the_report_says_how_many_messages_carry_a_cite(tmp_path: Path) -> None:
         BatchReport(played=[played])
     )
     assert citing_messages([Rig(tmp_path / "quiet").play()]) == 0
+
+
+def test_the_suspicion_table_leaves_out_dead_players() -> None:
+    state = state_with()
+    state.player("Gus").alive = False
+    beliefs = {
+        "Gus": Belief(suspicion=0.9, reason="dead one"),
+        "Bo": Belief(suspicion=0.4, reason="living one"),
+    }
+    text = build(state, beliefs=beliefs)[1]["content"]
+    assert "- Bo: 0.4 (living one)" in text and "Gus: 0.9" not in text
+
+
+def test_the_bid_question_lists_the_players_that_can_be_named() -> None:
+    state = state_with()
+    state.player("Gus").alive = False
+    text = build(state, "Cy")[1]["content"]
+    assert "a target from: Di, Bo, Fay, Hal, Ada, Eve (leave the target blank" in text

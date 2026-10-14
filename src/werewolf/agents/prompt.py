@@ -269,7 +269,7 @@ def _memory(
     parts = []
     if summary:
         parts.append(f"Summary of earlier rounds: {summary}")
-    known = [n for n in view.seats if n in beliefs and n != view.name]
+    known = [n for n in view.seats if n in beliefs and n != view.name and n in view.alive]
     if known:
         parts.append("Your suspicions (0 = trust, 1 = sure they are a wolf):")
         parts += [f"- {n}: {beliefs[n].suspicion:g} ({beliefs[n].reason})" for n in known]
@@ -287,9 +287,10 @@ def _beliefs_ask() -> str:
 
 
 def _bid_ask(view: PlayerView, task: BidTask) -> str:
+    others = ", ".join(n for n in view.alive if n != view.name)
     intents = (
         "Choose an intent (private): accuse, defend, share_info, ask, or none, and a target "
-        "name (leave the target blank if there is none)."
+        f"from: {others} (leave the target blank if there is none)."
     )
     fields = (
         "JSON fields: bid, message, intent, target, note, beliefs, cites (a list of cited "
