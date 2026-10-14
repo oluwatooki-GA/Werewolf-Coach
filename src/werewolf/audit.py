@@ -113,6 +113,9 @@ def find_leaks(
         for kind, secret in private:
             if kind == "note" and own_notes_ok and secret in authored.get(player, ()):
                 continue
+            # Our own fixed text (the answer examples in the system message) is not game data:
+            # a model that copies an example note word for word has not leaked anything.
             if secret in text and secret not in public and secret not in mine:
-                flag(player, kind, secret)
+                if secret not in system:
+                    flag(player, kind, secret)
     return list(leaks.values())

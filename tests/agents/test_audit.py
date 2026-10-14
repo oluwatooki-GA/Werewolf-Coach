@@ -232,3 +232,15 @@ def test_even_with_the_scratchpad_on_a_note_in_someone_elses_prompt_is_a_leak(
     other = next(p.name for p in log.players if p.name != author)
     leaks = find_leaks(log, with_extra(prompts, other, note), own_notes_ok=True)
     assert kinds(leaks) == {"note"} and leaks[0].player == other
+
+
+def test_a_note_copied_from_the_answer_examples_is_not_a_leak(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    """Models copy the example note word for word; that text is in every system message."""
+    copied = "Nothing to add yet."
+    rig = Rig(tmp_path_factory.mktemp("example"))
+    rig.model.note_for["Bo"] = copied
+    log = rig.play(seed=1)
+    assert all(copied in m[0]["content"] for _, m in rig.prompts)  # it is in the system message
+    assert find_leaks(log, rig.prompts) == []
