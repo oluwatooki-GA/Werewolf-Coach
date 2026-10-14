@@ -57,78 +57,103 @@ def _new_accusation(
     return None
 
 
-async def run_day(state: GameState, agents: Mapping[str, Agent]) -> None:
-    settings = state.settings
-    floor = settings.speaking_mode is SpeakingMode.FLOOR_TOKENS
-    alive = state.alive_names()
-    limit = settings.max_message_chars
-    tokens = {n: settings.tokens_per_day for n in alive}  # fresh each day: leftovers are lost
-    spoken = {n: 0 for n in alive}
-    replied: set[str] = set()  # players who already got their one free reply today
-    pending: tuple[str, str] | None = None  # (who owes a reply, who accused them)
+class DayRound:
+    """One day's discussion. It holds what changes as the day goes: each player's floor tokens,
+    how often each has spoken, and who is owed a free reply."""
 
-    def listening(names: list[str]) -> None:
-        state.events.extend(Listening(round=state.round, player=n) for n in names)
+    def __init__(self, state: GameState, agents: Mapping[str, Agent]) -> None:
+        self.state = state
+        self.agents = agents
+        self.settings = state.settings
+        self.floor = self.settings.speaking_mode is SpeakingMode.FLOOR_TOKENS
+        self.alive = state.alive_names()
+        self.limit = self.settings.max_message_chars
+        # Fresh each day: tokens left over from yesterday are lost.
+        self.tokens = {n: self.settings.tokens_per_day for n in self.alive}
+        self.spoken = {n: 0 for n in self.alive}
+        self.replied: set[str] = set()  # players who already got their one free reply today
+        self.pending: tuple[str, str] | None = None  # (who owes a reply, who accused them)
 
-    async def free_turn(speaker: str, reply_to: str | None) -> BidAction | None:
+    def listening(self, names: list[str]) -> None:
+        self.state.events.extend(Listening(round=self.state.round, player=n) for n in names)
+
+    def accuse(self, action: BidAction, speaker: str) -> None:
+        """If this message accused someone who has not had their reply yet, they get it next."""
+        target = _new_accusation(action, speaker, self.alive, self.replied)
+        if target:
+            self.replied.add(target)
+            self.pending = (target, speaker)
+
+    async def free_turn(self, speaker: str, reply_to: str | None) -> BidAction | None:
         """Ask one player to speak at no cost. None means they stayed silent."""
-        task = BidTask(max_bid=0, max_chars=limit, free=True, reply_to=reply_to)
-        request = Request(speaker, task, bid_check(speaker, 0, limit, alive))
-        (answer,) = await ask_many(state, agents, [request])
+        task = BidTask(max_bid=0, max_chars=self.limit, free=True, reply_to=reply_to)
+        request = Request(speaker, task, bid_check(speaker, 0, self.limit, self.alive))
+        (answer,) = await ask_many(self.state, self.agents, [request])
         action = _as_bid(answer)
         if not action.message.strip():
-            listening([speaker])
+            self.listening([speaker])
             return None
-        state.events.append(
+        self.state.events.append(
             Speech(
-                round=state.round,
+                round=self.state.round,
                 speaker=speaker,
                 text=action.message,
                 paid=0,
                 reply=reply_to is not None,
             )
         )
-        spoken[speaker] += 1
+        self.spoken[speaker] += 1
         return action
 
-    if settings.speaking_mode is SpeakingMode.FIXED_ORDER:
-        for turn in range(settings.speaking_turns):
-            await free_turn(alive[turn % len(alive)], None)
-        return
+    async def reply_turn(self) -> None:
+        assert self.pending is not None
+        replier, accuser = self.pending
+        self.pending = None
+        action = await self.free_turn(replier, accuser)
+        if action:
+            self.accuse(action, replier)
 
-    for _ in range(settings.speaking_turns):
-        if pending is not None:
-            replier, accuser = pending
-            pending = None
-            action = await free_turn(replier, accuser)
-            target = _new_accusation(action, replier, alive, replied) if action else None
-            if target:
-                replied.add(target)
-                pending = (target, replier)
-            continue
-
-        cap = {n: tokens[n] if floor else FREE_BID_MAX for n in alive}
+    async def bidding_turn(self) -> bool:
+        """Everyone bids in secret; the winner speaks. False when everyone chose to listen."""
+        cap = {n: self.tokens[n] if self.floor else FREE_BID_MAX for n in self.alive}
         requests = [
-            Request(n, BidTask(max_bid=cap[n], max_chars=limit), bid_check(n, cap[n], limit, alive))
-            for n in alive
+            Request(
+                n,
+                BidTask(max_bid=cap[n], max_chars=self.limit),
+                bid_check(n, cap[n], self.limit, self.alive),
+            )
+            for n in self.alive
         ]
-        actions = {
-            n: _as_bid(a)
-            for n, a in zip(alive, await ask_many(state, agents, requests), strict=True)
-        }
-        speaker = resolve_bids(alive, {n: a.bid for n, a in actions.items()}, spoken, state.rng)
+        answers = await ask_many(self.state, self.agents, requests)
+        actions = {n: _as_bid(a) for n, a in zip(self.alive, answers, strict=True)}
+        bids = {n: a.bid for n, a in actions.items()}
+        speaker = resolve_bids(self.alive, bids, self.spoken, self.state.rng)
         if speaker is None:
-            listening(alive)
-            return
+            self.listening(self.alive)
+            return False
         action = actions[speaker]
-        paid = action.bid if floor else 0
-        state.events.append(
-            Speech(round=state.round, speaker=speaker, text=action.message, paid=paid)
+        paid = action.bid if self.floor else 0
+        self.state.events.append(
+            Speech(round=self.state.round, speaker=speaker, text=action.message, paid=paid)
         )
-        tokens[speaker] -= paid
-        spoken[speaker] += 1
-        listening([n for n in alive if actions[n].bid == 0])
-        target = _new_accusation(action, speaker, alive, replied) if floor else None
-        if target:
-            replied.add(target)
-            pending = (target, speaker)
+        self.tokens[speaker] -= paid
+        self.spoken[speaker] += 1
+        self.listening([n for n in self.alive if actions[n].bid == 0])
+        if self.floor:  # the right of reply exists only with floor tokens
+            self.accuse(action, speaker)
+        return True
+
+    async def run(self) -> None:
+        if self.settings.speaking_mode is SpeakingMode.FIXED_ORDER:
+            for turn in range(self.settings.speaking_turns):
+                await self.free_turn(self.alive[turn % len(self.alive)], None)
+            return
+        for _ in range(self.settings.speaking_turns):
+            if self.pending is not None:
+                await self.reply_turn()
+            elif not await self.bidding_turn():
+                return
+
+
+async def run_day(state: GameState, agents: Mapping[str, Agent]) -> None:
+    await DayRound(state, agents).run()
