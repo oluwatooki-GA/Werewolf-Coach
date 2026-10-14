@@ -110,6 +110,8 @@ def find_leaks(
                 if line in text:
                     flag(player, "seer_result", line)
         mine = memory.get(player, "")
+        if own_notes_ok:  # with the scratchpad or a chat, a player's own notes are its own text
+            mine += "\n".join(authored.get(player, ()))
         for kind, secret in private:
             if kind == "note" and own_notes_ok and secret in authored.get(player, ()):
                 continue

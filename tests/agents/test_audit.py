@@ -244,3 +244,20 @@ def test_a_note_copied_from_the_answer_examples_is_not_a_leak(
     log = rig.play(seed=1)
     assert all(copied in m[0]["content"] for _, m in rig.prompts)  # it is in the system message
     assert find_leaks(log, rig.prompts) == []
+
+
+def test_a_phrase_inside_the_players_own_note_is_not_a_leak_when_it_sees_its_notes(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    """Bo's belief reason is a short generic phrase; Cy's own note contains it. In a chat Cy sees
+    its own notes, so the phrase comes back to Cy through text Cy wrote."""
+    phrase = "has not spoken yet at all"
+    rig = Rig(tmp_path_factory.mktemp("insidenote"))
+    rig.model.beliefs_for["Bo"] = [{"player": "Eve", "suspicion": 0.5, "reason": phrase}]
+    rig.model.note_for["Cy"] = f"Gus {phrase}, odd"
+    log = rig.play(seed=1, layout="conversation")
+    assert any(
+        phrase in m[1]["content"] or phrase in m[-2]["content"] for n, m in rig.prompts if n == "Cy"
+    )
+    assert find_leaks(log, rig.prompts, own_notes_ok=True) == []
+    assert "belief" in kinds(find_leaks(log, rig.prompts))  # with notes hidden it is a leak
