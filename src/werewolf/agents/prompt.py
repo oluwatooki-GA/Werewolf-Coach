@@ -288,6 +288,16 @@ def _beliefs_ask() -> str:
     )
 
 
+def _day_status(view: PlayerView) -> str:
+    """A plain statement, written by the game, of what has been said today. Without it a model
+    that finds nothing under "What has happened" tends to invent earlier talk."""
+    today = [line for line, speech in numbered_speeches(view.events) if speech.round == view.round]
+    if not today:
+        return "So far today: nobody has spoken."
+    span = today[0] if len(today) == 1 else f"{today[0]} to {today[-1]}"
+    return f"So far today: {_plural(len(today), 'message')} posted ({span})."
+
+
 def _bid_ask(view: PlayerView, task: BidTask) -> str:
     others = ", ".join(n for n in view.alive if n != view.name)
     intents = (
@@ -332,7 +342,7 @@ def _bid_ask(view: PlayerView, task: BidTask) -> str:
             "nothing to say, bid 0 and leave the message and target blank (write nothing between "
             "the quotes)."
         )
-    return f"{head} {intents} {_beliefs_ask()} {fields}"
+    return f"{_day_status(view)} {head} {intents} {_beliefs_ask()} {fields}"
 
 
 def _task(view: PlayerView, task: Task) -> str:

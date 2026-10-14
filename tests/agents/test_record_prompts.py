@@ -12,7 +12,7 @@ from werewolf.agents.prompt import EXAMPLES, LEGEND
 from werewolf.agents.prompter import Prompter
 from werewolf.agents.wire import json_schema_for, to_action_json
 from werewolf.cli import main
-from werewolf.engine.actions import Belief, MemoryTask
+from werewolf.engine.actions import Belief, BidTask, MemoryTask
 from werewolf.engine.events import Death, Removal, Speech, VoteCast, WolfChat
 from werewolf.engine.log import GameLog
 from werewolf.engine.record import numbered_speeches
@@ -253,3 +253,23 @@ def test_the_rules_in_the_prompt_follow_the_talking_settings() -> None:
     system = build(state_with(settings=settings))[0]["content"]
     assert "up to 12 speaking turns" in system and "5 floor tokens" in system
     assert "at most 600 characters" in system
+
+
+def test_the_first_turn_of_the_day_says_nobody_has_spoken() -> None:
+    state = state_with(Death(round=1, player="Gus"))
+    assert "So far today: nobody has spoken. " in build(state)[1]["content"]
+
+
+def test_later_turns_say_how_many_messages_are_up_and_which() -> None:
+    one = state_with(said(1, "Bo", "a"))
+    assert "So far today: 1 message posted (R1-1). " in build(one)[1]["content"]
+    three = state_with(said(1, "Bo", "a"), said(1, "Cy", "b"), said(1, "Eve", "c", paid=0))
+    assert "So far today: 3 messages posted (R1-1 to R1-3). " in build(three)[1]["content"]
+
+
+def test_the_status_counts_only_todays_messages_and_shows_on_free_turns_too() -> None:
+    state = state_with(said(1, "Bo", "yesterday"))
+    state.round = 2
+    assert "So far today: nobody has spoken. " in build(state)[1]["content"]
+    free = BidTask(max_bid=0, max_chars=300, free=True)
+    assert "So far today: nobody has spoken. " in build(state, task=free)[1]["content"]
