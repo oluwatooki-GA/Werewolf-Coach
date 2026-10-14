@@ -122,7 +122,9 @@ def format_game(p: Played) -> str:
     return (
         f"seed {p.seed}: {p.log.winner.value} won in {p.log.rounds} rounds, "
         f"rejected {s.rejected} of {s.responses}, cost ${s.cost:.6f}, {p.seconds:.1f} s, "
-        f"leaks {len(p.leaks)}, run {p.run_id}"
+        f"leaks {len(p.leaks)}, run {p.run_id}\n"
+        f"  saved to {p.path}\n"
+        f"  read it:  uv run python -m werewolf.cli show {p.path}"
     )
 
 

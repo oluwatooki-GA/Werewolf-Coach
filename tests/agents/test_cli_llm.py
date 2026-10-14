@@ -209,3 +209,13 @@ def test_notes_option_turns_on_the_scratchpad_and_keeps_the_audit_clean(
 def test_without_the_notes_option_no_prompt_has_a_notes_section(rig: Rig, tmp_path: Path) -> None:
     batch(tmp_path, "--games", "1")
     assert not [r for r in rig.model.calls if "private notes" in r.messages[1]["content"]]
+
+
+def test_each_finished_game_says_where_it_was_saved_and_how_to_read_it(
+    rig: Rig, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    batch(tmp_path, "--games", "1", "--first-seed", "5")
+    out = capsys.readouterr().out
+    (path,) = (tmp_path / "games").glob("5-*.json")
+    assert f"saved to {path}" in out
+    assert "werewolf.cli show" in out
