@@ -135,6 +135,11 @@ def cite_text(logs: Sequence[GameLog]) -> str:
     return f"{cited} cites in {messages} messages, invented {invented} ({rate:.1f}%)"
 
 
+def citing_messages(logs: Sequence[GameLog]) -> int:
+    """How many posted messages carry at least one cite."""
+    return sum(bool(e.cites) for log in logs for e in log.events if isinstance(e, Speech))
+
+
 def format_game(p: Played) -> str:
     s = p.log.stats
     return (
@@ -167,6 +172,7 @@ def format_report(report: BatchReport) -> str:
         f"clean games {sum(g.stats.clean for g in games)} of {n}, "
         f"cut off {sum(g.stats.truncated for g in games)}",
         f"cites: {cite_text(games)}",
+        f"messages that cite: {citing_messages(games)} of {cite_counts(games)[0]}",
         f"tokens: input {prompt:,} ({share}% cached), output {completion:,}",
         f"cost: ${cost:.6f} total, ${cost / n if n else Decimal('0'):.6f} per game",
         f"time: {sum(p.seconds for p in report.played) / n if n else 0.0:.1f} s per game",

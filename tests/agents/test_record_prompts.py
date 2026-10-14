@@ -19,7 +19,15 @@ from werewolf.engine.record import numbered_speeches
 from werewolf.engine.setup import new_game
 from werewolf.engine.views import make_view
 from werewolf.promptview import rebuild, render
-from werewolf.runner import BatchReport, Played, cite_counts, cite_text, format_report, save_log
+from werewolf.runner import (
+    BatchReport,
+    Played,
+    cite_counts,
+    cite_text,
+    citing_messages,
+    format_report,
+    save_log,
+)
 
 CITING_BID = json.dumps(
     {
@@ -208,3 +216,14 @@ def test_invented_cites_are_counted_and_reported(tmp_path: Path) -> None:
 def test_a_game_with_no_cites_says_so(tmp_path: Path) -> None:
     log = Rig(tmp_path).play()  # the fake model only ever listens
     assert cite_text([log]) == "no cites in 0 messages"
+
+
+def test_the_report_says_how_many_messages_carry_a_cite(tmp_path: Path) -> None:
+    _, log = play_with_cites(tmp_path)
+    posted = cite_counts([log])[0]
+    assert citing_messages([log]) == posted > 0  # the fake model cites in every message
+    played = Played(1, "run", log, 1.0, [], tmp_path / "x.json")
+    assert f"messages that cite: {posted} of {posted}" in format_report(
+        BatchReport(played=[played])
+    )
+    assert citing_messages([Rig(tmp_path / "quiet").play()]) == 0
