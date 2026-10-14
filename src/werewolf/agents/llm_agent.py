@@ -21,6 +21,7 @@ class LLMAgent:
         model: str,
         *,
         card: str = "",
+        persona: str = "",
         cache_salt: str = "",
         game_id: str = "",
         temperature: float = 0.7,
@@ -37,7 +38,9 @@ class LLMAgent:
         self._temperature = temperature
         self._max_tokens = max_tokens
         self._on_prompt = on_prompt
-        self._prompter = Prompter(card=card, summarize=summarize, keep_notes=keep_notes)
+        self._prompter = Prompter(
+            card=card, persona=persona, summarize=summarize, keep_notes=keep_notes
+        )
 
     async def act(self, view: PlayerView, task: Task) -> object:
         messages = self._prompter.messages(view, task)

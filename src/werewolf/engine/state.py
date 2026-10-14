@@ -3,7 +3,13 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+)
 
 from werewolf.engine.events import Event
 from werewolf.engine.roles import Role, Team
@@ -30,6 +36,7 @@ class Settings(BaseModel):
     max_summary_chars: int = 800
     names: tuple[str, ...] = DEFAULT_NAMES
     cards: dict[str, str] = {}  # seat name -> strategy card id; logged, never shown to the engine
+    personas: dict[str, str] = {}  # seat name -> table manner id; logged, the engine ignores it
 
     @field_validator("names")
     @classmethod
@@ -37,6 +44,13 @@ class Settings(BaseModel):
         if len(names) != 8 or len(set(names)) != 8:
             raise ValueError("exactly 8 unique names are needed")
         return names
+
+    @model_serializer(mode="wrap")
+    def _leave_out_empty_personas(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        if not data.get("personas"):  # so a log without personas keeps its exact old bytes
+            data.pop("personas", None)
+        return data
 
 
 class CallRecord(BaseModel):

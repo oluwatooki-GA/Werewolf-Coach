@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import json
 import time
 import uuid
 from collections import Counter
@@ -11,6 +12,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Literal
 
+from werewolf.agents import persona as personas
 from werewolf.agents.llm_agent import LLMAgent
 from werewolf.audit import Leak, find_leaks
 from werewolf.engine.actions import FatalAgentError
@@ -18,7 +20,7 @@ from werewolf.engine.events import Speech
 from werewolf.engine.game import play_game
 from werewolf.engine.log import GameLog, to_log
 from werewolf.engine.setup import new_game
-from werewolf.engine.state import Settings
+from werewolf.engine.state import CallRecord, Settings, SpeakingMode
 from werewolf.llm.client import LLMClient
 
 CacheMode = Literal["fresh", "shared"]
@@ -62,6 +64,7 @@ async def run_batch(
     announce: Callable[[Played], None] | None = None,
     keep_notes: int = 0,
     max_tokens: int = 300,
+    use_personas: bool = True,
 ) -> BatchReport:
     """Play one game per seed, `parallel` at a time. A hard stop (the spending cap) ends the
     run: games not yet started are skipped and a game under way is dropped, not saved."""
@@ -77,6 +80,8 @@ async def run_batch(
             run_id = uuid.uuid4().hex[:12]
             salt = run_id if cache == "fresh" else ""
             prompts: list[tuple[str, list[dict[str, str]]]] = []
+            seat_persona = personas.assign(seed, settings.names) if use_personas else {}
+            game_settings = settings.model_copy(update={"personas": seat_persona})
 
             def record(name: str, messages: list[dict[str, str]]) -> None:
                 prompts.append((name, messages))
@@ -90,14 +95,15 @@ async def run_batch(
                     game_id=run_id if cache == "fresh" else f"seed{seed}",
                     summarize=settings.summarize_rounds,
                     keep_notes=keep_notes,
+                    persona=seat_persona.get(p.name, ""),
                     max_tokens=max_tokens,
                     on_prompt=record,
                 )
-                for p in new_game(seed, settings).players
+                for p in new_game(seed, game_settings).players
             }
             started = time.perf_counter()
             try:
-                state = await play_game(seed, settings, agents)
+                state = await play_game(seed, game_settings, agents)
             except FatalAgentError as exc:
                 report.interrupted += 1
                 report.stopped = report.stopped or str(exc)
@@ -140,12 +146,49 @@ def citing_messages(logs: Sequence[GameLog]) -> int:
     return sum(bool(e.cites) for log in logs for e in log.events if isinstance(e, Speech))
 
 
+def _accepted_bid(call: CallRecord) -> int:
+    """The bid the engine used for this call: the last answer, or 0 if it fell back."""
+    if call.failed:
+        return 0
+    answer = call.responses[-1]
+    try:
+        data = json.loads(answer) if isinstance(answer, str) else answer
+        return int(data["bid"])
+    except (ValueError, KeyError, TypeError):
+        return 0
+
+
+def bid_counts(logs: Sequence[GameLog]) -> tuple[Counter[int], Counter[int]]:
+    """(every bid the players chose, the bids that won the floor), counted by size. A turn with
+    no tokens left, and a free reply, is not a choice, so it is left out."""
+    chosen: Counter[int] = Counter()
+    won: Counter[int] = Counter()
+    for log in logs:
+        for call in log.calls:
+            task = call.task
+            if task.get("kind") == "bid" and not task.get("free") and task.get("max_bid"):
+                chosen[_accepted_bid(call)] += 1
+        if log.settings.speaking_mode is SpeakingMode.FLOOR_TOKENS:  # only there a bid is paid
+            won.update(e.paid for e in log.events if isinstance(e, Speech) and not e.reply)
+    return chosen, won
+
+
+def bid_text(logs: Sequence[GameLog]) -> str:
+    chosen, won = bid_counts(logs)
+
+    def sizes(counts: Counter[int]) -> str:
+        return " ".join(f"{size}:{counts[size]}" for size in sorted(counts)) or "none"
+
+    return f"bids {sizes(chosen)} (won the floor with {sizes(won)})"
+
+
 def format_game(p: Played) -> str:
     s = p.log.stats
     return (
         f"seed {p.seed}: {p.log.winner.value} won in {p.log.rounds} rounds, "
         f"rejected {s.rejected} of {s.responses}, cost ${s.cost:.6f}, {p.seconds:.1f} s, "
         f"leaks {len(p.leaks)}, {cite_text([p.log])}, run {p.run_id}\n"
+        f"  {bid_text([p.log])}\n"
         f"  saved to {p.path}\n"
         f"  read it:  uv run python -m werewolf.cli show {p.path}"
     )
@@ -173,6 +216,7 @@ def format_report(report: BatchReport) -> str:
         f"cut off {sum(g.stats.truncated for g in games)}",
         f"cites: {cite_text(games)}",
         f"messages that cite: {citing_messages(games)} of {cite_counts(games)[0]}",
+        bid_text(games),
         f"tokens: input {prompt:,} ({share}% cached), output {completion:,}",
         f"cost: ${cost:.6f} total, ${cost / n if n else Decimal('0'):.6f} per game",
         f"time: {sum(p.seconds for p in report.played) / n if n else 0.0:.1f} s per game",

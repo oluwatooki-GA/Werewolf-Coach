@@ -61,7 +61,11 @@ def rebuild(log: GameLog, keep_notes: int = 0) -> list[Rebuilt]:
         name: _Rebuilder(
             name,
             inner,
-            Prompter(summarize=log.settings.summarize_rounds, keep_notes=keep_notes),
+            Prompter(
+                persona=log.settings.personas.get(name, ""),
+                summarize=log.settings.summarize_rounds,
+                keep_notes=keep_notes,
+            ),
             found,
         )
         for name, inner in replayers(log).items()

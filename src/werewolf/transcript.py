@@ -46,7 +46,12 @@ def render(log: GameLog, private: bool = False, talk_only: bool = False) -> str:
     `private` shows them, plus every player's private notes. `talk_only` is always public: just
     the messages and the votes (with their outcome), under round headings."""
     roles = {p.name: p.role.value for p in log.players}
-    seats = ", ".join(f"{n}={r}" for n, r in roles.items()) if private else ", ".join(roles)
+    manner = log.settings.personas
+    seats = (
+        ", ".join(f"{n}={r}" + (f" ({manner[n]})" if n in manner else "") for n, r in roles.items())
+        if private
+        else ", ".join(roles)
+    )
     private = private and not talk_only
     lines = (
         []

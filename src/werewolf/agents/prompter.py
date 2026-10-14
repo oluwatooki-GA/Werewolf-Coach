@@ -10,8 +10,11 @@ from werewolf.engine.views import PlayerView
 
 
 class Prompter:
-    def __init__(self, *, card: str = "", summarize: bool = False, keep_notes: int = 0) -> None:
+    def __init__(
+        self, *, card: str = "", persona: str = "", summarize: bool = False, keep_notes: int = 0
+    ) -> None:
         self._card = card
+        self._persona = persona
         self._summarize = summarize
         self.memory = PlayerMemory(keep_notes)
 
@@ -20,6 +23,7 @@ class Prompter:
             view,
             task,
             card=self._card,
+            persona=self._persona,
             beliefs=self.memory.beliefs,
             summary=self.memory.summary,
             notes=list(self.memory.notes),

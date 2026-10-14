@@ -8,6 +8,7 @@ memory, and the task. The log is append-only text, so each prompt begins with th
 import json
 from collections.abc import Mapping, Sequence
 
+from werewolf.agents.persona import describe
 from werewolf.agents.wire import NOTE_MAX, REASON_MAX
 from werewolf.engine.actions import (
     Belief,
@@ -147,7 +148,7 @@ def _speaking_rules(view: PlayerView) -> str:
     )
 
 
-def _system(view: PlayerView, card: str) -> str:
+def _system(view: PlayerView, card: str, persona: str = "") -> str:
     r = view.rules
     partner = f" Your partner is {view.partner}, the other Werewolf." if view.partner else ""
     return "\n".join(
@@ -170,6 +171,7 @@ def _system(view: PlayerView, card: str) -> str:
             "",
             f"YOU: you are {view.name}, the {view.role.value}. {ROLE_TEXT[view.role]}{partner}",
             f"Strategy: {card or DEFAULT_CARD}",
+            *([f"Table manner: {describe(persona)}"] if persona else []),
             "",
             "HOW TO ANSWER: reply with only the JSON asked for. Messages are posted for everyone "
             f"to read, at most {r.max_message_chars} characters. Notes and belief reasons are "
@@ -375,6 +377,7 @@ def build_messages(
     task: Task,
     *,
     card: str = "",
+    persona: str = "",
     beliefs: Mapping[str, Belief] | None = None,
     summary: str = "",
     notes: Sequence[str] = (),
@@ -394,6 +397,6 @@ def build_messages(
         ]
     )
     return [
-        {"role": "system", "content": _system(view, card)},
+        {"role": "system", "content": _system(view, card, persona)},
         {"role": "user", "content": user},
     ]

@@ -93,6 +93,7 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
             data_dir=Path(args.data_dir),
             announce=lambda played: print(runner.format_game(played), flush=True),
             keep_notes=args.notes,
+            use_personas=args.persona,
             max_tokens=args.max_tokens
             or runtime.default_max_tokens(args.model, args.message_chars),
         )
@@ -264,6 +265,12 @@ def main(argv: list[str] | None = None) -> int:
     play.add_argument(
         "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
     )
+    play.add_argument(
+        "--persona",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="give each player a seeded table manner (blunt, chatty, cautious)",
+    )
     play.set_defaults(run=_play)
 
     many = commands.add_parser("batch", help="play several model-driven games and report")
@@ -293,6 +300,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     many.add_argument(
         "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
+    )
+    many.add_argument(
+        "--persona",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="give each player a seeded table manner (blunt, chatty, cautious)",
     )
     many.set_defaults(run=_batch)
 
