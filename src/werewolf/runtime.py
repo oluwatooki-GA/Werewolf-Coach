@@ -22,10 +22,12 @@ KEY_FOR = {
 DEFAULT_RPM = {"cerebras": 5}
 
 
-def default_max_tokens(model: str) -> int:
+def default_max_tokens(model: str, message_chars: int = 300) -> int:
     """Output budget per answer. Claude models write longer answers (notes, belief reasons), and
-    at 300 tokens a bid answer was cut off before its belief table."""
-    return 700 if model.split("/")[-1].startswith("claude") else 300
+    at 300 tokens a bid answer was cut off before its belief table. Longer messages (about 3
+    characters a token) get that much extra room."""
+    base = 700 if model.split("/")[-1].startswith("claude") else 300
+    return base + max(0, message_chars - 300) // 3
 
 
 def load_env(path: Path) -> list[str]:

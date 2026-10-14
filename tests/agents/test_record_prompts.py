@@ -17,6 +17,7 @@ from werewolf.engine.events import Death, Removal, Speech, VoteCast, WolfChat
 from werewolf.engine.log import GameLog
 from werewolf.engine.record import numbered_speeches
 from werewolf.engine.setup import new_game
+from werewolf.engine.state import Settings
 from werewolf.engine.views import make_view
 from werewolf.promptview import rebuild, render
 from werewolf.runner import (
@@ -245,3 +246,10 @@ def test_the_bid_question_lists_the_players_that_can_be_named() -> None:
     state.player("Gus").alive = False
     text = build(state, "Cy")[1]["content"]
     assert "a target from: Di, Bo, Fay, Hal, Ada, Eve (leave the target blank" in text
+
+
+def test_the_rules_in_the_prompt_follow_the_talking_settings() -> None:
+    settings = Settings(speaking_turns=12, tokens_per_day=5, max_message_chars=600)
+    system = build(state_with(settings=settings))[0]["content"]
+    assert "up to 12 speaking turns" in system and "5 floor tokens" in system
+    assert "at most 600 characters" in system

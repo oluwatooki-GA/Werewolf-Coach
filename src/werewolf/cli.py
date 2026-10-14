@@ -9,6 +9,7 @@ import asyncio
 import hashlib
 import io
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -19,6 +20,50 @@ from werewolf.engine.log import GameLog, replay, to_log
 from werewolf.engine.roles import Role
 from werewolf.engine.setup import new_game
 from werewolf.engine.state import Settings, SpeakingMode
+
+
+def _bounded(low: int, high: int) -> Callable[[str], int]:
+    def parse(text: str) -> int:
+        number = int(text)
+        if not low <= number <= high:
+            raise argparse.ArgumentTypeError(f"must be from {low} to {high}")
+        return number
+
+    return parse
+
+
+def _add_game_options(parser: argparse.ArgumentParser) -> None:
+    """How long the talking is: both commands that play games take these."""
+    defaults = Settings()
+    parser.add_argument(
+        "--turns",
+        type=_bounded(1, 40),
+        default=defaults.speaking_turns,
+        help="speaking turns per day, at most (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--tokens-per-day",
+        type=_bounded(1, 10),
+        default=defaults.tokens_per_day,
+        help="floor tokens each player gets a day; they limit how often one can speak "
+        "(default: %(default)s)",
+    )
+    parser.add_argument(
+        "--message-chars",
+        type=_bounded(50, 2000),
+        default=defaults.max_message_chars,
+        help="longest message, in characters (default: %(default)s)",
+    )
+
+
+def _settings(args: argparse.Namespace, **more: bool) -> Settings:
+    return Settings(
+        speaking_mode=SpeakingMode(args.speaking_mode),
+        speaking_turns=args.turns,
+        tokens_per_day=args.tokens_per_day,
+        max_message_chars=args.message_chars,
+        **more,
+    )
 
 
 def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
@@ -36,7 +81,7 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
     except RuntimeError as exc:
         print(f"cannot start: {exc}", file=sys.stderr)
         return 2
-    settings = Settings(speaking_mode=SpeakingMode(args.speaking_mode), summarize_rounds=True)
+    settings = _settings(args, summarize_rounds=True)
     report = asyncio.run(
         runner.run_batch(
             client,
@@ -48,7 +93,8 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
             data_dir=Path(args.data_dir),
             announce=lambda played: print(runner.format_game(played), flush=True),
             keep_notes=args.notes,
-            max_tokens=args.max_tokens or runtime.default_max_tokens(args.model),
+            max_tokens=args.max_tokens
+            or runtime.default_max_tokens(args.model, args.message_chars),
         )
     )
     print(runner.format_report(report))
@@ -62,7 +108,7 @@ def _batch(args: argparse.Namespace) -> int:
 def _play(args: argparse.Namespace) -> int:
     if args.agents == "llm":
         return _llm(args, [args.seed])
-    settings = Settings(speaking_mode=SpeakingMode(args.speaking_mode))
+    settings = _settings(args)
     players = new_game(args.seed, settings).players
     wolves = [p.name for p in players if p.role is Role.WEREWOLF]
     agents = {p.name: policy(wolves) for p in players}  # "scripted" is the only kind in M1
@@ -204,6 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     play.add_argument("--agents", choices=["scripted", "llm"], default="scripted")
     play.add_argument("--speaking-mode", choices=[m.value for m in SpeakingMode],
                       default=SpeakingMode.FLOOR_TOKENS.value)  # fmt: skip
+    _add_game_options(play)
     play.add_argument("--data-dir", default="data/games")
     play.add_argument("--model", help="needed with --agents llm")
     play.add_argument("--max-spend", help="dollars; required for paid models")
@@ -236,6 +283,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=[m.value for m in SpeakingMode],
         default=SpeakingMode.FLOOR_TOKENS.value,
     )
+    _add_game_options(many)
     many.add_argument("--data-dir", default="data/games")
     many.add_argument(
         "--notes", type=int, default=0, help="show each player its last N private notes"
