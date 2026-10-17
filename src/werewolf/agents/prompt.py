@@ -47,9 +47,9 @@ def _example(**fields: object) -> str:
 
 EXAMPLES = {
     "wolf_chat": _example(
-        text="Let us take <name> tonight; they argue too well.", note="<name> may be the Seer."
+        text="Let us take <name> tonight.", note="A plain pick, no read on anyone yet."
     ),
-    "night_target": _example(target="<name>", note="Most dangerous player left."),
+    "night_target": _example(target="<name>", note="Pick for tonight."),
     "bid": _example(
         bid=1,
         message="<name>, why did you vote with the majority both days?",
@@ -101,7 +101,8 @@ LEGEND = (
 
 ROLE_TEXT = {
     Role.WEREWOLF: "You are on the wolf team. Each night you and your partner choose one player "
-    "to kill. You win if the wolves equal or outnumber everyone else.",
+    "to kill. You win if the wolves equal or outnumber everyone else. Never quote or hint at "
+    "your private wolf chat in public, and in public treat your partner like any other player.",
     Role.SEER: "You are on the village team. Each night you can check one player and learn their "
     "true role. You win when both werewolves are gone.",
     Role.DOCTOR: "You are on the village team. Each night you can protect one player (yourself "
@@ -194,7 +195,8 @@ def _system(view: PlayerView, card: str, persona: str = "") -> str:
             "living player: a suspicion from 0 (trust) to 1 (sure they are a wolf) and a reason "
             f"of at most {REASON_MAX} characters. Keep notes to {NOTE_MAX} characters. Use only "
             "what the log shows: do not invent events, earlier days, or things people did not "
-            "say. At the start of day 1 nobody has spoken yet. Write like a person at the "
+            "say. At the start of day 1 nobody has spoken yet, so a claim about someone staying "
+            "quiet or acting a certain way must match a numbered line. Write like a person at the "
             "table: short, direct sentences, no speeches.",
         ]
     )
@@ -345,11 +347,21 @@ def _bid_ask(view: PlayerView, task: BidTask) -> str:
     return f"{_day_status(view)} {head} {intents} {_beliefs_ask()} {fields}"
 
 
+_NO_READ = (
+    "on who to kill. It is the first night: nobody has spoken or acted, so you have no read on "
+    "anyone. Pick any player and say it is a guess; do not invent a reason"
+)
+_NO_READ_PICK = (
+    "It is the first night and nobody has spoken, so any pick is a guess: no invented reasons."
+)
+
+
 def _task(view: PlayerView, task: Task) -> str:
     if isinstance(task, WolfChatTask):
+        why = _NO_READ if view.round == 1 else "about who to kill and why"
         return (
             f"It is night. Write one private message to your partner {view.partner} (at most "
-            f"{task.max_chars} characters) about who to kill and why. Only the two of you can "
+            f"{task.max_chars} characters) {why}. Only the two of you can "
             f"read it. Also write a private note (at most {NOTE_MAX} characters). "
             "JSON fields: text, note."
         )
@@ -359,6 +371,8 @@ def _task(view: PlayerView, task: Task) -> str:
             "check": "Choose one player to check tonight; you will learn their true role.",
             "protect": "Choose one player to protect tonight (you may protect yourself).",
         }[task.purpose]
+        if view.round == 1:
+            what += f" {_NO_READ_PICK}"
         return (
             f"{what} Options: {', '.join(task.options)}. Use an empty string for no target. "
             f"Add a private note (at most {NOTE_MAX} characters). JSON fields: target, note."

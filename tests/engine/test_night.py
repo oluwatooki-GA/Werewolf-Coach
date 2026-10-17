@@ -114,7 +114,7 @@ def test_the_wolf_chat_is_seen_only_by_wolves() -> None:
         assert ("SECRET-PLAN" in text) == (p.role is Role.WEREWOLF)
 
 
-def test_the_second_wolf_sees_the_first_wolfs_message_before_speaking() -> None:
+def test_wolves_write_their_chat_messages_without_seeing_each_other() -> None:
     state = new_game(seed=1)
     first, second = who(state, Role.WEREWOLF, 0), who(state, Role.WEREWOLF, 1)
     seen: list[list[str]] = []
@@ -128,7 +128,7 @@ def test_the_second_wolf_sees_the_first_wolfs_message_before_speaking() -> None:
     agents = night_agents(state, chat="first")
     agents[second] = ScriptedAgent(listener)
     play_night(state, agents)
-    assert seen == [["first"]]
+    assert seen == [[]]  # asked at the same time: no copying the partner's pick
     assert [e.speaker for e in events_of(state, WolfChat)] == [first, second]
 
 

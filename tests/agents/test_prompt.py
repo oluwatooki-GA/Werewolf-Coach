@@ -466,3 +466,12 @@ def test_a_free_reply_is_described_as_the_chance_to_answer_the_accusation() -> N
     assert "message is in the log" in text
     assert "chance to answer" in text
     assert "no answer" in text.lower()  # silence means giving no answer
+
+
+def test_first_night_tasks_say_any_pick_is_a_guess() -> None:
+    state = new_game(seed=1)
+    wolf = next(p.name for p in state.players if p.role is Role.WEREWOLF)
+    view = make_view(state, wolf)
+    for task in (WolfChatTask(max_chars=300), NightTargetTask(purpose="kill", options=("Ada",))):
+        text = build_messages(view, task)[-1]["content"]
+        assert "guess" in text and "invent" in text

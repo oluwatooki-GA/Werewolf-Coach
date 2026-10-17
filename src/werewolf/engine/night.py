@@ -46,10 +46,13 @@ async def run_night(state: GameState, agents: Mapping[str, Agent]) -> None:
     limit = state.settings.max_message_chars
 
     if len(wolves) == 2:  # a lone wolf has nobody to talk to
-        for wolf in wolves:
-            (reply,) = await ask_many(
-                state, agents, [Request(wolf, WolfChatTask(max_chars=limit), chat_check(limit))]
-            )
+        # both ask at once, so the second wolf cannot just copy the first one's pick
+        replies = await ask_many(
+            state,
+            agents,
+            [Request(w, WolfChatTask(max_chars=limit), chat_check(limit)) for w in wolves],
+        )
+        for wolf, reply in zip(wolves, replies, strict=True):
             if isinstance(reply, ChatAction) and reply.text:
                 state.events.append(
                     WolfChat(round=state.round, speaker=wolf, text=reply.text, audience=wolves)
