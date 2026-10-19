@@ -18,6 +18,7 @@ ID_PREFIX = {
     Role.SEER: "seer",
     Role.DOCTOR: "doctor",
 }
+ROLE_FOR_PREFIX = {prefix: role for role, prefix in ID_PREFIX.items()}
 # Only wolves know these, so a card for another role may not lean on them.
 WOLF_ONLY = ("partner", "wolf chat", "fellow wolf", "teammate", "your wolves")
 

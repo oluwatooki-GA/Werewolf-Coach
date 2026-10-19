@@ -6,7 +6,7 @@ import json
 import time
 import uuid
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -19,9 +19,11 @@ from werewolf.engine.actions import FatalAgentError
 from werewolf.engine.events import Speech
 from werewolf.engine.game import play_game
 from werewolf.engine.log import GameLog, to_log
+from werewolf.engine.roles import Role
 from werewolf.engine.setup import new_game
 from werewolf.engine.state import CallRecord, Settings, SpeakingMode
 from werewolf.llm.client import LLMClient
+from werewolf.strategies.cards import assign_cards, load_card
 
 CacheMode = Literal["fresh", "shared"]
 
@@ -65,11 +67,22 @@ async def run_batch(
     keep_notes: int = 0,
     max_tokens: int = 300,
     use_personas: bool = True,
+    cards_by_role: Mapping[Role, str] | None = None,
+    cards_by_seat: Mapping[str, str] | None = None,
 ) -> BatchReport:
     """Play one game per seed, `parallel` at a time. A hard stop (the spending cap) ends the
     run: games not yet started are skipped and a game under way is dropped, not saved."""
     report = BatchReport()
     gate = asyncio.Semaphore(max(1, parallel))
+    # Worked out for every seed before any call is made, so a bad card stops the run for free.
+    seat_cards = {
+        seed: assign_cards(
+            {p.name: p.role for p in new_game(seed, settings).players},
+            cards_by_role or {},
+            cards_by_seat or {},
+        )
+        for seed in seeds
+    }
 
     async def one(seed: int) -> None:
         async with gate:
@@ -81,7 +94,9 @@ async def run_batch(
             salt = run_id if cache == "fresh" else ""
             prompts: list[tuple[str, list[dict[str, str]]]] = []
             seat_persona = personas.assign(seed, settings.names) if use_personas else {}
-            game_settings = settings.model_copy(update={"personas": seat_persona})
+            game_settings = settings.model_copy(
+                update={"personas": seat_persona, "cards": seat_cards[seed]}
+            )
 
             def record(name: str, messages: list[dict[str, str]]) -> None:
                 prompts.append((name, messages))
@@ -96,6 +111,9 @@ async def run_batch(
                     summarize=settings.summarize_rounds,
                     keep_notes=keep_notes,
                     persona=seat_persona.get(p.name, ""),
+                    card=load_card(seat_cards[seed][p.name]).prompt_text
+                    if p.name in seat_cards[seed]
+                    else "",
                     max_tokens=max_tokens,
                     on_prompt=record,
                 )

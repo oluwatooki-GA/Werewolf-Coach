@@ -56,6 +56,46 @@ def _add_game_options(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_card_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--cards",
+        default="",
+        help="strategy card for each role, such as wolf=wolf.lie_low,seer=seer.reveal "
+        "(roles: wolf, villager, seer, doctor)",
+    )
+    parser.add_argument(
+        "--card-seat",
+        action="append",
+        default=[],
+        metavar="NAME=CARD",
+        help="strategy card for one seat, such as Fay=wolf.lie_low; beats --cards",
+    )
+
+
+def _split_pairs(items: list[str], what: str) -> dict[str, str]:
+    pairs = {}
+    for item in items:
+        key, sep, value = item.partition("=")
+        if not sep or not key.strip() or not value.strip():
+            raise ValueError(f"{what} '{item}' should look like NAME=CARD")
+        pairs[key.strip()] = value.strip()
+    return pairs
+
+
+def _cards_from(args: argparse.Namespace) -> tuple[dict[Role, str], dict[str, str]]:
+    """(card by role, card by seat) from the command line. Raises ValueError if it is unreadable."""
+    from werewolf.strategies.cards import ROLE_FOR_PREFIX
+
+    by_role = {}
+    for prefix, card_id in _split_pairs(
+        [x for x in args.cards.split(",") if x.strip()], "--cards entry"
+    ).items():
+        if prefix not in ROLE_FOR_PREFIX:
+            raise ValueError(f"unknown role '{prefix}'; use one of: {', '.join(ROLE_FOR_PREFIX)}")
+        by_role[ROLE_FOR_PREFIX[prefix]] = card_id
+    return by_role, _split_pairs(args.card_seat, "--card-seat")
+
+
 def _settings(args: argparse.Namespace, **more: bool) -> Settings:
     return Settings(
         speaking_mode=SpeakingMode(args.speaking_mode),
@@ -77,27 +117,33 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
         return 2
     spend = Decimal(args.max_spend) if args.max_spend is not None else None
     try:
+        by_role, by_seat = _cards_from(args)
         client = runtime.build_client(args.model, spend, requests_per_minute=args.rpm)
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError) as exc:
         print(f"cannot start: {exc}", file=sys.stderr)
         return 2
-    settings = _settings(args, summarize_rounds=True)
-    report = asyncio.run(
-        runner.run_batch(
-            client,
-            args.model,
-            seeds,
-            settings=settings,
-            parallel=getattr(args, "parallel", 1),
-            cache=args.cache,
-            data_dir=Path(args.data_dir),
-            announce=lambda played: print(runner.format_game(played), flush=True),
-            keep_notes=args.notes,
-            use_personas=args.persona,
-            max_tokens=args.max_tokens
-            or runtime.default_max_tokens(args.model, args.message_chars),
+    try:
+        report = asyncio.run(
+            runner.run_batch(
+                client,
+                args.model,
+                seeds,
+                settings=_settings(args, summarize_rounds=True),
+                parallel=getattr(args, "parallel", 1),
+                cache=args.cache,
+                data_dir=Path(args.data_dir),
+                announce=lambda played: print(runner.format_game(played), flush=True),
+                keep_notes=args.notes,
+                use_personas=args.persona,
+                max_tokens=args.max_tokens
+                or runtime.default_max_tokens(args.model, args.message_chars),
+                cards_by_role=by_role,
+                cards_by_seat=by_seat,
+            )
         )
-    )
+    except ValueError as exc:  # a card that does not fit its seat, found before any model call
+        print(f"cannot start: {exc}", file=sys.stderr)
+        return 2
     print(runner.format_report(report))
     return 1 if report.stopped is not None or any(p.leaks for p in report.played) else 0
 
@@ -109,6 +155,9 @@ def _batch(args: argparse.Namespace) -> int:
 def _play(args: argparse.Namespace) -> int:
     if args.agents == "llm":
         return _llm(args, [args.seed])
+    if args.cards or args.card_seat:
+        print("--cards and --card-seat need --agents llm", file=sys.stderr)
+        return 2
     settings = _settings(args)
     players = new_game(args.seed, settings).players
     wolves = [p.name for p in players if p.role is Role.WEREWOLF]
@@ -252,6 +301,7 @@ def main(argv: list[str] | None = None) -> int:
     play.add_argument("--speaking-mode", choices=[m.value for m in SpeakingMode],
                       default=SpeakingMode.FLOOR_TOKENS.value)  # fmt: skip
     _add_game_options(play)
+    _add_card_options(play)
     play.add_argument("--data-dir", default="data/games")
     play.add_argument("--model", help="needed with --agents llm")
     play.add_argument("--max-spend", help="dollars; required for paid models")
@@ -291,6 +341,7 @@ def main(argv: list[str] | None = None) -> int:
         default=SpeakingMode.FLOOR_TOKENS.value,
     )
     _add_game_options(many)
+    _add_card_options(many)
     many.add_argument("--data-dir", default="data/games")
     many.add_argument(
         "--notes", type=int, default=0, help="show each player its last N private notes"

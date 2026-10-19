@@ -16,6 +16,7 @@ from werewolf.engine.events import Speech
 from werewolf.engine.game import play_game
 from werewolf.engine.log import GameLog, replayers
 from werewolf.engine.views import PlayerView
+from werewolf.strategies.cards import load_card
 
 NOTE = (
     "(Rebuilt from the saved answers with today's prompt code. A game played before a change to "
@@ -59,6 +60,16 @@ class _Rebuilder:
         return out
 
 
+def _card_text(ref: str) -> str:
+    """The card a seat played, from today's cards folder; empty if there was none or it is gone."""
+    if not ref:
+        return ""
+    try:
+        return load_card(ref).prompt_text
+    except ValueError:
+        return ""
+
+
 def rebuild(log: GameLog, keep_notes: int = 0) -> list[Rebuilt]:
     """Every prompt of the game in the order it was sent. `keep_notes` must match the run."""
     found: list[Rebuilt] = []
@@ -67,6 +78,7 @@ def rebuild(log: GameLog, keep_notes: int = 0) -> list[Rebuilt]:
             name,
             inner,
             Prompter(
+                card=_card_text(log.settings.cards.get(name, "")),
                 persona=log.settings.personas.get(name, ""),
                 summarize=log.settings.summarize_rounds,
                 keep_notes=keep_notes,

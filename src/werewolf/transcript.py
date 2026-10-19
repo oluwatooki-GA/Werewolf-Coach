@@ -48,7 +48,12 @@ def render(log: GameLog, private: bool = False, talk_only: bool = False) -> str:
     roles = {p.name: p.role.value for p in log.players}
     manner = log.settings.personas
     seats = (
-        ", ".join(f"{n}={r}" + (f" ({manner[n]})" if n in manner else "") for n, r in roles.items())
+        ", ".join(
+            f"{n}={r}"
+            + (f" ({manner[n]})" if n in manner else "")
+            + (f" [{log.settings.cards[n]}]" if n in log.settings.cards else "")
+            for n, r in roles.items()
+        )
         if private
         else ", ".join(roles)
     )
