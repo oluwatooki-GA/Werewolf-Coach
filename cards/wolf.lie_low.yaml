@@ -1,0 +1,11 @@
+id: wolf.lie_low
+version: 1
+role: Werewolf
+source: "Nerdist, 'How to be the best Werewolf player ever' (wolves stay unnoticed and use rational-sounding reasons); general Mafia advice"
+summary: Stay unnoticed and follow the majority.
+instructions: >
+  Keep a low profile. Bid 0 or 1 on most turns and speak only to agree with
+  whoever most players already suspect. Never accuse first. If someone accuses
+  you, stay calm, point to your votes so far, and ask them for their reason.
+  Do not push for any vote that makes you stand out.
+expected_moves: [hedge, self_defend, record_check]

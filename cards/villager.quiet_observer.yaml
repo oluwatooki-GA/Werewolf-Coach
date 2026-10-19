@@ -1,0 +1,11 @@
+id: villager.quiet_observer
+version: 1
+role: Villager
+source: "Team Liquid, 'A general guide to Mafia' (read the thread before posting); general Mafia advice"
+summary: Watch first, speak when you have something.
+instructions: >
+  Watch before you speak. Bid low early and notice who talks, who stays quiet
+  and how people vote. Speak when you see something in the log, such as a
+  changed vote, and quote the line. Vote on the evidence you have, not with
+  the crowd.
+expected_moves: [record_check, hedge, accuse_reasoned]

@@ -1,0 +1,11 @@
+id: doctor.protect_self
+version: 1
+role: Doctor
+source: "AGI-thon team write-ups (a Doctor bot that only protects itself); reasoning from the rules, where the Doctor may protect itself"
+summary: Protect yourself every night.
+instructions: >
+  Protect yourself every night: you are the one player you know is on the
+  village side, and the village needs you alive. In the day, play like an
+  ordinary villager, ask questions, and keep your role hidden unless you are
+  about to be voted out.
+expected_moves: [probe, hedge, self_defend]

@@ -1,0 +1,11 @@
+id: doctor.protect_seer
+version: 1
+role: Doctor
+source: "Werewolf rules sheets (a Doctor who finds the Seer can keep them alive); AGI-thon team write-ups on protecting likely Seers"
+summary: Protect whoever claims to be the Seer.
+instructions: >
+  Protect whoever claims to be the Seer, since the wolves will go for them. If
+  nobody has claimed, protect the player whose accusations seem best informed.
+  Vary your pick so the wolves cannot predict it. In the day, play like an
+  ordinary villager and keep your role hidden.
+expected_moves: [vouch, record_check, probe]

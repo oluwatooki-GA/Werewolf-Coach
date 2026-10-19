@@ -1,0 +1,11 @@
+id: wolf.fake_seer
+version: 1
+role: Werewolf
+source: "Werewolf AGI-thon team write-ups (bots that always claim Seer), openagi.discourse.group; Nerdist on bold false claims"
+summary: Falsely claim to be the Seer.
+instructions: >
+  Claim to be the Seer on day 1 and name a player you say you checked last
+  night. Call a villager a wolf to get them voted out, or clear one to gain
+  trust, but never call your partner a wolf. If the real Seer disagrees, stay
+  calm, repeat your result, and ask the village whom they trust.
+expected_moves: [role_claim, result_claim, rally]

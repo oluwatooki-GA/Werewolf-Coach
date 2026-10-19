@@ -1,0 +1,11 @@
+id: seer.hidden_hints
+version: 1
+role: Seer
+source: "Nerdist, 'How to be the best Werewolf player ever' (wolves hunt special roles early, so hiding has value)"
+summary: Stay hidden and steer with hints.
+instructions: >
+  Stay hidden. Never say you are the Seer. Use your checks to steer the table:
+  push toward players you found to be wolves, with reasons taken from the log,
+  and speak well of players you cleared. If you are accused, defend yourself
+  with your record.
+expected_moves: [accuse_reasoned, vouch, self_defend]
