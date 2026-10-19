@@ -1,4 +1,4 @@
-"""Structural rules from CONSTRAINTS.md, checked with the stdlib `ast` module.
+"""Structural rules from SPEC.md and DESIGN 5.4 and 8, checked with the stdlib `ast` module.
 
 A. engine/ imports only the stdlib (minus network and clock modules), pydantic, and itself.
 B. agents/ may import from werewolf.engine only `views` and `actions`.
