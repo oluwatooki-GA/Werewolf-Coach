@@ -198,7 +198,76 @@ def _show(args: argparse.Namespace) -> int:
         print(render_prompts(items, args.prompt, args.round, args.kind, args.spoke))
         return 0
     print(render(log, private=args.private, talk_only=args.talk))
+    if args.tags:
+        from werewolf.tagger.show import render_tags
+        from werewolf.tagger.tags import load_tags
+
+        tagfile = load_tags(Path(args.path))
+        if tagfile is None:
+            print(f"\nno tags yet: run  tag {args.path} --model <model>", file=sys.stderr)
+            return 1
+        print("\n" + render_tags(log, tagfile, private=args.private))
     return 0
+
+
+def _game_files(paths: list[str]) -> list[Path]:
+    """Game logs among the given files and folders (tag files are not games)."""
+    found: list[Path] = []
+    for item in paths:
+        path = Path(item)
+        files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
+        found += [f for f in files if not f.name.endswith(".tags.json")]
+    return found
+
+
+def _tag(args: argparse.Namespace) -> int:
+    """Tag the public messages of saved games. Exit 1 if the run had to stop early."""
+    from decimal import Decimal
+
+    from werewolf import runtime
+    from werewolf.tagger.tagger import TagStopped, tag_game
+    from werewolf.tagger.tags import TagFile, save_tags, tags_path
+
+    spend = Decimal(args.max_spend) if args.max_spend is not None else None
+    try:
+        client = runtime.build_client(args.model, spend, requests_per_minute=args.rpm)
+    except RuntimeError as exc:
+        print(f"cannot start: {exc}", file=sys.stderr)
+        return 2
+    limit = args.max_tokens or runtime.default_max_tokens(args.model)
+
+    async def run() -> int:
+        code, total, tagged_games = 0, Decimal("0"), 0
+        for path in _game_files(args.paths):
+            if tags_path(path).exists() and not args.again:
+                print(f"{path}: already tagged (use --again to redo)")
+                continue
+            try:
+                log = GameLog.from_json(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, ValidationError) as exc:
+                print(f"{path}: cannot read: {exc}", file=sys.stderr)
+                code = 2
+                continue
+            try:
+                result = await tag_game(log, client, args.model, max_tokens=limit)
+            except TagStopped as stop:
+                total += stop.run.cost
+                print(f"{path}: STOPPED: {stop}; nothing saved, a rerun resumes from the cache")
+                print(f"spent ${total:.6f}")
+                return 1
+            save_tags(path, TagFile(model=args.model, tags=result.tags, untagged=result.untagged))
+            total += result.cost
+            tagged_games += 1
+            print(
+                f"{path}: {len(result.tags)} tagged, {len(result.untagged)} untagged, "
+                f"{result.cache_hits} from cache, ${result.cost:.6f}"
+            )
+            for line, why in sorted(result.untagged.items()):
+                print(f"    {line}: {why}")
+        print(f"{tagged_games} game(s) tagged, ${total:.6f}")
+        return code
+
+    return asyncio.run(run())
 
 
 def _replay(args: argparse.Namespace) -> int:
@@ -377,9 +446,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     shown.add_argument("--spoke", action="store_true", help="with --prompt: only posted messages")
     shown.add_argument(
+        "--tags", action="store_true", help="add the tagger's moves (labels need --private)"
+    )
+    shown.add_argument(
         "--notes", type=int, default=0, help="with --prompt: the --notes value the game used"
     )
     shown.set_defaults(run=_show)
+
+    tag = commands.add_parser("tag", help="label the moves in saved games")
+    tag.add_argument("paths", nargs="+", help="game logs or folders of them")
+    tag.add_argument("--model", required=True)
+    tag.add_argument("--max-spend", help="dollars; required for paid models")
+    tag.add_argument("--again", action="store_true", help="tag games that already have tags")
+    tag.add_argument("--rpm", type=int, help="requests per minute to send")
+    tag.add_argument("--max-tokens", type=int, help="output limit per answer")
+    tag.set_defaults(run=_tag)
 
     check = commands.add_parser("smoke", help="call a real model once per answer shape")
     check.add_argument("--model", required=True)
