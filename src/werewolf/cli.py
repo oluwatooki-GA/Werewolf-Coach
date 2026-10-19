@@ -270,6 +270,28 @@ def _tag(args: argparse.Namespace) -> int:
     return asyncio.run(run())
 
 
+def _adherence(args: argparse.Namespace) -> int:
+    from werewolf.tagger.adherence import adherence, format_adherence
+    from werewolf.tagger.tags import load_tags
+
+    pairs, skipped = [], 0
+    for path in _game_files(args.paths):
+        try:
+            log = GameLog.from_json(path.read_text(encoding="utf-8"))
+            tagfile = load_tags(path)
+        except (OSError, ValueError, ValidationError) as exc:
+            print(f"{path}: cannot read: {exc}", file=sys.stderr)
+            return 2
+        if tagfile is None:
+            skipped += 1
+        else:
+            pairs.append((log, tagfile))
+    print(format_adherence(adherence(pairs)))
+    if skipped:
+        print(f"{skipped} game(s) left out: no tags yet (run the tag command first)")
+    return 0
+
+
 def _replay(args: argparse.Namespace) -> int:
     try:
         log = GameLog.from_json(Path(args.path).read_text(encoding="utf-8"))
@@ -461,6 +483,10 @@ def main(argv: list[str] | None = None) -> int:
     tag.add_argument("--rpm", type=int, help="requests per minute to send")
     tag.add_argument("--max-tokens", type=int, help="output limit per answer")
     tag.set_defaults(run=_tag)
+
+    follow = commands.add_parser("adherence", help="do players follow their strategy card?")
+    follow.add_argument("paths", nargs="+", help="tagged game logs or folders of them")
+    follow.set_defaults(run=_adherence)
 
     check = commands.add_parser("smoke", help="call a real model once per answer shape")
     check.add_argument("--model", required=True)
