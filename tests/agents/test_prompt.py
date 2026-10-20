@@ -496,3 +496,11 @@ def test_once_someone_has_spoken_or_in_a_later_round_the_hook_is_gone() -> None:
 
 def test_the_rules_tell_players_an_accusation_needs_a_cite() -> None:
     assert "must cite the numbered line it rests on" in build(state_with())[0]["content"]
+
+
+def test_a_silent_day_helps_the_wolves_and_unspent_tokens_are_to_be_spent() -> None:
+    assert "only helps the wolves" in system(state_with())
+    assert "spend them: bid 1 to 3" in system(state_with())
+    state = state_with(Death(round=1, player="Gus"))
+    state.player("Gus").alive = False
+    assert "stay quiet" not in user(state).split("So far today")[1].split("You have")[0]

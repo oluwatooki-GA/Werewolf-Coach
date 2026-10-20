@@ -134,16 +134,20 @@ def _speaking_rules(view: PlayerView) -> str:
             f"secretly bids 0 to {r.tokens_per_day} tokens and writes the message they would say. "
             "The highest bid speaks and pays what it bid; ties go to whoever has spoken least "
             "today, then to chance. A bid of 0 means you stay quiet and listen. Tokens you do not "
-            "spend are lost at nightfall. If a message accuses someone by name (intent accuse "
+            "spend are lost at nightfall, so unless your strategy says otherwise, spend them: "
+            "bid 1 to 3 when you have a question, a read or an answer to give. If a message "
+            "accuses someone by name (intent accuse "
             "with a target), that player gets one free reply next, once per day; free replies "
-            "cost nothing. The day ends early if everyone listens."
+            "cost nothing. The day ends early if everyone listens, and a day with no talk gives "
+            "the village nothing to vote on, which only helps the wolves."
         )
     if r.speaking_mode == "free_bid":
         return (
             f"{turns} On each turn everyone secretly bids 0 to 4 and writes the message they "
             "would say. The highest bid speaks, and bids cost nothing; ties go to whoever has "
             "spoken least today, then to chance. A bid of 0 means you stay quiet and listen. "
-            "The day ends early if everyone listens."
+            "The day ends early if everyone listens, and a day with no talk gives the village "
+            "nothing to vote on, which only helps the wolves."
         )
     return (
         f"{turns} Living players speak one at a time in seat order. When it is your turn you "
@@ -313,8 +317,7 @@ def _day_status(view: PlayerView) -> str:
         )
         return (
             f"So far today: nobody has spoken.{died} Nobody has done anything yet, so there is "
-            "nothing to accuse anyone of: you may ask about the death or the table in general, "
-            "or stay quiet."
+            "nothing to accuse anyone of: you may ask about the death or the table in general."
         )
     span = today[0] if len(today) == 1 else f"{today[0]} to {today[-1]}"
     return f"So far today: {_plural(len(today), 'message')} posted ({span})."
