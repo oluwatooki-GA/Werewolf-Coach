@@ -33,6 +33,7 @@ def test_an_uncited_accusation_after_a_message_exists_is_rejected_then_asked_aga
     play_day(state, bidders(state, script))
     (errors,) = rejections(state, b)
     assert "must cite the numbered line" in errors[0]
+    assert f"R1-1 ({a})" in errors[0]  # the message names the lines the player could cite
     assert "a said hi and nothing else" in [s.text for s in speeches(state)]
     assert "a is odd" not in [s.text for s in speeches(state)]
 

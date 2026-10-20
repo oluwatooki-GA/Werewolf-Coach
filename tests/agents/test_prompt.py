@@ -538,3 +538,11 @@ def test_a_summary_question_does_not_repeat_the_card() -> None:
     view = make_view(state, "Cy")
     memory = MemoryTask(max_chars=800)
     assert "keep to it" not in build_messages(view, memory, card="Anything.")[1]["content"]
+
+
+def test_the_bid_question_lists_the_latest_lines_an_accusation_can_cite() -> None:
+    state = state_with(*[Speech(round=1, speaker="Bo", text=f"m{n}", paid=1) for n in range(6)])
+    text = user(state)
+    assert "must cite one of the latest lines: R1-3 (Bo), R1-4 (Bo), R1-5 (Bo), R1-6 (Bo)" in text
+    assert "R1-2 (Bo)" not in text.split("must cite one of")[1]
+    assert "must cite one of the latest" not in user(state_with())

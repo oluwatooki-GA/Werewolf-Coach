@@ -1,6 +1,6 @@
 """The day: one speaker per turn, chosen by floor-token bids, free bids, or a fixed order."""
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from random import Random
 
 from werewolf.engine.actions import Action, Agent, BidAction, BidTask
@@ -27,7 +27,7 @@ def resolve_bids(
 
 
 def bid_check(
-    me: str, max_bid: int, limit: int, alive: list[str], has_lines: bool = False
+    me: str, max_bid: int, limit: int, alive: list[str], citable: Sequence[str] = ()
 ) -> Callable[[Action], str | None]:
     def check(action: Action) -> str | None:
         if not isinstance(action, BidAction):
@@ -40,8 +40,11 @@ def bid_check(
             return "a bid above 0 needs a message"
         if action.target is not None and (action.target == me or action.target not in alive):
             return "the target must be another living player"
-        if has_lines and action.message.strip() and action.intent == "accuse" and not action.cites:
-            return "an accusation must cite the numbered line it rests on (add it to cites)"
+        if citable and action.message.strip() and action.intent == "accuse" and not action.cites:
+            return (
+                "an accusation must cite the numbered line it rests on: add one of "
+                f"{', '.join(citable)} to cites"
+            )
         return None
 
     return check
@@ -77,9 +80,9 @@ class DayRound:
         self.replied: set[str] = set()  # players who already got their one free reply today
         self.pending: tuple[str, str] | None = None  # (who owes a reply, who accused them)
 
-    def has_lines(self) -> bool:
-        """Is there a numbered public message to cite yet?"""
-        return bool(numbered_speeches(self.state.events))
+    def citable(self) -> list[str]:
+        """The latest numbered public messages, such as 'R1-2 (Di)'. Empty before anyone spoke."""
+        return [f"{line} ({s.speaker})" for line, s in numbered_speeches(self.state.events)[-4:]]
 
     def listening(self, names: list[str]) -> None:
         self.state.events.extend(Listening(round=self.state.round, player=n) for n in names)
@@ -108,7 +111,7 @@ class DayRound:
         """Ask one player to speak at no cost. None means they stayed silent."""
         task = BidTask(max_bid=0, max_chars=self.limit, free=True, reply_to=reply_to)
         request = Request(
-            speaker, task, bid_check(speaker, 0, self.limit, self.alive, self.has_lines())
+            speaker, task, bid_check(speaker, 0, self.limit, self.alive, self.citable())
         )
         (answer,) = await ask_many(self.state, self.agents, [request])
         action = _as_bid(answer)
@@ -132,7 +135,7 @@ class DayRound:
         listen. A player with no tokens left cannot bid, so it is not asked and is not listed as
         listening: staying quiet because you must is not the same as choosing to."""
         cap = {n: self.tokens[n] if self.floor else FREE_BID_MAX for n in self.alive}
-        lines = self.has_lines()
+        lines = self.citable()
         asked = [n for n in self.alive if cap[n] > 0]
         requests = [
             Request(

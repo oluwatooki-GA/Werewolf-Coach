@@ -329,9 +329,15 @@ def _bid_ask(view: PlayerView, task: BidTask) -> str:
         "Choose an intent (private): accuse, defend, share_info, ask, or none, and a target "
         f"from: {others} (leave the target blank if there is none)."
     )
+    latest = [f"{line} ({s.speaker})" for line, s in numbered_speeches(view.events)[-4:]]
     fields = (
         "JSON fields: bid, message, intent, target, note, beliefs, cites (a list of cited "
         "lines; [] when you cite nothing)."
+        + (
+            f" An accusation must cite one of the latest lines: {', '.join(latest)}."
+            if latest
+            else ""
+        )
     )
     if task.reply_to:
         head = (
