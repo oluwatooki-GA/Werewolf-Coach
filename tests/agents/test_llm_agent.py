@@ -51,6 +51,8 @@ class FakeModel:
         self.vote_reason_for: dict[str, str] = {}  # public reason each player gives when voting
         self.note_for: dict[str, str] = {}  # a fixed private note for a player
         self.kill_last = False  # wolves pick the last option, so the Seer is not always the victim
+        self.guard_says = False  # what the wolf-chat guard answers
+        self.talk = False  # every bid asks for the floor with a message no other call repeats
 
     def provider(self, model: str) -> str:
         return "openai"
@@ -93,6 +95,8 @@ class FakeModel:
         ]
 
     def answer(self, title: str, request: Request) -> dict[str, Any]:
+        if title == "WireGuard":
+            return {"reveals": self.guard_says}
         me = player_of(request)
         if title == "WireChat":
             text = f"SECRET-WOLFCHAT-{me}-{len(self.calls)}" if self.plant else "let us hunt"
@@ -105,6 +109,12 @@ class FakeModel:
             else:
                 pick = options[0] if "check" in purpose else ""
             return {"target": pick, "note": self.note("target", me)}
+        if title == "WireBid" and self.talk:
+            return {
+                "bid": 1, "message": f"I have question {len(self.calls)}", "intent": "ask",
+                "target": "", "note": self.note("bid", me), "beliefs": self.beliefs(me, request),
+                "cites": [],
+            }  # fmt: skip
         if title == "WireBid":
             return {
                 "bid": 0, "message": "", "intent": "none", "target": "",
