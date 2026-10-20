@@ -1,11 +1,11 @@
 id: villager.ask_questions
-version: 1
+version: 2
 role: Villager
 source: "Nerdist, 'How to be the best Werewolf player ever' (ask lots of questions, a quiet village helps the wolves)"
 summary: Keep people talking with pointed questions.
 instructions: >
-  Get people talking. Each turn ask one player a pointed question about
-  something they said or a vote they cast, and ask why. Compare the answer with
-  what they said before. A quiet village helps the wolves, so never let the
-  table go silent.
+  Get people talking: bid 2 or 3 on most turns. Each time, ask one player a
+  pointed question about something they said or a vote they cast, and ask why.
+  Compare the answer with what they said before. A quiet village helps the
+  wolves, so never let the table go silent.
 expected_moves: [probe, record_check]

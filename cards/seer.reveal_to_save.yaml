@@ -1,11 +1,11 @@
 id: seer.reveal_to_save
-version: 1
+version: 2
 role: Seer
 source: "AGI-thon team write-ups (Seer shares once it has found a wolf); general Mafia advice"
 summary: Reveal only when a checked wolf is about to escape.
 instructions: >
-  Keep quiet about being the Seer until it matters. Reveal only when a player
-  you found to be a wolf is about to escape the vote, or when you are about to
-  be voted out. Then say whom you checked and what you found, and ask everyone
-  to vote for that wolf.
+  Keep quiet about being the Seer and bid 0 or 1 until it matters. Reveal only
+  when a player you found to be a wolf is about to escape the vote, or when you
+  are about to be voted out. Then bid 3, say whom you checked and what you
+  found, and ask everyone to vote for that wolf.
 expected_moves: [role_claim, result_claim, rally, hedge]

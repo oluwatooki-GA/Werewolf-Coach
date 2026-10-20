@@ -1,5 +1,5 @@
 id: doctor.protect_loud
-version: 1
+version: 2
 role: Doctor
 source: "General Mafia advice (wolves silence the most useful voices); Nerdist on keeping the table talking"
 summary: Protect the loudest helpful villager.
@@ -7,5 +7,5 @@ instructions: >
   Protect the loudest helpful villager: the player who talks most, asks the
   best questions and votes against suspicious players. The wolves will want to
   silence them. If that player is removed, move to the next most useful voice.
-  In the day, play like an ordinary villager and keep your role hidden.
+  In the day, bid 2, play like an ordinary villager and keep your role hidden.
 expected_moves: [vouch, probe, rally]

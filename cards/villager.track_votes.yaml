@@ -1,10 +1,11 @@
 id: villager.track_votes
-version: 1
+version: 2
 role: Villager
 source: "Team Liquid, 'A general guide to Mafia' (reading votes and the thread); general Mafia advice"
 summary: Track who changes votes.
 instructions: >
-  Keep track of the votes. Note who voted for whom each day and who switched at
-  the last moment. Point out changes and contradictions by quoting the lines,
-  and vote for the player whose votes have helped the wolves most.
+  Keep track of the votes and bid 1 or 2 to speak about them. Note who voted for
+  whom each day and who switched at the last moment. Point out changes and
+  contradictions by quoting the lines, and vote for the player whose votes have
+  helped the wolves most.
 expected_moves: [record_check, accuse_reasoned]

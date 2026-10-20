@@ -8,6 +8,7 @@ from werewolf.agents.wire import WIRE_FOR, json_schema_for
 from werewolf.engine.actions import (
     Belief,
     BidTask,
+    MemoryTask,
     NightTargetTask,
     Task,
     VoteTask,
@@ -504,3 +505,36 @@ def test_a_silent_day_helps_the_wolves_and_unspent_tokens_are_to_be_spent() -> N
     state = state_with(Death(round=1, player="Gus"))
     state.player("Gus").alive = False
     assert "stay quiet" not in user(state).split("So far today")[1].split("You have")[0]
+
+
+def wolf_and_villager(state: GameState) -> tuple[str, str]:
+    wolf = next(p.name for p in state.players if p.role is Role.WEREWOLF)
+    villager = next(p.name for p in state.players if p.role is Role.VILLAGER)
+    return wolf, villager
+
+
+def test_the_card_is_said_again_in_the_question_but_not_when_there_is_none() -> None:
+    state = state_with()
+    wolf, _ = wolf_and_villager(state)
+    view = make_view(state, wolf)
+    with_card = build_messages(view, BID, card="Bid 3 and accuse early.")
+    now = with_card[1]["content"].split("## Now")[1]
+    assert "Your strategy, keep to it: Bid 3 and accuse early." in now
+    assert "Your strategy, keep to it" not in build_messages(view, BID)[1]["content"]
+
+
+def test_only_a_wolfs_bid_question_carries_the_wolf_chat_reminder() -> None:
+    state = state_with()
+    wolf, villager = wolf_and_villager(state)
+    assert (
+        "never learn what the wolf chat says"
+        in build_messages(make_view(state, wolf), BID)[1]["content"]
+    )
+    assert "wolf chat says" not in build_messages(make_view(state, villager), BID)[1]["content"]
+
+
+def test_a_summary_question_does_not_repeat_the_card() -> None:
+    state = state_with()
+    view = make_view(state, "Cy")
+    memory = MemoryTask(max_chars=800)
+    assert "keep to it" not in build_messages(view, memory, card="Anything.")[1]["content"]

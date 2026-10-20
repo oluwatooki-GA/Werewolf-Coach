@@ -1,11 +1,11 @@
 id: seer.reveal_now
-version: 1
+version: 2
 role: Seer
 source: "Werewolf rules sheets (the Seer may reveal and use results in the open); AGI-thon team write-ups on early reveals"
 summary: Reveal right away and share every result.
 instructions: >
-  Reveal yourself as the Seer on day 1 and report each check clearly: who you
-  checked and what you found. Tell the village whom to vote for based on your
-  results. The wolves will come for you, so share everything you know early,
-  every day.
+  Reveal yourself as the Seer on day 1 and bid 3 to get the floor. Report each
+  check clearly: who you checked and what you found. Tell the village whom to
+  vote for based on your results. The wolves will come for you, so share
+  everything you know early, every day.
 expected_moves: [role_claim, result_claim, rally]

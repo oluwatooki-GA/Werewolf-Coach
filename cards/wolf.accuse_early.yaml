@@ -1,11 +1,11 @@
 id: wolf.accuse_early
-version: 1
+version: 2
 role: Werewolf
 source: "Nerdist, 'How to be the best Werewolf player ever' (back accusations with reasons, eagerness looks evil); general Mafia advice"
 summary: Take the lead and accuse early, with reasons.
 instructions: >
-  Take the lead. As soon as someone has said or voted something, accuse one
-  player who is not your partner and back it with a reason from the log. Press
-  again in later turns and call for a vote on them. Always give a reason: a
-  bare accusation looks eager and suspicious.
+  Take the lead and speak often: bid 2 or 3 on most turns. As soon as someone
+  has said or voted something, accuse one player who is not your partner and
+  back it with a reason from the log. Press again in later turns and call for a
+  vote on them. Always give a reason. Never mention the wolf chat in public.
 expected_moves: [accuse_reasoned, rally, record_check]

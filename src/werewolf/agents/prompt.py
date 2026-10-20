@@ -432,6 +432,12 @@ def build_messages(
 ) -> list[dict[str, str]]:
     dead = ", ".join(view.dead) or "nobody"
     now = f"Round {view.round}. Alive: {', '.join(view.alive)}. Dead: {dead}.\n{_task(view, task)}"
+    if card and not isinstance(task, MemoryTask):  # said again at the moment of choosing
+        now += f"\nYour strategy, keep to it: {card}"
+    if view.partner and isinstance(task, BidTask):
+        now += (
+            "\nReminder: you are a Werewolf. The village must never learn what the wolf chat says."
+        )
     if task.error:
         now += f"\n\nYour last answer was rejected: {task.error}. Answer again and fix that."
     record = _record(view, from_round)
