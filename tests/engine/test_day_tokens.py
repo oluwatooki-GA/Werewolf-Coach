@@ -48,6 +48,10 @@ def listeners(state: GameState) -> list[str]:
     return [e.player for e in state.events if isinstance(e, Listening)]
 
 
+def cite(speaker: str, line: str = "R1-1") -> dict[str, str]:
+    return {"line": line, "speaker": speaker}
+
+
 def say(bid: int, text: str = "hello", **kw: object) -> BidAction:
     return BidAction.model_validate({"bid": bid, "message": text, **kw})
 
@@ -120,7 +124,7 @@ def test_right_of_reply_once_per_day() -> None:
     script = {
         a: [say(2, "b is a wolf", intent="accuse", target=b)],
         b: [BidAction(bid=0), say(0, "no I am not")],  # 2nd answer is the free reply
-        c: [BidAction(bid=0), say(1, "b again", intent="accuse", target=b)],
+        c: [BidAction(bid=0), say(1, "b again", intent="accuse", target=b, cites=[cite(a)])],
     }
     seen: list[tuple[str, BidTask]] = []
     play_day(state, bidders(state, script, seen))

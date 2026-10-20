@@ -196,8 +196,9 @@ def _system(view: PlayerView, card: str, persona: str = "") -> str:
             f"of at most {REASON_MAX} characters. Keep notes to {NOTE_MAX} characters. Use only "
             "what the log shows: do not invent events, earlier days, or things people did not "
             "say. At the start of day 1 nobody has spoken yet, so a claim about someone staying "
-            "quiet or acting a certain way must match a numbered line. Write like a person at the "
-            "table: short, direct sentences, no speeches.",
+            "quiet or acting a certain way must match a numbered line. An accusation (intent "
+            "accuse) must cite, in cites, the numbered line it rests on. Write like a person at "
+            "the table: short, direct sentences, no speeches.",
         ]
     )
 
@@ -295,7 +296,18 @@ def _day_status(view: PlayerView) -> str:
     that finds nothing under "What has happened" tends to invent earlier talk."""
     today = [line for line, speech in numbered_speeches(view.events) if speech.round == view.round]
     if not today:
-        return "So far today: nobody has spoken."
+        if numbered_speeches(view.events):
+            return "So far today: nobody has spoken."
+        died = (
+            f" The only thing that has happened is the death of {', '.join(view.dead)}."
+            if view.dead
+            else ""
+        )
+        return (
+            f"So far today: nobody has spoken.{died} Nobody has done anything yet, so there is "
+            "nothing to accuse anyone of: you may ask about the death or the table in general, "
+            "or stay quiet."
+        )
     span = today[0] if len(today) == 1 else f"{today[0]} to {today[-1]}"
     return f"So far today: {_plural(len(today), 'message')} posted ({span})."
 

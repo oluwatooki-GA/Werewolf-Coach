@@ -475,3 +475,24 @@ def test_first_night_tasks_say_any_pick_is_a_guess() -> None:
     for task in (WolfChatTask(max_chars=300), NightTargetTask(purpose="kill", options=("Ada",))):
         text = build_messages(view, task)[-1]["content"]
         assert "guess" in text and "invent" in text
+
+
+def test_the_very_first_bid_question_names_the_death_and_says_there_is_nothing_to_accuse() -> None:
+    state = state_with(Death(round=1, player="Gus"))
+    state.player("Gus").alive = False
+    text = user(state)
+    assert "The only thing that has happened is the death of Gus" in text
+    assert "nothing to accuse anyone of" in text
+
+
+def test_once_someone_has_spoken_or_in_a_later_round_the_hook_is_gone() -> None:
+    spoke = state_with(Speech(round=1, speaker="Bo", text="hi", paid=1))
+    assert "nothing to accuse anyone of" not in user(spoke)
+    later = state_with(Speech(round=1, speaker="Bo", text="hi", paid=1))
+    later.round = 2
+    assert "nothing to accuse anyone of" not in user(later)
+    assert "So far today: nobody has spoken." in user(later)
+
+
+def test_the_rules_tell_players_an_accusation_needs_a_cite() -> None:
+    assert "must cite, in cites, the numbered line" in build(state_with())[0]["content"]
