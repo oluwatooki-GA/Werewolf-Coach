@@ -495,4 +495,4 @@ def test_once_someone_has_spoken_or_in_a_later_round_the_hook_is_gone() -> None:
 
 
 def test_the_rules_tell_players_an_accusation_needs_a_cite() -> None:
-    assert "must cite, in cites, the numbered line" in build(state_with())[0]["content"]
+    assert "must cite the numbered line it rests on" in build(state_with())[0]["content"]

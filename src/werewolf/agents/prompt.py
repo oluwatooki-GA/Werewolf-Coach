@@ -87,16 +87,18 @@ QUIET_BID_EXAMPLE = _example(
 LEGEND = (
     'READING THE LOG: "X says (2 tokens): ..." means X won the turn by bidding 2 tokens; '
     '"X says: ..." is a message at no cost; "X replies (free): ..." is a free reply to an '
-    'accusation; "Listening: A, B" means those players bid 0 on that turn; "Vote: A voted for B '
-    '(reason: ...)" is a vote cast; "Morning: ..." says who died in the night; lines marked '
-    "[Private] or [Wolf chat] are seen only by you (or by the two werewolves). Each message "
+    'accusation; "Listening: A, B" means those players chose to stay quiet that turn; '
+    '"Vote: A voted for B (reason: ...)" is a vote cast; "Morning: ..." says who died in the '
+    "night; lines marked [Private] or [Wolf chat] are seen only by you (or by the two "
+    "werewolves). Each message "
     "starts with its number, such as [R2-4] (round 2, message 4). The game record, when there is "
     "one, was written by the game and is always accurate; role claims in it are what players said "
     "about themselves, not proof.\n\n"
     "CITING: when your message points at something a player "
     'said, add it to "cites" as {"line": "R2-4", "speaker": "Bo"}: the number and the player '
     "who wrote that line. The game checks every cite and marks a wrong one as invented. Cite only "
-    "lines you can see. Use [] when you cite nothing."
+    "lines you can see. Use [] when you cite nothing. An accusation (intent accuse) must cite "
+    "the numbered line it rests on."
 )
 
 ROLE_TEXT = {
@@ -172,7 +174,15 @@ def _system(view: PlayerView, card: str, persona: str = "") -> str:
             "",
             f"YOU: you are {view.name}, the {view.role.value}. {ROLE_TEXT[view.role]}{partner}",
             f"Strategy: {card or DEFAULT_CARD}",
-            *([f"Table manner: {describe(persona)}"] if persona else []),
+            *(
+                [
+                    f"Table manner: {describe(persona)}",
+                    "Your strategy decides what you try to do and how much you speak; your "
+                    "manner only decides how you sound.",
+                ]
+                if persona
+                else []
+            ),
             "",
             "HOW TO ANSWER: reply with only the JSON asked for. Messages are posted for everyone "
             f"to read, at most {r.max_message_chars} characters. Notes and belief reasons are "
@@ -189,16 +199,14 @@ def _system(view: PlayerView, card: str, persona: str = "") -> str:
             f"- Voting (an empty string means abstain): {EXAMPLES['vote']}",
             f"- End-of-round summary: {EXAMPLES['memory']}",
             "",
-            "RULE REMINDERS: never bid more than the limit named in the question. A bid above 0 "
-            "needs a message; with a bid of 0 leave the message empty. You can only target or "
-            "vote for players who are alive, never for yourself. Give a belief for every other "
-            "living player: a suspicion from 0 (trust) to 1 (sure they are a wolf) and a reason "
-            f"of at most {REASON_MAX} characters. Keep notes to {NOTE_MAX} characters. Use only "
-            "what the log shows: do not invent events, earlier days, or things people did not "
-            "say. At the start of day 1 nobody has spoken yet, so a claim about someone staying "
-            "quiet or acting a certain way must match a numbered line. An accusation (intent "
-            "accuse) must cite, in cites, the numbered line it rests on. Write like a person at "
-            "the table: short, direct sentences, no speeches.",
+            "RULE REMINDERS: you can only target or vote for players who are alive, never for "
+            "yourself. Give a belief for every other living player: a suspicion from 0 (trust) "
+            "to 1 (sure they are a wolf) and a reason of at most "
+            f"{REASON_MAX} characters. Keep notes to {NOTE_MAX} characters. Use only what the log "
+            "shows: do not invent events, earlier days, or things people did not say. At the "
+            "start of day 1 nobody has spoken yet, so a claim about someone staying quiet or "
+            "acting a certain way must match a numbered line. Write like a person at the table: "
+            "short, direct sentences, no speeches.",
         ]
     )
 

@@ -1,6 +1,6 @@
 """A short table manner for each player, picked from the game seed.
 
-It changes how a player talks and how eagerly it bids for the floor, never what it is trying to do
+It changes only how a player sounds, never what it is trying to do or how much it speaks
 (that is the strategy card). The same seed gives every seat the same manner in every run, so two
 strategies played on one seed still face the same table.
 """
@@ -9,12 +9,9 @@ from collections.abc import Sequence
 from random import Random
 
 PERSONAS: dict[str, str] = {
-    "blunt": "blunt. You say what you think in few words, ask pointed questions, and bid for the "
-    "floor when you have one.",
-    "chatty": "chatty. You like to talk: you speak up early and often, react to what others "
-    "said, and bid high for the floor.",
-    "cautious": "cautious. You listen first, speak only when you have something worth saying, "
-    "and usually bid 0 or 1.",
+    "blunt": "blunt. You say what you think in few words and ask pointed questions.",
+    "chatty": "chatty. You write warmly and at some length, and react to what others said.",
+    "cautious": "cautious. You hedge, qualify what you say, and avoid strong statements.",
 }
 
 
