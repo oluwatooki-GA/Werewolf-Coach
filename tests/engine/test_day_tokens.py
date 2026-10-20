@@ -256,3 +256,16 @@ def test_when_nobody_has_tokens_left_the_day_simply_ends() -> None:
     script = {n: [say(1, f"{n} speaks")] * 12 for n in names(state)}
     play_day(state, bidders(state, script))
     assert len(speeches(state)) == 8  # each of the eight spoke once, then nobody could bid
+
+
+def test_a_free_reply_that_bids_anyway_is_accepted_because_a_bid_means_nothing_there() -> None:
+    state = new_game(seed=1)
+    a, b = names(state)[:2]
+    script = {
+        a: [say(2, "b is a wolf", intent="accuse", target=b)],
+        b: [BidAction(bid=0), say(3, "no I am not")],  # a bid of 3 on a free reply
+    }
+    play_day(state, bidders(state, script))
+    reply = speeches(state)[1]
+    assert (reply.speaker, reply.reply, reply.paid) == (b, True, 0)
+    assert not [c for c in state.calls if c.player == b and c.rejected]

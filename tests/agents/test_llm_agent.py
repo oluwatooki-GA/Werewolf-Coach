@@ -97,6 +97,8 @@ class FakeModel:
     def answer(self, title: str, request: Request) -> dict[str, Any]:
         if title == "WireGuard":
             return {"reveals": self.guard_says}
+        if title == "WireGround":
+            return {"unsupported": ""}
         me = player_of(request)
         if title == "WireChat":
             text = f"SECRET-WOLFCHAT-{me}-{len(self.calls)}" if self.plant else "let us hunt"

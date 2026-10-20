@@ -97,3 +97,11 @@ def test_the_command_reads_tag_files_and_names_games_left_out(
     out = capsys.readouterr().out
     assert "wolf.lie_low" in out and "67% (2/3" in out
     assert "1 game(s) left out" in out
+
+
+def test_a_log_that_names_its_model_is_reported_per_model() -> None:
+    log = game({WOLF_A: "wolf.lie_low@1"})
+    named = log.model_copy(update={"model": "gpt-4.1-nano"})
+    stats = adherence([(log, TAGS), (named, TAGS)])
+    assert set(stats) == {"wolf.lie_low", "wolf.lie_low on gpt-4.1-nano"}
+    assert stats["wolf.lie_low on gpt-4.1-nano"].messages == 3

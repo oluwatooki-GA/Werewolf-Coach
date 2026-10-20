@@ -57,3 +57,10 @@ def test_a_vote_for_a_player_and_an_abstention_are_accepted() -> None:
     check = vote_check(("Bo", "Cy"), limit=300)
     assert check(VoteAction(target="Bo", reason="dodged")) is None
     assert check(VoteAction(target=None)) is None
+
+
+def test_an_illegal_target_message_lists_who_can_be_named() -> None:
+    check = bid_check("Ada", max_bid=3, limit=300, alive=ALIVE)
+    error = check(BidAction(bid=1, message="hi", target="Ada"))
+    assert error is not None and "another living player:" in error
+    assert "Ada" not in error.split(":")[1]  # you cannot name yourself

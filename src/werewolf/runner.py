@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import re
 import time
 import uuid
 from collections import Counter
@@ -13,6 +14,7 @@ from pathlib import Path
 from typing import Literal
 
 from werewolf.agents import persona as personas
+from werewolf.agents.leakguard import REWRITE
 from werewolf.agents.llm_agent import LLMAgent
 from werewolf.audit import Leak, find_leaks
 from werewolf.engine.actions import FatalAgentError
@@ -24,6 +26,7 @@ from werewolf.engine.setup import new_game
 from werewolf.engine.state import CallRecord, Settings, SpeakingMode
 from werewolf.llm.client import LLMClient
 from werewolf.strategies.cards import assign_cards, load_card
+from werewolf.tagger.grounding import GroundStopped, check_game
 
 CacheMode = Literal["fresh", "shared"]
 
@@ -36,6 +39,9 @@ class Played:
     seconds: float
     leaks: list[Leak]
     path: Path
+    rewrites: int = 0  # wolf messages sent back once for giving away the wolf chat
+    claims: tuple[int, int, int] | None = None  # (checked, unsupported, not checkable); None: off
+    claim_cost: Decimal = Decimal("0")  # what the fact-check cost; it is not in the log's stats
 
 
 @dataclass
@@ -69,6 +75,8 @@ async def run_batch(
     use_personas: bool = True,
     cards_by_role: Mapping[Role, str] | None = None,
     cards_by_seat: Mapping[str, str] | None = None,
+    claim_model: str | None = None,
+    claim_tokens: int = 200,
 ) -> BatchReport:
     """Play one game per seed, `parallel` at a time. A hard stop (the spending cap) ends the
     run: games not yet started are skipped and a game under way is dropped, not saved."""
@@ -126,7 +134,17 @@ async def run_batch(
                 report.interrupted += 1
                 report.stopped = report.stopped or str(exc)
                 return
-            log = to_log(state, run_id=run_id)
+            log = to_log(state, run_id=run_id, model=model)
+            claims: tuple[int, int, int] | None = None
+            claim_cost = Decimal("0")
+            if claim_model:
+                try:
+                    ground = await check_game(log, client, claim_model, max_tokens=claim_tokens)
+                except GroundStopped as stop:  # keep the game; no further games are started
+                    report.stopped = report.stopped or str(stop)
+                    ground = stop.run
+                claims = (ground.checked, len(ground.flagged), len(ground.failed))
+                claim_cost = ground.cost
             played = Played(
                 seed=seed,
                 run_id=run_id,
@@ -134,6 +152,9 @@ async def run_batch(
                 seconds=time.perf_counter() - started,
                 leaks=find_leaks(log, prompts, own_notes_ok=keep_notes > 0),
                 path=save_log(log, data_dir),
+                rewrites=sum(REWRITE in messages[1]["content"] for _, messages in prompts),
+                claims=claims,
+                claim_cost=claim_cost,
             )
             report.played.append(played)
             if announce is not None:
@@ -200,12 +221,38 @@ def bid_text(logs: Sequence[GameLog]) -> str:
     return f"bids {sizes(chosen)} (won the floor with {sizes(won)})"
 
 
+def claim_text(played: Sequence[Played]) -> str:
+    """Messages whose claims about earlier play the public log does not back up."""
+    runs = [p.claims for p in played if p.claims is not None]
+    if not runs:
+        return "claims not checked"
+    checked, flagged = sum(r[0] for r in runs), sum(r[1] for r in runs)
+    failed = sum(r[2] for r in runs)
+    rate = f" ({100 * flagged / checked:.0f}%)" if checked else ""
+    more = f", {failed} could not be checked" if failed else ""
+    return f"unsupported claims {flagged} of {checked} messages{rate}{more}"
+
+
+def reject_reasons(logs: Sequence[GameLog], top: int = 5) -> str:
+    """Why answers were turned down, grouped with the names and line numbers taken out."""
+    counts: Counter[str] = Counter()
+    for log in logs:
+        names = "|".join(re.escape(n) for n in log.settings.names)
+        for call in log.calls:
+            for error in call.errors:
+                text = re.sub(r"R\d+-\d+ \(\w+\)", "", error)
+                text = re.sub(rf"\b({names})\b", "", text)
+                counts[" ".join(text.replace(",", " ").split())[:60]] += 1
+    return "; ".join(f"{reason} x{n}" for reason, n in counts.most_common(top)) or "none"
+
+
 def format_game(p: Played) -> str:
     s = p.log.stats
     return (
         f"seed {p.seed}: {p.log.winner.value} won in {p.log.rounds} rounds, "
-        f"rejected {s.rejected} of {s.responses}, cost ${s.cost:.6f}, {p.seconds:.1f} s, "
-        f"leaks {len(p.leaks)}, {cite_text([p.log])}, run {p.run_id}\n"
+        f"rejected {s.rejected} of {s.responses}, cost ${s.cost + p.claim_cost:.6f}, "
+        f"{p.seconds:.1f} s, "
+        f"leaks {len(p.leaks)}, {cite_text([p.log])}, {claim_text([p])}, run {p.run_id}\n"
         f"  {bid_text([p.log])}\n"
         f"  saved to {p.path}\n"
         f"  read it:  uv run python -m werewolf.cli show {p.path}"
@@ -221,6 +268,7 @@ def format_report(report: BatchReport) -> str:
     completion = sum(g.stats.completion_tokens for g in games)
     cached = sum(g.stats.cached_tokens for g in games)
     cost = sum((g.stats.cost for g in games), Decimal("0"))
+    checks = sum((p.claim_cost for p in report.played), Decimal("0"))
     winners = Counter(g.winner.value for g in games)
     leaks = [(p, leak) for p in report.played for leak in p.leaks]
     rate = 100 * rejected / responses if responses else 0.0
@@ -236,8 +284,12 @@ def format_report(report: BatchReport) -> str:
         f"messages that cite: {citing_messages(games)} of {cite_counts(games)[0]}",
         bid_text(games),
         f"tokens: input {prompt:,} ({share}% cached), output {completion:,}",
-        f"cost: ${cost:.6f} total, ${cost / n if n else Decimal('0'):.6f} per game",
+        f"cost: ${cost + checks:.6f} total, ${(cost + checks) / n if n else Decimal('0'):.6f} "
+        f"per game (the fact-check is ${checks:.6f} of it)",
         f"time: {sum(p.seconds for p in report.played) / n if n else 0.0:.1f} s per game",
+        f"rejected for: {reject_reasons(games)}",
+        f"wolf-chat rewrites: {sum(p.rewrites for p in report.played)}",
+        claim_text(report.played),
         f"leaks: {len(leaks)}",
     ]
     lines += [

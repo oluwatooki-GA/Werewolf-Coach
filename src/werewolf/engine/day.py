@@ -27,19 +27,25 @@ def resolve_bids(
 
 
 def bid_check(
-    me: str, max_bid: int, limit: int, alive: list[str], citable: Sequence[str] = ()
+    me: str,
+    max_bid: int,
+    limit: int,
+    alive: list[str],
+    citable: Sequence[str] = (),
+    free: bool = False,
 ) -> Callable[[Action], str | None]:
     def check(action: Action) -> str | None:
         if not isinstance(action, BidAction):
             return "expected a bid"
-        if action.bid > max_bid:
+        if action.bid > max_bid and not free:  # on a free turn the bid means nothing
             return f"you can bid at most {max_bid}"
         if len(action.message) > limit:
             return f"the message must be at most {limit} characters"
         if action.bid > 0 and not action.message.strip():
             return "a bid above 0 needs a message"
         if action.target is not None and (action.target == me or action.target not in alive):
-            return "the target must be another living player"
+            others = ", ".join(n for n in alive if n != me)
+            return f"the target must be another living player: {others} (or leave it blank)"
         if citable and action.message.strip() and action.intent == "accuse" and not action.cites:
             return (
                 "an accusation must cite the numbered line it rests on: add one of "
@@ -111,7 +117,7 @@ class DayRound:
         """Ask one player to speak at no cost. None means they stayed silent."""
         task = BidTask(max_bid=0, max_chars=self.limit, free=True, reply_to=reply_to)
         request = Request(
-            speaker, task, bid_check(speaker, 0, self.limit, self.alive, self.citable())
+            speaker, task, bid_check(speaker, 0, self.limit, self.alive, self.citable(), free=True)
         )
         (answer,) = await ask_many(self.state, self.agents, [request])
         action = _as_bid(answer)

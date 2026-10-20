@@ -6,7 +6,7 @@ from collections import deque
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, SerializerFunctionWrapHandler, model_serializer
 
 from werewolf.engine.actions import Agent, Reply, Task
 from werewolf.engine.events import Event
@@ -37,6 +37,7 @@ class Stats(BaseModel):
 class GameLog(BaseModel):
     version: int = 2
     run_id: str = ""  # unique per run; also the response-cache salt in experiment runs
+    model: str = ""  # which model played; left out of the JSON when empty, like personas
     seed: int
     settings: Settings
     players: list[PlayerRecord]
@@ -45,6 +46,13 @@ class GameLog(BaseModel):
     winner: Team
     rounds: int
     stats: Stats
+
+    @model_serializer(mode="wrap")
+    def _leave_out_empty_model(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        if not data.get("model"):
+            data.pop("model", None)
+        return data
 
     def to_json(self) -> str:
         """Canonical text: sorted keys, no spaces, plain ASCII, one trailing newline."""
@@ -56,13 +64,14 @@ class GameLog(BaseModel):
         return cls.model_validate_json(text)
 
 
-def to_log(state: GameState, run_id: str = "") -> GameLog:
+def to_log(state: GameState, run_id: str = "", model: str = "") -> GameLog:
     if state.winner is None:
         raise ValueError("the game is not finished")
     failed = sum(c.failed for c in state.calls)
     used = [u for c in state.calls for u in c.usage if u is not None]
     return GameLog(
         run_id=run_id,
+        model=model,
         seed=state.seed,
         settings=state.settings,
         players=[PlayerRecord(name=p.name, role=p.role) for p in state.players],
@@ -111,7 +120,7 @@ def replayers(log: GameLog) -> dict[str, Agent]:
 def replay(log: GameLog) -> GameLog:
     """Play the game again from the seed, feeding each player its recorded answers."""
     state = asyncio.run(play_game(log.seed, log.settings, replayers(log)))
-    return to_log(state, run_id=log.run_id)
+    return to_log(state, run_id=log.run_id, model=log.model)
 
 
 def replays_exactly(log: GameLog) -> bool:

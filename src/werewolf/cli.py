@@ -72,6 +72,16 @@ def _add_card_options(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_claim_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--claim-check-model",
+        help="model that fact-checks each game's messages (default: the player model)",
+    )
+    parser.add_argument(
+        "--no-claim-check", action="store_true", help="skip the fact-check of what players said"
+    )
+
+
 def _split_pairs(items: list[str], what: str) -> dict[str, str]:
     pairs = {}
     for item in items:
@@ -116,6 +126,7 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
         print("--model is required with --agents llm", file=sys.stderr)
         return 2
     spend = Decimal(args.max_spend) if args.max_spend is not None else None
+    claim_model = None if args.no_claim_check else (args.claim_check_model or args.model)
     try:
         by_role, by_seat = _cards_from(args)
         client = runtime.build_client(args.model, spend, requests_per_minute=args.rpm)
@@ -139,6 +150,8 @@ def _llm(args: argparse.Namespace, seeds: list[int]) -> int:
                 or runtime.default_max_tokens(args.model, args.message_chars),
                 cards_by_role=by_role,
                 cards_by_seat=by_seat,
+                claim_model=claim_model,
+                claim_tokens=runtime.default_max_tokens(claim_model or args.model),
             )
         )
     except ValueError as exc:  # a card that does not fit its seat, found before any model call
@@ -451,6 +464,7 @@ def main(argv: list[str] | None = None) -> int:
                       default=SpeakingMode.FLOOR_TOKENS.value)  # fmt: skip
     _add_game_options(play)
     _add_card_options(play)
+    _add_claim_options(play)
     play.add_argument("--data-dir", default="data/games")
     play.add_argument("--model", help="needed with --agents llm")
     play.add_argument("--max-spend", help="dollars; required for paid models")
@@ -491,6 +505,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     _add_game_options(many)
     _add_card_options(many)
+    _add_claim_options(many)
     many.add_argument("--data-dir", default="data/games")
     many.add_argument(
         "--notes", type=int, default=0, help="show each player its last N private notes"

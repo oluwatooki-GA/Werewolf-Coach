@@ -60,7 +60,7 @@ class CardStats:
 
 
 def adherence(games: list[tuple[GameLog, TagFile]]) -> dict[str, CardStats]:
-    """Stats per card id, over every seat that played a card in the given games."""
+    """Stats per card id (and model, when the log names one), over every seat that played a card."""
     stats: dict[str, CardStats] = defaultdict(CardStats)
     for log, tagfile in games:
         intents = _intents(log)
@@ -70,7 +70,7 @@ def adherence(games: list[tuple[GameLog, TagFile]]) -> dict[str, CardStats]:
                 expected = set(load_card(ref).expected_moves)
             except ValueError:
                 continue
-            card = stats[ref.split("@")[0]]
+            card = stats[ref.split("@")[0] + (f" on {log.model}" if log.model else "")]
             card.games += 1
             for tag in (t for t in tagfile.tags if t.speaker == seat):
                 card.messages += 1
