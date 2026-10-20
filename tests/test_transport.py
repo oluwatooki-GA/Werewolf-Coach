@@ -212,6 +212,17 @@ def test_a_rate_limit_error_becomes_a_hard_stop_with_a_clear_message() -> None:
         asyncio.run(LiteLLMTransport().call(request("cerebras/gpt-oss-120b")))
 
 
+def test_a_refused_key_becomes_a_hard_stop_not_a_bad_answer() -> None:
+    async def refuse(**kwargs: Any) -> ModelResponse:
+        raise litellm.AuthenticationError(
+            message="invalid x-api-key", llm_provider="anthropic", model="claude-haiku-5-5"
+        )
+
+    litellm.acompletion = refuse
+    with pytest.raises(RateLimited, match="anthropic refused the call"):
+        asyncio.run(LiteLLMTransport().call(request("claude-haiku-5-5")))
+
+
 # --- Claude: priced from Anthropic's own pricing page --------------------------------------
 
 

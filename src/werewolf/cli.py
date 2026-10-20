@@ -255,6 +255,14 @@ def _tag(args: argparse.Namespace) -> int:
                 print(f"{path}: STOPPED: {stop}; nothing saved, a rerun resumes from the cache")
                 print(f"spent ${total:.6f}")
                 return 1
+            if (
+                not result.tags and result.untagged
+            ):  # nothing worked: a file now would block a retry
+                print(f"{path}: nothing could be tagged, nothing saved", file=sys.stderr)
+                for line, why in sorted(result.untagged.items())[:3]:
+                    print(f"    {line}: {why}", file=sys.stderr)
+                code = 1
+                continue
             save_tags(path, TagFile(model=args.model, tags=result.tags, untagged=result.untagged))
             total += result.cost
             tagged_games += 1

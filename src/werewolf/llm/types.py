@@ -10,6 +10,11 @@ class RateLimited(Exception):
     """The provider's rate limit is used up. Retrying at once will not help: stop and wait."""
 
 
+class ProviderRefused(RateLimited):
+    """The provider turns every call away (a bad API key, no access to the model). Retrying
+    cannot help, so it stops a run like a rate limit does."""
+
+
 class UnknownPrice(LedgerBlocked):
     """The model has no known price, so its cost cannot be limited. Refused."""
 

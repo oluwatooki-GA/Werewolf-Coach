@@ -128,5 +128,17 @@ def test_an_unreadable_game_file_is_reported_and_the_rest_still_run(
     assert len(list(folder.glob("*.tags.json"))) == 1
 
 
+def test_a_game_where_nothing_could_be_tagged_saves_no_file_so_a_retry_works(
+    rig: Rig, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rig.model.truncate = True  # every answer is cut off
+    folder = games(tmp_path, 1)
+    assert tag(folder) == 1
+    assert "nothing could be tagged" in capsys.readouterr().err
+    assert list(folder.glob("*.tags.json")) == []
+    rig.model.truncate = False
+    assert tag(folder) == 0 and len(list(folder.glob("*.tags.json"))) == 1
+
+
 def test_the_log_files_are_valid_games() -> None:
     assert GameLog.from_json(base_log(talk((SEER, "hi"))).to_json())
