@@ -278,6 +278,56 @@ def _tag(args: argparse.Namespace) -> int:
     return asyncio.run(run())
 
 
+def _ground(args: argparse.Namespace) -> int:
+    """Fact-check what players said against the public log. Exit 1 if the run had to stop."""
+    from decimal import Decimal
+
+    from werewolf import runtime
+    from werewolf.engine.record import numbered_speeches
+    from werewolf.tagger.grounding import GroundStopped, check_game
+
+    spend = Decimal(args.max_spend) if args.max_spend is not None else None
+    try:
+        client = runtime.build_client(args.model, spend, requests_per_minute=args.rpm)
+    except RuntimeError as exc:
+        print(f"cannot start: {exc}", file=sys.stderr)
+        return 2
+    limit = args.max_tokens or runtime.default_max_tokens(args.model)
+
+    async def run() -> int:
+        code, checked, flagged, total = 0, 0, 0, Decimal("0")
+        for path in _game_files(args.paths):
+            try:
+                log = GameLog.from_json(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, ValidationError) as exc:
+                print(f"{path}: cannot read: {exc}", file=sys.stderr)
+                code = 2
+                continue
+            try:
+                result = await check_game(log, client, args.model, max_tokens=limit)
+            except GroundStopped as stop:
+                print(f"{path}: STOPPED: {stop}; spent ${total + stop.run.cost:.6f}")
+                return 1
+            checked += result.checked
+            flagged += len(result.flagged)
+            total += result.cost
+            print(
+                f"{path}: {result.checked} messages checked, {len(result.flagged)} with an "
+                f"unsupported claim, {len(result.failed)} could not be checked, "
+                f"${result.cost:.6f}"
+            )
+            speakers = {line: s.speaker for line, s in numbered_speeches(log.events)}
+            for line, claim in sorted(result.flagged.items()):
+                print(f"    {line} {speakers[line]}: {claim}")
+            for line, why in sorted(result.failed.items()):
+                print(f"    {line}: could not check: {why}")
+        rate = 100 * flagged / checked if checked else 0.0
+        print(f"unsupported claims: {flagged} of {checked} messages ({rate:.0f}%), ${total:.6f}")
+        return code
+
+    return asyncio.run(run())
+
+
 def _adherence(args: argparse.Namespace) -> int:
     from werewolf.tagger.adherence import adherence, format_adherence
     from werewolf.tagger.tags import load_tags
@@ -491,6 +541,14 @@ def main(argv: list[str] | None = None) -> int:
     tag.add_argument("--rpm", type=int, help="requests per minute to send")
     tag.add_argument("--max-tokens", type=int, help="output limit per answer")
     tag.set_defaults(run=_tag)
+
+    ground = commands.add_parser("ground", help="fact-check messages against the public log")
+    ground.add_argument("paths", nargs="+", help="game logs or folders of them")
+    ground.add_argument("--model", required=True)
+    ground.add_argument("--max-spend", help="dollars; required for paid models")
+    ground.add_argument("--rpm", type=int, help="requests per minute to send")
+    ground.add_argument("--max-tokens", type=int, help="output limit per answer")
+    ground.set_defaults(run=_ground)
 
     follow = commands.add_parser("adherence", help="do players follow their strategy card?")
     follow.add_argument("paths", nargs="+", help="tagged game logs or folders of them")
