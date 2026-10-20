@@ -63,8 +63,7 @@ def test_highest_bid_speaks_and_pays_exactly_its_bid() -> None:
     script = {a: [say(1), BidAction(bid=0)], b: [say(3, "mine"), BidAction(bid=0)], c: [say(2)]}
     play_day(state, bidders(state, script, seen))
     assert [(s.speaker, s.paid, s.text) for s in speeches(state)] == [(b, 3, "mine")]
-    second_turn = [task for who, task in seen if who == b][1]
-    assert second_turn.max_bid == 0
+    assert len([task for who, task in seen if who == b]) == 1  # b has no tokens left: not asked
 
 
 def test_bid_ties_go_to_least_spoken() -> None:
@@ -233,3 +232,27 @@ def test_the_private_intent_never_reaches_a_view() -> None:
     play_day(state, bidders(state, {a: [say(1, "hmm", intent="accuse", target=b)]}))
     for p in state.players:
         assert '"intent"' not in make_view(state, p.name).model_dump_json()
+
+
+def test_a_player_with_no_tokens_is_not_asked_and_not_listed_as_listening() -> None:
+    state = new_game(seed=1)
+    a, b = names(state)[:2]
+    seen: list[tuple[str, BidTask]] = []
+    play_day(state, bidders(state, {a: [say(3, "all in"), BidAction(bid=0)], b: []}, seen))
+    assert [t.max_bid for who, t in seen if who == a] == [3]  # a was never asked again
+    quiet = listeners(state)
+    assert quiet.count(a) == 0 and quiet.count(b) >= 1
+
+
+def test_choosing_to_listen_is_still_listed() -> None:
+    state = new_game(seed=1)
+    a, b = names(state)[:2]
+    play_day(state, bidders(state, {a: [say(1, "hi")], b: [BidAction(bid=0)]}))
+    assert b in listeners(state)
+
+
+def test_when_nobody_has_tokens_left_the_day_simply_ends() -> None:
+    state = new_game(seed=1, settings=Settings(tokens_per_day=1, speaking_turns=12))
+    script = {n: [say(1, f"{n} speaks")] * 12 for n in names(state)}
+    play_day(state, bidders(state, script))
+    assert len(speeches(state)) == 8  # each of the eight spoke once, then nobody could bid

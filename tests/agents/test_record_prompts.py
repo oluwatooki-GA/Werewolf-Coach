@@ -175,8 +175,25 @@ def test_rebuilt_prompts_equal_the_prompts_the_players_were_sent(
         assert [i.messages for i in items if i.player == player] == sent
 
 
+ACCUSING_BID = json.dumps(
+    {
+        "bid": 1,
+        "message": "I accuse someone",
+        "intent": "accuse",
+        "target": "",
+        "note": "n",
+        "beliefs": [],
+        "cites": [],
+    }
+)
+
+
 def test_the_rebuilt_prompts_include_retries_and_mark_posted_messages(tmp_path: Path) -> None:
-    _, log = play_with_cites(tmp_path)
+    rig = Rig(tmp_path)
+    rig.model.raw["WireBid"] = (
+        ACCUSING_BID  # after the first message, an uncited accusation retries
+    )
+    log = rig.play()
     items = rebuild(log)
     assert any(
         i.retry and "Your last answer was rejected" in i.messages[1]["content"] for i in items

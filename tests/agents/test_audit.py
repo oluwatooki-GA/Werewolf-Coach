@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from test_llm_agent import Rig
@@ -261,3 +262,13 @@ def test_a_phrase_inside_the_players_own_note_is_not_a_leak_when_it_sees_its_not
     )
     assert find_leaks(log, rig.prompts, own_notes_ok=True) == []
     assert "belief" in kinds(find_leaks(log, rig.prompts))  # with notes hidden it is a leak
+
+
+def test_two_wolves_writing_the_same_words_in_chat_and_note_are_not_a_leak(
+    tmp_path: Path,
+) -> None:
+    rig = Rig(tmp_path)
+    phrase = "No reason, just a random choice."
+    rig.model.raw["WireChat"] = json.dumps({"text": phrase, "note": phrase})
+    log = rig.play(seed=1)
+    assert find_leaks(log, rig.prompts) == []

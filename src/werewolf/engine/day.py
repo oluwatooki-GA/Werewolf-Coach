@@ -128,30 +128,33 @@ class DayRound:
             self.accuse(action, replier)
 
     async def bidding_turn(self) -> bool:
-        """Everyone bids in secret; the winner speaks. False when everyone chose to listen."""
+        """Everyone who can bid does so in secret; the winner speaks. False when everyone chose to
+        listen. A player with no tokens left cannot bid, so it is not asked and is not listed as
+        listening: staying quiet because you must is not the same as choosing to."""
         cap = {n: self.tokens[n] if self.floor else FREE_BID_MAX for n in self.alive}
         lines = self.has_lines()
+        asked = [n for n in self.alive if cap[n] > 0]
         requests = [
             Request(
                 n,
                 BidTask(max_bid=cap[n], max_chars=self.limit),
                 bid_check(n, cap[n], self.limit, self.alive, lines),
             )
-            for n in self.alive
+            for n in asked
         ]
         answers = await ask_many(self.state, self.agents, requests)
-        actions = {n: _as_bid(a) for n, a in zip(self.alive, answers, strict=True)}
+        actions = {n: _as_bid(a) for n, a in zip(asked, answers, strict=True)}
         bids = {n: a.bid for n, a in actions.items()}
         speaker = resolve_bids(self.alive, bids, self.spoken, self.state.rng)
         if speaker is None:
-            self.listening(self.alive)
+            self.listening(asked)
             return False
         action = actions[speaker]
         paid = action.bid if self.floor else 0
         self.state.events.append(self.speech(speaker, action, paid, False))
         self.tokens[speaker] -= paid
         self.spoken[speaker] += 1
-        self.listening([n for n in self.alive if actions[n].bid == 0])
+        self.listening([n for n in asked if actions[n].bid == 0])
         if self.floor:  # the right of reply exists only with floor tokens
             self.accuse(action, speaker)
         return True

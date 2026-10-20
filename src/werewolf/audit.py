@@ -86,6 +86,12 @@ def find_leaks(
         memory[owner] = memory.get(owner, "") + "\n".join(own) + "\n"
         private += [(kind, t) for kind, t in found if isinstance(t, str) and len(t) >= min_length]
 
+    # A wolf may see the wolf chat, so a private text that merely repeats it reveals nothing new.
+    # Two wolves told to "say it is a guess" often write the same words in chat and in a note.
+    chat_text = "\n".join(e.text for e in log.events if isinstance(e, WolfChat))
+    for wolf in wolves:
+        memory[wolf] = memory.get(wolf, "") + chat_text + "\n"
+
     leaks: dict[tuple[str, str, str], Leak] = {}
 
     def flag(player: str, kind: str, detail: str) -> None:
