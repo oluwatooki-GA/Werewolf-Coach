@@ -81,8 +81,19 @@ def _user(players: list[str], context: list[tuple[str, Speech]], line: str, spee
     )
 
 
+def _blank(value: str) -> str:
+    """Models sometimes write the word instead of leaving a field empty."""
+    return "" if value.strip().lower() in ("none", "null", "n/a") else value.strip()
+
+
 def to_tag(line: str, speech: Speech, wire: WireTag, players: list[str]) -> Tag | str:
     """The tag, or the reason this answer cannot be used."""
+    wire = wire.model_copy(
+        update={k: _blank(getattr(wire, k)) for k in ("target", "checked", "vote")}
+    )
+    if wire.move1 == "result_claim" or wire.move2 == "result_claim":
+        if wire.claim_role not in ROLES:  # reporting a check already means "I am the Seer"
+            wire = wire.model_copy(update={"claim_role": "Seer"})
     moves = [wire.move1] + ([wire.move2] if wire.move2 not in ("none", wire.move1) else [])
     unknown = [m for m in moves if m not in MOVE_NAMES]
     if unknown:

@@ -144,6 +144,20 @@ def test_an_unusable_answer_is_counted_and_not_stored_as_a_tag(
     assert "R1-1" in result.untagged and [t.line for t in result.tags] == ["R1-2", "R1-3"]
 
 
+def test_the_word_none_in_a_name_field_counts_as_empty(rig: Rig) -> None:
+    rig.model.by_line["R1-1"] = {**PLAIN, "target": "none", "vote": "None"}
+    (tag, *_) = run(rig, three()).tags
+    assert tag.target is None and tag.claimed is None
+
+
+def test_a_check_report_with_no_role_written_is_read_as_the_seer(rig: Rig) -> None:
+    rig.model.by_line["R1-1"] = {
+        **PLAIN, "move1": "result_claim", "checked": WOLF_A, "result": "wolf", "claim_role": "none"
+    }  # fmt: skip
+    (tag, *_) = run(rig, three()).tags
+    assert tag.claimed is not None and tag.claimed.role == "Seer"
+
+
 def test_claim_facts_on_a_non_claim_move_are_dropped(rig: Rig) -> None:
     rig.model.by_line["R1-1"] = {**PLAIN, "claim_role": "Seer", "checked": WOLF_A, "result": "wolf"}
     (tag, *_) = run(rig, three()).tags
