@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agents"))  # the f
 _fake = importlib.import_module("test_llm_agent")
 MODEL: str = _fake.MODEL  # the fake model's name
 Rig = _fake.Rig  # a fake model behind the real client, cache and ledger
+FakeModel = _fake.FakeModel  # answers every player question with a valid, quiet answer
 
 Game = tuple[GameLog, TagFile | None]
 
@@ -132,3 +133,31 @@ def coach_client(tmp_path: Path, cap: str = "10") -> tuple[LLMClient, CoachFake]
     fake = CoachFake()
     ledger = Ledger(tmp_path / "ledger.json", {"openai": Decimal(cap)})
     return LLMClient(fake, ledger, FileCache(tmp_path / "cache")), fake
+
+
+class BothModels:
+    """One transport for a generation: coach questions go to `coach`, the rest to `players`."""
+
+    def __init__(self, coach: CoachFake, players: object) -> None:
+        self.coach = coach
+        self.players = players
+
+    def provider(self, model: str) -> str:
+        return "openai"
+
+    def estimate(self, request: Request) -> Decimal:
+        return Decimal("0.001")
+
+    async def call(self, request: Request) -> Completion:
+        assert request.schema_ is not None
+        if request.schema_["title"] in self.coach.replies:
+            return await self.coach.call(request)
+        return cast(Completion, await self.players.call(request))  # type: ignore[attr-defined]
+
+
+def both_client(tmp_path: Path) -> tuple[LLMClient, CoachFake, object]:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    coach, players = CoachFake(), FakeModel()
+    ledger = Ledger(tmp_path / "ledger.json", {"openai": Decimal("10")})
+    transport = BothModels(coach, players)
+    return LLMClient(transport, ledger, FileCache(tmp_path / "cache")), coach, players
