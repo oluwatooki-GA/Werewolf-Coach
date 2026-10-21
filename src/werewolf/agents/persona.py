@@ -2,17 +2,15 @@
 
 It changes only how a player sounds, never what it is trying to do or how much it speaks
 (that is the strategy card). The same seed gives every seat the same manner in every run, so two
-strategies played on one seed still face the same table.
+strategies played on one seed still face the same table. The wording is in prompts/player.yaml.
 """
 
 from collections.abc import Sequence
 from random import Random
 
-PERSONAS: dict[str, str] = {
-    "blunt": "blunt. You say what you think in few words and ask pointed questions.",
-    "chatty": "chatty. You write warmly and at some length, and react to what others said.",
-    "cautious": "cautious. You hedge, qualify what you say, and avoid strong statements.",
-}
+from werewolf.prompts import load
+
+PERSONAS: dict[str, str] = dict(load("player")["manners"])
 
 
 def assign(seed: int, names: Sequence[str]) -> dict[str, str]:

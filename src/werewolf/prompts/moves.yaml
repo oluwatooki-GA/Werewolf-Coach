@@ -1,0 +1,46 @@
+version: 1
+moves:
+- name: role_claim
+  family: claims
+  what: says what role the speaker has
+  example: I'm the Seer.
+- name: result_claim
+  family: claims
+  what: reports the result of a Seer check as the speaker's own
+  example: I checked Bo last night. Wolf.
+- name: record_check
+  family: claims
+  what: points at something in the public record (who said or voted what)
+  example: Cy switched his vote at the last second yesterday.
+- name: accuse_reasoned
+  family: pressure
+  what: 'accuses a player and says why: their silence, a vote, or something they said or did'
+  example: Di defended Bo twice, then went quiet.
+- name: accuse_bare
+  family: pressure
+  what: accuses a player and gives no why at all, only a feeling
+  example: I just think it's Eve.
+- name: probe
+  family: pressure
+  what: asks a player a question to test them
+  example: Fay, who would you vote for and why?
+- name: self_defend
+  family: protection
+  what: defends the speaker against suspicion
+  example: I voted with the majority both days.
+- name: vouch
+  family: protection
+  what: says another player can be trusted
+  example: I trust Gus, he's consistent.
+- name: rally
+  family: steering
+  what: calls on everyone to vote for one player
+  example: Everyone, vote Bo now.
+- name: redirect
+  family: steering
+  what: moves attention from one player to another
+  example: Forget Bo, look at Cy.
+- name: hedge
+  family: steering
+  what: urges caution or delay
+  example: Let's not rush, we don't know enough.

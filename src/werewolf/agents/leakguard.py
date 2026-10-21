@@ -13,20 +13,11 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from werewolf.llm.types import Request
+from werewolf.prompts import load
 
-REWRITE = (
-    "your message reveals what was said in the private wolf chat, which the village must not "
-    "learn. Write a message that does not repeat or point at it"
-)
+REWRITE = load("leakguard")["rewrite"]
 
-SYSTEM = (
-    "You guard a secret in a game of Werewolf. Two werewolves talk privately at night. One of "
-    "them is about to say something in public. Answer reveals=true if the public message "
-    "repeats, quotes or points at anything said in that private chat: who was suggested as the "
-    "victim, who proposed what, or what the plan was, even in a question. Answer reveals=false "
-    "if the message does not depend on the private chat. Accusations and questions about what "
-    "players said in public are fine."
-)
+SYSTEM = load("leakguard")["system"]
 
 
 class WireGuard(BaseModel):

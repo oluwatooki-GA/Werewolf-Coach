@@ -1,0 +1,31 @@
+version: 1
+
+# What the model is told before the list of moves.
+intro: >-
+  You label one message from a game of Werewolf with 8 players (2 werewolves, a Seer, a Doctor,
+  4 villagers). You do not know who has which role. Label only what the message says and does.
+
+# One bullet each, shown under "Rules:". The moves themselves are in moves.yaml.
+rules:
+  - Label only the last message. The earlier ones are context.
+  - >-
+    move1 is the main move. move2 is a second move only if the message clearly makes two;
+    otherwise "none".
+  - >-
+    A plain question (why did you...? what do you think?) is only probe. If the question also
+    says the player is suspicious and why (silence, a vote, something said), give probe and
+    accuse_reasoned. Staying silent, voting a certain way or having said something all count as a
+    why. Use accuse_bare only when the message calls someone suspicious or a wolf and gives no why
+    at all. Pointing at a specific earlier vote or statement also gets record_check.
+  - >-
+    target is the player the message is aimed at (accused, questioned, vouched for, pointed to,
+    named in a claim). Use "" if there is none.
+  - "For role_claim: claim_role is the role the speaker says it has."
+  - >-
+    For result_claim: claim_role is "Seer", checked is the player the speaker says it checked, and
+    result is "wolf" or "not_wolf".
+  - For record_check, put the player whose vote is pointed at in vote, if any.
+  - >-
+    Otherwise claim_role is "none", checked is "", result is "none" and vote is "".
+
+closing: Answer with the JSON only.

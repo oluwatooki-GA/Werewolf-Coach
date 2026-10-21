@@ -28,19 +28,9 @@ from werewolf.engine.record import numbered_speeches
 from werewolf.llm.client import LLMClient
 from werewolf.llm.ledger import LedgerBlocked, LedgerError
 from werewolf.llm.types import RateLimited, Request
+from werewolf.prompts import load
 
-SYSTEM = (
-    "You check one message from a game of Werewolf against the public log of the game so far. "
-    "Find the first statement in the message about what a named player SAID, DID, VOTED or how "
-    "they BEHAVED earlier that the log does not support. Examples of unsupported statements: "
-    "'you were quiet last round' when the log shows no such thing, 'last time we played', "
-    "'you voted with Bo' when the log shows a different vote.\n"
-    "These are fine and are not flagged: questions, opinions, guesses about motives, "
-    "suggestions, predictions, statements about a death or vote that the log shows, and what "
-    "the speaker says about their own role or night actions (the log cannot show those).\n"
-    'Answer with JSON: {"unsupported": "<the quoted statement in under 20 words, or empty '
-    'if every statement is supported>"}.'
-)
+SYSTEM = load("grounding")["system"]
 
 
 class WireGround(BaseModel):

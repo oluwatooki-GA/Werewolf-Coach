@@ -19,6 +19,7 @@ from werewolf.engine.record import numbered_speeches
 from werewolf.llm.client import LLMClient
 from werewolf.llm.ledger import LedgerBlocked, LedgerError
 from werewolf.llm.types import RateLimited, Request
+from werewolf.prompts import load
 from werewolf.tagger.moves import CLAIM_MOVES, MOVE_NAMES, MOVES
 from werewolf.tagger.tags import Claimed, Tag, line_key
 
@@ -53,30 +54,11 @@ def tag_schema() -> dict[str, Any]:
 
 
 def _system() -> str:
+    """The instructions, from prompts/tagger.yaml; the moves come from prompts/moves.yaml."""
+    spec = load("tagger")
     moves = "\n".join(f'- {n} ({fam}): {what}. Example: "{ex}"' for n, fam, what, ex in MOVES)
-    return (
-        "You label one message from a game of Werewolf with 8 players (2 werewolves, a Seer, a "
-        "Doctor, 4 villagers). You do not know who has which role. Label only what the message "
-        "says and does.\n\nThe moves:\n" + moves + "\n\n"
-        "Rules:\n"
-        "- Label only the last message. The earlier ones are context.\n"
-        "- move1 is the main move. move2 is a second move only if the message clearly makes two; "
-        'otherwise "none".\n'
-        "- A plain question (why did you...? what do you think?) is only probe. If the question "
-        "also says the player is suspicious and why (silence, a vote, something said), give "
-        "probe and accuse_reasoned. Staying silent, voting a certain way or having said "
-        "something all count as a why. Use accuse_bare only when the message calls someone "
-        "suspicious or a wolf and gives no why at all. Pointing at a specific earlier vote or "
-        "statement also gets record_check.\n"
-        "- target is the player the message is aimed at (accused, questioned, vouched for, "
-        'pointed to, named in a claim). Use "" if there is none.\n'
-        "- For role_claim: claim_role is the role the speaker says it has.\n"
-        '- For result_claim: claim_role is "Seer", checked is the player the speaker says it '
-        'checked, and result is "wolf" or "not_wolf".\n'
-        "- For record_check, put the player whose vote is pointed at in vote, if any.\n"
-        '- Otherwise claim_role is "none", checked is "", result is "none" and vote is "".\n'
-        "Answer with the JSON only."
-    )
+    rules = "\n".join(f"- {rule}" for rule in spec["rules"])
+    return f"{spec['intro']}\n\nThe moves:\n{moves}\n\nRules:\n{rules}\n{spec['closing']}"
 
 
 def _user(players: list[str], context: list[tuple[str, Speech]], line: str, speech: Speech) -> str:
