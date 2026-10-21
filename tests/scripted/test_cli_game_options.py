@@ -37,6 +37,6 @@ def test_values_outside_the_allowed_range_are_refused(option: list[str], tmp_pat
 
 
 def test_longer_messages_get_more_output_room() -> None:
-    assert default_max_tokens("claude-haiku-5-5", 900) == 900
+    assert default_max_tokens("claude-haiku-5-5", 900) == 1200
     assert default_max_tokens("gpt-4.1-nano", 600) == 400
     assert default_max_tokens("gpt-4.1-nano", 100) == 300  # shorter never goes below the base
