@@ -64,6 +64,16 @@ def save_tags(log_path: Path, tagfile: TagFile) -> Path:
     return path
 
 
+def game_files(paths: list[str]) -> list[Path]:
+    """Game logs among the given files and folders (tag files are not games)."""
+    found: list[Path] = []
+    for item in paths:
+        path = Path(item)
+        files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
+        found += [f for f in files if not f.name.endswith(TAG_SUFFIX)]
+    return found
+
+
 def line_key(line: str) -> tuple[int, int]:
     """'R2-4' sorts as (2, 4)."""
     left, _, right = line.strip("R").partition("-")

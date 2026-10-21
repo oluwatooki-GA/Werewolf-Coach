@@ -224,13 +224,39 @@ def _show(args: argparse.Namespace) -> int:
 
 
 def _game_files(paths: list[str]) -> list[Path]:
-    """Game logs among the given files and folders (tag files are not games)."""
-    found: list[Path] = []
-    for item in paths:
-        path = Path(item)
-        files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
-        found += [f for f in files if not f.name.endswith(".tags.json")]
-    return found
+    from werewolf.tagger.tags import game_files
+
+    return game_files(paths)
+
+
+def _label(args: argparse.Namespace) -> int:
+    """Label a seeded sample of messages by hand; stop with q and come back later."""
+    from werewolf.tagger.labels import collect, load_labels, run_session, sample
+
+    store = Path(args.file)
+    items = sample(collect(args.paths), args.count, args.seed)
+    if not items:
+        print("no messages found in those games", file=sys.stderr)
+        return 2
+    run_session(items, store, ask=input, out=print)
+    print(f"{len(load_labels(store))} labels in {store}")
+    return 0
+
+
+def _accuracy(args: argparse.Namespace) -> int:
+    """Score the tagger against your labels. Exit 1 if there is nothing to compare."""
+    from werewolf.tagger.labels import accuracy, format_accuracy, load_labels
+
+    labels = load_labels(Path(args.file))
+    if not labels:
+        print(f"no labels in {args.file}: run the label command first", file=sys.stderr)
+        return 1
+    report = accuracy(args.paths, labels)
+    if not report.messages:
+        print("none of your labeled messages has a tag: run the tag command on those games")
+        return 1
+    print(format_accuracy(report))
+    return 0
 
 
 def _tag(args: argparse.Namespace) -> int:
@@ -556,6 +582,18 @@ def main(argv: list[str] | None = None) -> int:
     tag.add_argument("--rpm", type=int, help="requests per minute to send")
     tag.add_argument("--max-tokens", type=int, help="output limit per answer")
     tag.set_defaults(run=_tag)
+
+    label = commands.add_parser("label", help="label messages by hand to check the tagger")
+    label.add_argument("paths", nargs="+", help="game logs or folders of them")
+    label.add_argument("--count", type=int, default=100, help="how many messages (default: 100)")
+    label.add_argument("--seed", type=int, default=1, help="which sample (default: 1)")
+    label.add_argument("--file", default="data/labels/mine.jsonl")
+    label.set_defaults(run=_label)
+
+    score = commands.add_parser("accuracy", help="score the tagger against your labels")
+    score.add_argument("paths", nargs="+", help="tagged game logs or folders of them")
+    score.add_argument("--file", default="data/labels/mine.jsonl")
+    score.set_defaults(run=_accuracy)
 
     ground = commands.add_parser("ground", help="fact-check messages against the public log")
     ground.add_argument("paths", nargs="+", help="game logs or folders of them")
