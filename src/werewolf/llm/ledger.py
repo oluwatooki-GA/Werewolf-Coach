@@ -13,8 +13,8 @@ from decimal import Decimal
 from itertools import count
 from pathlib import Path
 
-# The OpenAI cap was $4.50 until Oct 21, 2026, when the owner added $4.10 of credit for experiments.
-# Total spent so far was about $3.4 then, so $7.25 keeps a margin whichever way the $4.10 is counted.
+# The OpenAI cap was $4.50 until Oct 21, 2026, when the owner added $4.10 of credit.
+# About $3.4 was spent by then, so $7.25 keeps a margin however the $4.10 is counted.
 DEFAULT_CAPS: dict[str, Decimal] = {
     "openai": Decimal("7.25"),
     "anthropic": Decimal("4.50"),
