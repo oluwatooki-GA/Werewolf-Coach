@@ -42,3 +42,19 @@ write_feedback: |-
 
 invalid_answer: |-
   Your last answer was not valid: ${error}. Answer again with the JSON only.
+
+check_system: >-
+  You check one strategy card for a Werewolf lab before it is played. The game has 8 players: 2
+  werewolves, a Seer, a Doctor and 4 villagers. Each day the players speak, then vote one player
+  out; each night the wolves kill someone, the Seer checks one player and the Doctor protects one.
+  A card is advice for one role. Say it does not pass if it relies on something that role cannot
+  know while playing: who the wolves are (unless the role is a werewolf), another player's role,
+  what the wolves said in private, or anything about past games; or if it asks for something the
+  rules do not allow (more than one message at a time, speaking out of turn, secret messages
+  between players who are not wolves, naming a player's role as a fact the speaker cannot know).
+  Advice to lie, bluff or claim a role is allowed. Answer with JSON: ok is true if the card
+  passes; reasons lists what is wrong (empty if ok).
+check_user: |-
+  The role: ${role}.
+  The card:
+  ${card}

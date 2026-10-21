@@ -72,8 +72,15 @@ def _describe(card: Card) -> str:
     return f"{card.summary}\n{card.prompt_text}"
 
 
-async def _ask(
-    client: LLMClient, model: str, system: str, user: str, wire: type[T], what: str, tokens: int
+async def ask(
+    client: LLMClient,
+    model: str,
+    system: str,
+    user: str,
+    wire: type[T],
+    what: str,
+    tokens: int,
+    temperature: float = TEMPERATURE,
 ) -> tuple[T, Decimal]:
     """Ask once, and once more if the answer does not fit. Returns the answer and what it cost."""
     cost = Decimal("0")
@@ -86,7 +93,7 @@ async def _ask(
             model=model,
             messages=[{"role": "system", "content": system}, {"role": "user", "content": content}],
             schema=_schema(wire),
-            temperature=TEMPERATURE,
+            temperature=temperature,
             max_tokens=tokens,
         )
         try:
@@ -109,7 +116,7 @@ async def diagnose(
 ) -> tuple[Diagnosis, Decimal]:
     if evidence.empty:
         raise CoachError(f"nothing to diagnose: {evidence.text}")
-    answer, cost = await _ask(
+    answer, cost = await ask(
         client,
         model,
         text("coach", "diagnose_system"),
@@ -148,7 +155,7 @@ async def write_challenger(
     if feedback:
         reasons = "\n".join(f"- {reason}" for reason in feedback)
         user += "\n\n" + text("coach", "write_feedback", reasons=reasons)
-    answer, cost = await _ask(
+    answer, cost = await ask(
         client,
         model,
         text("coach", "write_system", max_words=MAX_WORDS, moves=", ".join(MOVE_NAMES)),
