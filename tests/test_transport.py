@@ -284,3 +284,9 @@ def test_a_larger_output_budget_is_respected_when_judging_a_cut_off() -> None:
         "claude-haiku-5-5", response(finish="stop", completion=300, cached=None), max_tokens=500
     )
     assert not done.truncated
+
+
+def test_claude_sonnet_5_5_is_priced_from_our_table() -> None:
+    assert EXTRA_PRICES["claude-sonnet-5-5"] == (D("2e-06"), D("1e-05"), D("1e-07"))
+    done, _ = call("claude-sonnet-5-5", response(prompt=1000, completion=100, cached=None))
+    assert done.cost == D("0.003")  # 1,000 in at $2 and 100 out at $10 per million
