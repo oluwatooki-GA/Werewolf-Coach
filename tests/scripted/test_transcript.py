@@ -159,3 +159,34 @@ def test_the_show_command_has_a_talk_option(
     assert main(["show", str(path), "--talk"]) == 0
     out = capsys.readouterr().out
     assert "Bo says (2 tokens): Who is the wolf?" in out and "Players:" not in out
+
+
+def night(round_: int, kill: str | None, protect: str | None, check: str | None) -> NightSummary:
+    return NightSummary(
+        round=round_, kill=kill, protect=protect, check=check, saved=False, audience=()
+    )
+
+
+def test_a_dead_seer_or_doctor_is_named_as_dead_not_as_checking_nobody() -> None:
+    events = [
+        night(1, "Di", "Ada", "Fay"),
+        Death(round=1, player="Di"),  # the Seer is killed
+        night(2, "Ada", None, None),
+        Death(round=2, player="Ada"),  # the Doctor is killed
+        night(3, "Bo", None, None),
+    ]
+    text = render(story().model_copy(update={"events": events}), private=True)
+    assert "Night: the wolves chose Di, the Doctor protected Ada, the Seer checked Fay" in text
+    assert "the Doctor protected nobody, the Seer was killed in round 1" in text
+    assert "the Doctor was killed in round 2, the Seer was killed in round 1" in text
+
+
+def test_a_seer_who_was_voted_out_says_so_and_a_living_one_who_did_not_check_says_nobody() -> None:
+    events = [
+        night(1, "Bo", "Ada", None),
+        Removal(round=1, player="Di"),
+        night(2, "Cy", "Ada", None),
+    ]
+    text = render(story().model_copy(update={"events": events}), private=True)
+    assert "the Seer checked nobody" in text  # round 1: alive, did not check
+    assert "the Seer was voted out in round 1" in text  # round 2

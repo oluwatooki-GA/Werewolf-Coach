@@ -68,6 +68,17 @@ def render(log: GameLog, private: bool = False, talk_only: bool = False) -> str:
     )
     quiet: list[str] = []
     last_round = 0
+    gone: dict[str, str] = {}  # who is out of the game, and how
+    holder = {role: name for name, role in roles.items()}  # the Seer and the Doctor are one each
+
+    def night_part(role: str, did: str | None, verb: str) -> str:
+        """'the Seer checked Fay', or why there was no check: the Seer is already out."""
+        if did:
+            return f"the {role} {verb} {did}"
+        name = holder.get(role)
+        if name in gone:
+            return f"the {role} was {gone[name]}"
+        return f"the {role} {verb} nobody"
 
     def flush() -> None:
         if quiet:
@@ -87,11 +98,10 @@ def render(log: GameLog, private: bool = False, talk_only: bool = False) -> str:
         if isinstance(event, NightSummary):
             if private:
                 saved = " (the kill was saved)" if event.saved else ""
-                kill, protect = event.kill or "nobody", event.protect or "nobody"
-                check = event.check or "nobody"
+                doctor = night_part("Doctor", event.protect, "protected")
+                seer = night_part("Seer", event.check, "checked")
                 lines.append(
-                    f"  Night: the wolves chose {kill}, the Doctor protected {protect}, "
-                    f"the Seer checked {check}{saved}"
+                    f"  Night: the wolves chose {event.kill or 'nobody'}, {doctor}, {seer}{saved}"
                 )
         elif isinstance(event, WolfChat):
             if private:
@@ -101,6 +111,7 @@ def render(log: GameLog, private: bool = False, talk_only: bool = False) -> str:
                 seer = event.audience[0] if event.audience else "the Seer"
                 lines.append(f"  [seer] {seer} checked {event.target}: {event.role.value}")
         elif isinstance(event, Death):
+            gone[event.player] = f"killed in round {event.round}"
             lines.append(f"  Morning: {event.player} was killed in the night.")
         elif isinstance(event, NoDeath):
             lines.append("  Morning: nobody died in the night.")
@@ -118,6 +129,7 @@ def render(log: GameLog, private: bool = False, talk_only: bool = False) -> str:
                 why = f" (reason: {event.reason})" if event.reason else ""
                 lines.append(f"  Vote: {event.voter} voted for {event.target}{why}.")
         elif isinstance(event, Removal):
+            gone[event.player] = f"voted out in round {event.round}"
             lines.append(f"  {event.player} was removed by the vote.")
         elif isinstance(event, NoRemoval):
             lines.append("  Nobody was removed by the vote.")
