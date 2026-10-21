@@ -5,6 +5,7 @@ import importlib
 import json
 import sys
 from collections.abc import Sequence
+from decimal import Decimal
 from pathlib import Path
 from typing import cast
 
@@ -15,6 +16,10 @@ from werewolf.engine.log import GameLog, to_log
 from werewolf.engine.roles import Role, Team
 from werewolf.engine.setup import new_game
 from werewolf.engine.state import CallRecord
+from werewolf.llm.cache import FileCache
+from werewolf.llm.client import LLMClient
+from werewolf.llm.ledger import Ledger
+from werewolf.llm.types import Completion, Request
 from werewolf.tagger.tags import Claimed, Tag, TagFile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agents"))  # the fake model is there
@@ -91,3 +96,39 @@ def claim_tag(line: str, speaker: str, role: str) -> Tag:
 
 def removed(round_: int, player: str) -> Removal:
     return Removal(round=round_, player=player)
+
+
+class CoachFake:
+    """A pretend coach model behind the real client. `replies` maps a schema title (the name of
+    the answer shape) to the texts it returns in order; the last one repeats."""
+
+    def __init__(self) -> None:
+        self.requests: list[Request] = []
+        self.replies: dict[str, list[str]] = {}
+        self.cost = Decimal("0.01")
+
+    def provider(self, model: str) -> str:
+        return "openai"
+
+    def estimate(self, request: Request) -> Decimal:
+        return Decimal("0.001")
+
+    async def call(self, request: Request) -> Completion:
+        self.requests.append(request)
+        assert request.schema_ is not None
+        queue = self.replies[request.schema_["title"]]
+        text = queue.pop(0) if len(queue) > 1 else queue[0]
+        return Completion(
+            model=request.model, text=text, prompt_tokens=500, completion_tokens=100,
+            cost=self.cost,
+        )  # fmt: skip
+
+    def asked(self, title: str) -> list[Request]:
+        return [r for r in self.requests if r.schema_ and r.schema_["title"] == title]
+
+
+def coach_client(tmp_path: Path, cap: str = "10") -> tuple[LLMClient, CoachFake]:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    fake = CoachFake()
+    ledger = Ledger(tmp_path / "ledger.json", {"openai": Decimal(cap)})
+    return LLMClient(fake, ledger, FileCache(tmp_path / "cache")), fake

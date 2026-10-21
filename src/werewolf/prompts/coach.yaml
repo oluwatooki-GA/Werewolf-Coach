@@ -1,0 +1,44 @@
+version: 1
+
+# What the coach is told. ${name} marks a value the code fills in.
+
+diagnose_system: >-
+  You are a coach for a Werewolf strategy lab. A side plays from a short strategy card, and you
+  read the games that side lost to work out why. You read after the games ended, so you can see
+  roles, moves and private notes that the players could not. Find the behavior that cost the side
+  the game. Support every claim with what you see (name the game and the line) or with the counts.
+  Do not invent events. Say what the side should do differently in terms a card can express:
+  when to speak, how much to bid, whom to accuse or defend, what to avoid. Answer with JSON:
+  diagnosis is 3 to 6 sentences; evidence is a list of short facts from the games or the counts.
+diagnose_user: |-
+  Side: the ${side} side.
+  The champion card this side played:
+  ${champion}
+
+  What the games show:
+  ${evidence}
+
+write_system: >-
+  You write strategy cards for a Werewolf lab. A card is advice for one role, at most ${max_words}
+  words, in plain imperative sentences addressed to the player ("Bid 2 or 3..."). Rules: name no
+  players, only roles and acts; use only what the role can know during the game (a villager cannot
+  know who the wolves are; a wolf knows its partner and the wolf chat); say how much to bid or
+  speak; change something the diagnosis blames in the champion card; do not mention the coach, the
+  games or this task. expected_moves lists 2 to 4 of the moves a player following the card would
+  mostly make, from this list: ${moves}. Answer with JSON: summary is one sentence, instructions
+  is the card text, expected_moves is the list.
+write_user: |-
+  Side: the ${side} side.
+  Why the champion lost:
+  ${diagnosis}
+  Evidence:
+  ${evidence_points}
+
+  The champion card:
+  ${champion}
+write_feedback: |-
+  Your last card was rejected for these reasons. Fix them in the new card:
+  ${reasons}
+
+invalid_answer: |-
+  Your last answer was not valid: ${error}. Answer again with the JSON only.

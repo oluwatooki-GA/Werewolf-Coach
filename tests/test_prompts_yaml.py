@@ -12,7 +12,7 @@ FILES = sorted(p.stem for p in DIR.glob("*.yaml"))
 
 
 def test_every_prompt_file_has_a_version() -> None:
-    assert FILES == ["grounding", "leakguard", "moves", "player", "tagger"]
+    assert FILES == ["coach", "grounding", "leakguard", "moves", "player", "tagger"]
     for name in FILES:
         assert isinstance(load(name)["version"], int)
 
