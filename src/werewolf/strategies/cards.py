@@ -8,6 +8,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from werewolf.engine.roles import Role
+from werewolf.engine.state import DEFAULT_NAMES
 from werewolf.tagger.moves import MOVE_NAMES
 
 CARDS_DIR = Path("cards")
@@ -21,6 +22,9 @@ ID_PREFIX = {
 ROLE_FOR_PREFIX = {prefix: role for role, prefix in ID_PREFIX.items()}
 # Only wolves know these, so a card for another role may not lean on them.
 WOLF_ONLY = ("partner", "wolf chat", "fellow wolf", "teammate", "your wolves")
+# A card is advice for a role, not for a seat: it may not name the players of any one game.
+PLAYER_NAME = re.compile(r"\b(" + "|".join(DEFAULT_NAMES) + r")\b")
+COACH_FOLDER = "coach"  # inside the cards folder: cards the coach wrote
 
 
 class Card(BaseModel):
@@ -63,6 +67,9 @@ def check_card(card: Card) -> list[str]:
     unknown = [m for m in card.expected_moves if m not in MOVE_NAMES]
     if unknown:
         problems.append(f"unknown moves {unknown}; the moves are: {', '.join(MOVE_NAMES)}")
+    named = sorted(set(PLAYER_NAME.findall(f"{card.summary} {card.instructions}")))
+    if named:
+        problems.append(f"the card names a player ({', '.join(named)}); say the role or the act")
     if card.role is not Role.WEREWOLF:
         text = f"{card.summary} {card.instructions}".lower()
         leaked = [w for w in WOLF_ONLY if re.search(rf"\b{re.escape(w)}", text)]
@@ -92,10 +99,38 @@ def load_all(directory: Path = CARDS_DIR) -> dict[str, Card]:
     return cards
 
 
-def load_card(ref: str, directory: Path = CARDS_DIR) -> Card:
-    """A card by id, or by 'id@version' as a game log stores it."""
-    card_id = ref.split("@")[0]
+def load_everywhere(directory: Path = CARDS_DIR) -> dict[str, Card]:
+    """The starter cards plus the ones the coach wrote (in the coach folder), by id."""
     cards = load_all(directory)
+    coach = directory / COACH_FOLDER
+    if coach.is_dir():
+        for card_id, card in load_all(coach).items():
+            if card_id in cards:
+                raise ValueError(f"the id '{card_id}' is used by another card too (coach folder)")
+            cards[card_id] = card
+    return cards
+
+
+def write_card(card: Card, directory: Path = CARDS_DIR) -> Path:
+    """Save a coach card as `<directory>/coach/<id>.yaml`. A card that fails the checks is
+    refused before anything is written, and a card is never overwritten."""
+    problems = check_card(card)
+    if problems:
+        raise ValueError(f"{card.id}: " + "; ".join(problems))
+    path = directory / COACH_FOLDER / f"{card.id}.yaml"
+    if path.exists():
+        raise ValueError(f"{path.name} already exists; a card is never overwritten")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = card.model_dump(mode="json")
+    data["expected_moves"] = list(card.expected_moves)
+    path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True, width=100), "utf-8")
+    return path
+
+
+def load_card(ref: str, directory: Path = CARDS_DIR) -> Card:
+    """A card by id, or by 'id@version' as a game log stores it. Coach cards count too."""
+    card_id = ref.split("@")[0]
+    cards = load_everywhere(directory)
     if card_id not in cards:
         have = ", ".join(sorted(cards)) or "none"
         raise ValueError(f"no card '{card_id}'; the cards are: {have}")
