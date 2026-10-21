@@ -62,6 +62,11 @@ def _system() -> str:
         "- Label only the last message. The earlier ones are context.\n"
         "- move1 is the main move. move2 is a second move only if the message clearly makes two; "
         'otherwise "none".\n'
+        "- A plain question (why did you...? what do you think?) is only probe. If the question "
+        "also says the player is suspicious and why (silence, a vote, something said), give "
+        "probe and accuse_reasoned. Use accuse_bare only when the message calls someone "
+        "suspicious or a wolf and gives no why. Pointing at a specific earlier vote or "
+        "statement also gets record_check.\n"
         "- target is the player the message is aimed at (accused, questioned, vouched for, "
         'pointed to, named in a claim). Use "" if there is none.\n'
         "- For role_claim: claim_role is the role the speaker says it has.\n"

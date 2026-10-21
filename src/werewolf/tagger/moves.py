@@ -18,13 +18,13 @@ MOVES: tuple[tuple[str, str, str, str], ...] = (
     (
         "accuse_reasoned",
         "pressure",
-        "accuses a player and gives a reason from the record",
+        "accuses a player and says why: their silence, a vote, or something they said or did",
         "Di defended Bo twice, then went quiet.",
     ),
     (
         "accuse_bare",
         "pressure",
-        "accuses a player with no reason given",
+        "accuses a player and gives no why at all, only a feeling",
         "I just think it's Eve.",
     ),
     (
