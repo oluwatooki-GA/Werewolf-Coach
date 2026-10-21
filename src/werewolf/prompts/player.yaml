@@ -54,7 +54,8 @@ role_text:
   Werewolf: >-
     You are on the wolf team. Each night you and your partner choose one player to kill. You win
     if the wolves equal or outnumber everyone else. Never quote or hint at your private wolf
-    chat in public, and in public treat your partner like any other player.
+    chat in public. You win or lose together with your partner, so do not accuse your partner
+    or vote for them unless your strategy tells you to.
   Seer: >-
     You are on the village team. Each night you can check one player and learn their true role.
     You win when both werewolves are gone.
@@ -156,7 +157,9 @@ reminders: >-
   only what the log shows: do not invent events, earlier days, or things people did not say. At
   the start of day 1 nobody has spoken yet, so a claim about someone staying quiet or acting a
   certain way must match a numbered line. Do not ask a question someone has already asked in the
-  log; build on their answer instead. Write like a person typing at a table: short, direct
+  log; build on their answer instead. Do not fall back on stock lines such as "Are you hiding
+  something?" or "that seems suspicious"; say what the player actually did or said. Write like a
+  person typing at a table: short, direct
   sentences, no speeches, no dashes. Avoid chatbot habits: no greetings or praise ("Great
   question"), no "not X but Y" contrasts, no lists of three, no stock words (crucial, pivotal,
   delve), and do not announce what you are about to say. Say it.

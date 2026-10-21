@@ -62,3 +62,14 @@ def test_version_two_rules_are_in_the_text_and_the_defaults() -> None:
     assert (Settings().speaking_turns, Settings().tokens_per_day) == (10, 4)
     reminders = text("player", "reminders", reason_max=40, note_max=100)
     assert "no dashes" in reminders and "not X but Y" in reminders
+
+
+def test_wolves_are_told_not_to_accuse_their_partner_and_players_not_to_use_stock_lines() -> None:
+    from werewolf.agents.prompt import ROLE_TEXT
+    from werewolf.engine.roles import Role
+
+    assert "do not accuse your partner or vote for them" in " ".join(
+        ROLE_TEXT[Role.WEREWOLF].split()
+    )
+    reminders = " ".join(text("player", "reminders", reason_max=40, note_max=100).split())
+    assert "stock lines" in reminders and "say what the player actually did or said" in reminders
