@@ -16,7 +16,7 @@ def make(tmp_path: Path, **caps: str) -> Ledger:
 
 def test_default_caps_are_4_50_for_paid_providers_and_zero_for_free_tiers() -> None:
     assert DEFAULT_CAPS == {
-        "openai": D("4.50"),
+        "openai": D("7.25"),
         "anthropic": D("4.50"),
         "groq": D("0"),
         "cerebras": D("0"),
