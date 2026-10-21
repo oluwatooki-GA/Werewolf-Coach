@@ -13,6 +13,7 @@ from typing import Any
 from werewolf.engine.events import SeerResult, Speech, VoteCast, WolfChat
 from werewolf.engine.log import GameLog
 from werewolf.engine.roles import Role
+from werewolf.prompts import text
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,9 @@ class Leak:
     player: str  # whose prompt held something it should not
     kind: str  # wolf_chat, note, belief, summary, seer_result, partner or role
     detail: str  # a short excerpt, so the leak can be found
+
+
+FIXED_TEXT = text("player", "nothing_yet")  # the prompt's own words for an empty section
 
 
 def _excerpt(text: str) -> str:
@@ -124,6 +128,6 @@ def find_leaks(
             # Our own fixed text (the answer examples in the system message) is not game data:
             # a model that copies an example note word for word has not leaked anything.
             if secret in text and secret not in public and secret not in mine:
-                if secret not in system:
+                if secret not in system and secret != FIXED_TEXT:
                     flag(player, kind, secret)
     return list(leaks.values())

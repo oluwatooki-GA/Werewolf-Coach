@@ -181,12 +181,12 @@ def test_no_overbidding() -> None:
     assert [t.error is not None for who, t in seen if who == a][1:3] == [False, True]
 
 
-def test_a_bid_above_zero_needs_a_message() -> None:
+def test_a_bid_above_zero_with_no_message_never_posts_a_speech() -> None:
     state = new_game(seed=1, settings=DEFAULTS)
     a = names(state)[0]
     play_day(state, bidders(state, {a: [say(1, ""), say(1, "")]}))
-    assert speeches(state) == []
-    assert next(c for c in state.calls if c.player == a).failed
+    assert speeches(state) == []  # it is read as listening, so it is not even sent back
+    assert not next(c for c in state.calls if c.player == a).failed
 
 
 def test_all_randomness_through_seeded_rng(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -293,3 +293,12 @@ def test_other_intents_do_not_earn_a_reply() -> None:
     seen: list[tuple[str, BidTask]] = []
     play_day(state, bidders(state, {a: [say(2, "fyi", intent="share_info", target=b)]}, seen))
     assert not [1 for _, t in seen if t.reply_to]
+
+
+def test_a_bid_with_no_message_counts_as_listening_and_is_not_sent_back() -> None:
+    state = new_game(seed=1, settings=DEFAULTS)
+    a, b = names(state)[:2]
+    play_day(state, bidders(state, {a: [say(3, "")], b: [say(1, "hi")]}))
+    assert [s.speaker for s in speeches(state)][:1] == [b]  # a's empty bid of 3 did not win
+    assert a in listeners(state)
+    assert not [c for c in state.calls if c.player == a and c.rejected]

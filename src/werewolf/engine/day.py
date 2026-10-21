@@ -41,8 +41,6 @@ def bid_check(
             return f"you can bid at most {max_bid}"
         if len(action.message) > limit:
             return f"the message must be at most {limit} characters"
-        if action.bid > 0 and not action.message.strip():
-            return "a bid above 0 needs a message"
         if action.target is not None and (action.target == me or action.target not in alive):
             others = ", ".join(n for n in alive if n != me)
             return f"the target must be another living player: {others} (or leave it blank)"
@@ -57,7 +55,13 @@ def bid_check(
 
 
 def _as_bid(action: Action) -> BidAction:
-    return action if isinstance(action, BidAction) else BidAction(bid=0)
+    """The bid the engine uses. A bid with no message is a player who wants to listen: it cannot
+    win a turn, so it counts as 0 instead of being sent back for another answer."""
+    if not isinstance(action, BidAction):
+        return BidAction(bid=0)
+    if action.bid > 0 and not action.message.strip():
+        return action.model_copy(update={"bid": 0})
+    return action
 
 
 def _new_accusation(

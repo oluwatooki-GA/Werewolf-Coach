@@ -34,7 +34,7 @@ speaking_floor_tokens: >-
   whoever has spoken least today, then to chance. A bid of 0 means you stay quiet and listen.
   Tokens you do not spend are lost at nightfall, so unless your strategy says otherwise, use
   them: bid when you have a question, a read or an answer to give. A bid above 0 needs a
-  message, so with nothing to say, bid 0. If a message accuses or questions someone by name
+  message, so with nothing to say, bid 0 (a bid with no message counts as 0). If a message accuses or questions someone by name
   (intent accuse or ask, with a target), that player gets one free reply next, once per day;
   free replies cost nothing. The day ends early if everyone listens, and a day with no talk
   gives the village nothing to vote on, which only helps the wolves.

@@ -233,6 +233,23 @@ def claim_text(played: Sequence[Played]) -> str:
     return f"unsupported claims {flagged} of {checked} messages{rate}{more}"
 
 
+def quiet_bids(logs: Sequence[GameLog]) -> int:
+    """Bids above 0 that came with no message. The engine reads them as listening."""
+    count = 0
+    for log in logs:
+        for call in log.calls:
+            task = call.task
+            if task.get("kind") != "bid" or task.get("free") or call.failed or not call.responses:
+                continue
+            try:
+                answer = call.responses[-1]
+                data = json.loads(answer) if isinstance(answer, str) else answer
+                count += int(data["bid"]) > 0 and not str(data.get("message", "")).strip()
+            except (ValueError, KeyError, TypeError):
+                continue
+    return count
+
+
 def reject_reasons(logs: Sequence[GameLog], top: int = 5) -> str:
     """Why answers were turned down, grouped with the names and line numbers taken out."""
     counts: Counter[str] = Counter()
@@ -288,6 +305,7 @@ def format_report(report: BatchReport) -> str:
         f"per game (the fact-check is ${checks:.6f} of it)",
         f"time: {sum(p.seconds for p in report.played) / n if n else 0.0:.1f} s per game",
         f"rejected for: {reject_reasons(games)}",
+        f"bids with no message, read as listening: {quiet_bids(games)}",
         f"wolf-chat rewrites: {sum(p.rewrites for p in report.played)}",
         claim_text(report.played),
         f"leaks: {len(leaks)}",

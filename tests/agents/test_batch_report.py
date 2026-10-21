@@ -71,3 +71,16 @@ def test_the_reasons_answers_were_turned_down_are_grouped(
     out = capsys.readouterr().out
     assert re.search(r"rejected for: .*another living player.* x\d+", out)
     assert saved(tmp_path)[0].model == "gpt-4.1-nano"  # the log names the model
+
+
+def test_bids_with_no_message_are_read_as_listening_and_counted(
+    rig: Rig, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    quiet = {"bid": 2, "message": "", "intent": "none", "target": "", "note": "n",
+             "beliefs": [], "cites": []}  # fmt: skip
+    rig.model.talk = False
+    rig.model.raw["WireBid"] = json.dumps(quiet)
+    assert batch(tmp_path) == 0
+    out = capsys.readouterr().out
+    assert int(re.search(r"read as listening: (\d+)", out).group(1)) > 0  # type: ignore[union-attr]
+    assert "needs a message" not in out and "rejected 0 of" in out

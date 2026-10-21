@@ -19,7 +19,6 @@ def bid(**fields: object) -> BidAction:
         (ChatAction(text="hi"), "expected a bid"),
         (bid(bid=4), "you can bid at most 3"),
         (bid(message="x" * 301), "at most 300 characters"),
-        (bid(message="   "), "needs a message"),
         (bid(target="Ada"), "another living player"),  # oneself
         (bid(target="Zed"), "another living player"),  # not at the table
     ],

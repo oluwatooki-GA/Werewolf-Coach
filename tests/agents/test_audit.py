@@ -272,3 +272,16 @@ def test_two_wolves_writing_the_same_words_in_chat_and_note_are_not_a_leak(
     rig.model.raw["WireChat"] = json.dumps({"text": phrase, "note": phrase})
     log = rig.play(seed=1)
     assert find_leaks(log, rig.prompts) == []
+
+
+def test_a_belief_reason_equal_to_the_prompts_own_empty_section_text_is_not_a_leak(
+    tmp_path: Path,
+) -> None:
+    rig = Rig(tmp_path)
+    first = new_game(1).players[0].name
+    others = [p.name for p in new_game(1).players if p.name != first]
+    rig.model.beliefs_for = {
+        first: [{"player": o, "suspicion": 0.5, "reason": "Nothing yet."} for o in others]
+    }
+    log = rig.play(seed=1)
+    assert find_leaks(log, rig.prompts) == []
