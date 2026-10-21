@@ -501,7 +501,7 @@ def test_the_rules_tell_players_an_accusation_needs_a_cite() -> None:
 
 def test_a_silent_day_helps_the_wolves_and_unspent_tokens_are_to_be_spent() -> None:
     assert "only helps the wolves" in system(state_with())
-    assert "spend them: bid 1 to 4" in system(state_with())
+    assert "use them: bid when you have a question" in system(state_with())
     state = state_with(Death(round=1, player="Gus"))
     state.player("Gus").alive = False
     assert "stay quiet" not in user(state).split("So far today")[1].split("You have")[0]

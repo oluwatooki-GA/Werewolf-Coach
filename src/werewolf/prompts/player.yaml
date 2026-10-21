@@ -29,14 +29,15 @@ each_round: >-
 # How the day is run, one text for each speaking mode.
 speaking_floor_tokens: >-
   Discussion has up to ${turns} speaking turns each day. Every living player starts the day with
-  ${tokens}. On each turn everyone secretly bids 0 to ${max_bid} tokens and writes the message
-  they would say. The highest bid speaks and pays what it bid; ties go to whoever has spoken
-  least today, then to chance. A bid of 0 means you stay quiet and listen. Tokens you do not
-  spend are lost at nightfall, so unless your strategy says otherwise, spend them: bid 1 to
-  ${max_bid} when you have a question, a read or an answer to give. If a message accuses or
-  questions someone by name (intent accuse or ask, with a target), that player gets one free
-  reply next, once per day; free replies cost nothing. The day ends early if everyone listens, and a day with no talk gives the
-  village nothing to vote on, which only helps the wolves.
+  ${tokens}. On each turn everyone secretly bids from 0 up to the tokens they have left, and
+  writes the message they would say. The highest bid speaks and pays what it bid; ties go to
+  whoever has spoken least today, then to chance. A bid of 0 means you stay quiet and listen.
+  Tokens you do not spend are lost at nightfall, so unless your strategy says otherwise, use
+  them: bid when you have a question, a read or an answer to give. A bid above 0 needs a
+  message, so with nothing to say, bid 0. If a message accuses or questions someone by name
+  (intent accuse or ask, with a target), that player gets one free reply next, once per day;
+  free replies cost nothing. The day ends early if everyone listens, and a day with no talk
+  gives the village nothing to vote on, which only helps the wolves.
 speaking_free_bid: >-
   Discussion has up to ${turns} speaking turns each day. On each turn everyone secretly bids 0 to
   4 and writes the message they would say. The highest bid speaks, and bids cost nothing; ties go
@@ -207,8 +208,8 @@ bid_no_tokens: >-
   You have no floor tokens left today, so you cannot speak this turn: bid 0 and leave the message
   empty.
 bid_tokens: >-
-  You have ${tokens} left today. Bid 0 to ${max_bid}: 0 means you stay quiet and listen; the
-  highest bid speaks and pays what it bid. Your message (at most ${max_chars} characters) is
+  You have ${tokens} left today. Your bid must be from 0 to ${max_bid}; a higher number is
+  not allowed. 0 means you stay quiet and listen; the highest bid speaks and pays what it bid. Your message (at most ${max_chars} characters) is
   posted only if you win the turn. If you bid above 0 you must write a message; if you have
   nothing to say, bid 0 and leave the message and target blank (write nothing between the
   quotes).

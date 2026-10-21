@@ -58,7 +58,7 @@ def test_version_two_rules_are_in_the_text_and_the_defaults() -> None:
     from werewolf.engine.state import Settings
 
     rules = text("player", "speaking_floor_tokens", turns=10, tokens="4 floor tokens", max_bid=4)
-    assert "accuses or questions someone" in rules and "bid 1 to 4" in rules
+    assert "accuses or questions someone" in rules and "bid 0" in rules
     assert (Settings().speaking_turns, Settings().tokens_per_day) == (10, 4)
     reminders = text("player", "reminders", reason_max=40, note_max=100)
     assert "no dashes" in reminders and "not X but Y" in reminders
