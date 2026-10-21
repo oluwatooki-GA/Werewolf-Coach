@@ -150,6 +150,12 @@ def test_the_word_none_in_a_name_field_counts_as_empty(rig: Rig) -> None:
     assert tag.target is None and tag.claimed is None
 
 
+def test_two_quote_marks_written_for_nothing_count_as_empty(rig: Rig) -> None:
+    rig.model.by_line["R1-1"] = {**PLAIN, "target": '""', "vote": '"",', "checked": "''"}
+    (tag, *_) = run(rig, three()).tags
+    assert tag.target is None and tag.claimed is None
+
+
 def test_a_check_report_with_no_role_written_is_read_as_the_seer(rig: Rig) -> None:
     rig.model.by_line["R1-1"] = {
         **PLAIN, "move1": "result_claim", "checked": WOLF_A, "result": "wolf", "claim_role": "none"

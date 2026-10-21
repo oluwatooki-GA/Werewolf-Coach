@@ -71,7 +71,8 @@ def _user(players: list[str], context: list[tuple[str, Speech]], line: str, spee
 
 def _blank(value: str) -> str:
     """Models sometimes write the word instead of leaving a field empty."""
-    return "" if value.strip().lower() in ("none", "null", "n/a") else value.strip()
+    cleaned = value.strip().strip("\"', ")  # some models write the two characters "" for nothing
+    return "" if cleaned.lower() in ("", "none", "null", "n/a") else cleaned
 
 
 def to_tag(line: str, speech: Speech, wire: WireTag, players: list[str]) -> Tag | str:
