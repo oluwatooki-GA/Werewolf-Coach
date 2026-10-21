@@ -154,7 +154,8 @@ reminders: >-
   and a reason of at most ${reason_max} characters. Keep notes to ${note_max} characters. Use
   only what the log shows: do not invent events, earlier days, or things people did not say. At
   the start of day 1 nobody has spoken yet, so a claim about someone staying quiet or acting a
-  certain way must match a numbered line. Write like a person at the table: short, direct
+  certain way must match a numbered line. Do not ask a question someone has already asked in the
+  log; build on their answer instead. Write like a person at the table: short, direct
   sentences, no speeches.
 
 # ---- the user message --------------------------------------------------------------------------

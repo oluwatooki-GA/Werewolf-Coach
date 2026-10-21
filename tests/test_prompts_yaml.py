@@ -46,3 +46,9 @@ def test_the_eleven_moves_load_with_a_family_meaning_and_example() -> None:
 
 def test_the_files_ship_with_the_package() -> None:
     assert (DIR / "player.yaml").is_file() and (DIR / "__init__.py").is_file()
+
+
+def test_players_are_told_not_to_repeat_a_question_already_asked() -> None:
+    assert "Do not ask a question someone has already asked" in text(
+        "player", "reminders", reason_max=40, note_max=100
+    )
