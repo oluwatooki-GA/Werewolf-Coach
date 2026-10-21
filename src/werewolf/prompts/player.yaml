@@ -32,10 +32,10 @@ speaking_floor_tokens: >-
   ${tokens}. On each turn everyone secretly bids 0 to ${max_bid} tokens and writes the message
   they would say. The highest bid speaks and pays what it bid; ties go to whoever has spoken
   least today, then to chance. A bid of 0 means you stay quiet and listen. Tokens you do not
-  spend are lost at nightfall, so unless your strategy says otherwise, spend them: bid 1 to 3
-  when you have a question, a read or an answer to give. If a message accuses someone by name
-  (intent accuse with a target), that player gets one free reply next, once per day; free
-  replies cost nothing. The day ends early if everyone listens, and a day with no talk gives the
+  spend are lost at nightfall, so unless your strategy says otherwise, spend them: bid 1 to
+  ${max_bid} when you have a question, a read or an answer to give. If a message accuses or
+  questions someone by name (intent accuse or ask, with a target), that player gets one free
+  reply next, once per day; free replies cost nothing. The day ends early if everyone listens, and a day with no talk gives the
   village nothing to vote on, which only helps the wolves.
 speaking_free_bid: >-
   Discussion has up to ${turns} speaking turns each day. On each turn everyone secretly bids 0 to
@@ -83,7 +83,7 @@ how_to_answer: >-
 
 legend_reading: >-
   READING THE LOG: "X says (2 tokens): ..." means X won the turn by bidding 2 tokens; "X says:
-  ..." is a message at no cost; "X replies (free): ..." is a free reply to an accusation;
+  ..." is a message at no cost; "X replies (free): ..." is a free reply to an accusation or question;
   "Listening: A, B" means those players chose to stay quiet that turn; "Vote: A voted for B
   (reason: ...)" is a vote cast; "Morning: ..." says who died in the night; lines marked
   [Private] or [Wolf chat] are seen only by you (or by the two werewolves). Each message starts
@@ -155,8 +155,10 @@ reminders: >-
   only what the log shows: do not invent events, earlier days, or things people did not say. At
   the start of day 1 nobody has spoken yet, so a claim about someone staying quiet or acting a
   certain way must match a numbered line. Do not ask a question someone has already asked in the
-  log; build on their answer instead. Write like a person at the table: short, direct
-  sentences, no speeches.
+  log; build on their answer instead. Write like a person typing at a table: short, direct
+  sentences, no speeches, no dashes. Avoid chatbot habits: no greetings or praise ("Great
+  question"), no "not X but Y" contrasts, no lists of three, no stock words (crucial, pivotal,
+  delve), and do not announce what you are about to say. Say it.
 
 # ---- the user message --------------------------------------------------------------------------
 
@@ -195,8 +197,8 @@ bid_fields: >-
   you cite nothing).
 bid_fields_latest: " An accusation must cite one of the latest lines: ${latest}."
 bid_reply: >-
-  ${accuser} accused you (their message is in the log above). This free reply is your chance to
-  answer the accusation: write your message (at most ${max_chars} characters). Leaving it empty
+  ${accuser} accused or questioned you (their message is in the log above). This free reply is
+  your chance to answer: write your message (at most ${max_chars} characters). Leaving it empty
   means you give no answer. It is a free turn, so use bid 0.
 bid_free: >-
   It is your turn to speak (a free turn, so use bid 0). Write your message (at most ${max_chars}

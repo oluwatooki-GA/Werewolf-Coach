@@ -64,7 +64,7 @@ def _new_accusation(
     action: BidAction, speaker: str, alive: list[str], replied: set[str]
 ) -> str | None:
     target = action.target
-    if action.intent == "accuse" and target and target != speaker and target in alive:
+    if action.intent in ("accuse", "ask") and target and target != speaker and target in alive:
         return target if target not in replied else None
     return None
 

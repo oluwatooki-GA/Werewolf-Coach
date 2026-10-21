@@ -28,9 +28,9 @@ class Settings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     speaking_mode: SpeakingMode = SpeakingMode.FLOOR_TOKENS
-    speaking_turns: int = 8
+    speaking_turns: int = 10
     max_rounds: int = 6
-    tokens_per_day: int = 3
+    tokens_per_day: int = 4
     max_message_chars: int = 300
     summarize_rounds: bool = False  # ask every player for a summary at the end of each round
     max_summary_chars: int = 800

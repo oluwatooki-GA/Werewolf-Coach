@@ -11,6 +11,8 @@ from werewolf.engine.setup import new_game
 from werewolf.engine.state import GameState, Settings
 from werewolf.engine.views import PlayerView, make_view
 
+DEFAULTS = Settings(speaking_turns=8, tokens_per_day=3)  # the rules these tests were written for
+
 
 def bidders(
     state: GameState,
@@ -57,7 +59,7 @@ def say(bid: int, text: str = "hello", **kw: object) -> BidAction:
 
 
 def test_highest_bid_speaks_and_pays_exactly_its_bid() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a, b, c = names(state)[:3]
     seen: list[tuple[str, BidTask]] = []
     script = {a: [say(1), BidAction(bid=0)], b: [say(3, "mine"), BidAction(bid=0)], c: [say(2)]}
@@ -68,7 +70,7 @@ def test_highest_bid_speaks_and_pays_exactly_its_bid() -> None:
 
 def test_bid_ties_go_to_least_spoken() -> None:
     for seed in range(20):  # must hold for every seed, so luck cannot pass it
-        state = new_game(seed=seed)
+        state = new_game(seed=seed, settings=DEFAULTS)
         a, b = names(state)[:2]
         script = {a: [say(1, "first"), say(1, "again")], b: [BidAction(bid=0), say(1, "me")]}
         play_day(state, bidders(state, script))
@@ -77,7 +79,7 @@ def test_bid_ties_go_to_least_spoken() -> None:
 
 def test_a_tie_between_equally_quiet_players_is_settled_by_the_seeded_rng() -> None:
     def winner(seed: int) -> str:
-        state = new_game(seed=seed)
+        state = new_game(seed=seed, settings=DEFAULTS)
         a, b = names(state)[:2]
         play_day(state, bidders(state, {a: [say(1)], b: [say(1)]}))
         return "first" if speeches(state)[0].speaker == a else "second"
@@ -87,7 +89,7 @@ def test_a_tie_between_equally_quiet_players_is_settled_by_the_seeded_rng() -> N
 
 
 def test_zero_bid_means_listening() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a = names(state)[0]
     play_day(state, bidders(state, {a: [say(1)]}))
     assert [s.speaker for s in speeches(state)] == [a]
@@ -96,7 +98,7 @@ def test_zero_bid_means_listening() -> None:
 
 
 def test_all_listening_ends_the_day() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     play_day(state, bidders(state, {}))
     assert speeches(state) == []
     assert len(state.calls) == 8  # one turn, then the day ends
@@ -104,7 +106,7 @@ def test_all_listening_ends_the_day() -> None:
 
 
 def test_the_day_also_ends_early_after_a_quiet_turn_that_follows_speech() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     play_day(state, bidders(state, {names(state)[0]: [say(1)]}))
     assert len(speeches(state)) == 1
     assert len(state.calls) == 16  # turn 1 spoke, turn 2 everyone listened
@@ -118,7 +120,7 @@ def test_the_day_stops_at_the_speaking_turn_limit() -> None:
 
 
 def test_right_of_reply_once_per_day() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a, b, c = names(state)[:3]
     script = {
         a: [say(2, "b is a wolf", intent="accuse", target=b)],
@@ -135,7 +137,7 @@ def test_right_of_reply_once_per_day() -> None:
 
 
 def test_only_an_accuse_intent_with_a_target_gives_a_reply() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a, b = names(state)[:2]
     script = {a: [say(1, "defending", intent="defend", target=b), say(1, "bare", intent="accuse")]}
     seen: list[tuple[str, BidTask]] = []
@@ -156,7 +158,7 @@ def test_a_free_reply_counts_as_one_of_the_speaking_turns() -> None:
 
 
 def test_tokens_lost_at_nightfall() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a = names(state)[0]
     seen: list[tuple[str, BidTask]] = []
     play_day(state, bidders(state, {a: [say(3)]}, seen))
@@ -167,7 +169,7 @@ def test_tokens_lost_at_nightfall() -> None:
 
 
 def test_no_overbidding() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a = names(state)[0]
     script = {a: [say(2), say(3, "too much"), say(3, "still too much")]}
     seen: list[tuple[str, BidTask]] = []
@@ -180,7 +182,7 @@ def test_no_overbidding() -> None:
 
 
 def test_a_bid_above_zero_needs_a_message() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a = names(state)[0]
     play_day(state, bidders(state, {a: [say(1, ""), say(1, "")]}))
     assert speeches(state) == []
@@ -196,7 +198,7 @@ def test_all_randomness_through_seeded_rng(monkeypatch: pytest.MonkeyPatch) -> N
         monkeypatch.setattr(random, fn, forbidden)
 
     def day(seed: int) -> list[Speech]:
-        state = new_game(seed=seed)
+        state = new_game(seed=seed, settings=DEFAULTS)
         script = {n: [say(1, n)] * 3 for n in names(state)}  # ties on every turn
         play_day(state, bidders(state, script))
         return speeches(state)
@@ -227,7 +229,7 @@ def test_result_ignores_answer_order() -> None:
 
 
 def test_the_private_intent_never_reaches_a_view() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a, b = names(state)[:2]
     play_day(state, bidders(state, {a: [say(1, "hmm", intent="accuse", target=b)]}))
     for p in state.players:
@@ -235,7 +237,7 @@ def test_the_private_intent_never_reaches_a_view() -> None:
 
 
 def test_a_player_with_no_tokens_is_not_asked_and_not_listed_as_listening() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a, b = names(state)[:2]
     seen: list[tuple[str, BidTask]] = []
     play_day(state, bidders(state, {a: [say(3, "all in"), BidAction(bid=0)], b: []}, seen))
@@ -245,7 +247,7 @@ def test_a_player_with_no_tokens_is_not_asked_and_not_listed_as_listening() -> N
 
 
 def test_choosing_to_listen_is_still_listed() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a, b = names(state)[:2]
     play_day(state, bidders(state, {a: [say(1, "hi")], b: [BidAction(bid=0)]}))
     assert b in listeners(state)
@@ -259,7 +261,7 @@ def test_when_nobody_has_tokens_left_the_day_simply_ends() -> None:
 
 
 def test_a_free_reply_that_bids_anyway_is_accepted_because_a_bid_means_nothing_there() -> None:
-    state = new_game(seed=1)
+    state = new_game(seed=1, settings=DEFAULTS)
     a, b = names(state)[:2]
     script = {
         a: [say(2, "b is a wolf", intent="accuse", target=b)],
@@ -269,3 +271,25 @@ def test_a_free_reply_that_bids_anyway_is_accepted_because_a_bid_means_nothing_t
     reply = speeches(state)[1]
     assert (reply.speaker, reply.reply, reply.paid) == (b, True, 0)
     assert not [c for c in state.calls if c.player == b and c.rejected]
+
+
+def test_a_direct_question_earns_a_free_reply_once_a_day() -> None:
+    state = new_game(seed=1, settings=DEFAULTS)
+    a, b, c = names(state)[:3]
+    script = {
+        a: [say(2, "b, why so quiet?", intent="ask", target=b)],
+        b: [BidAction(bid=0), say(0, "I was listening")],  # the free reply
+        c: [BidAction(bid=0), say(1, "b, and you?", intent="ask", target=b, cites=[cite(a)])],
+    }
+    seen: list[tuple[str, BidTask]] = []
+    play_day(state, bidders(state, script, seen))
+    assert [(who, t.reply_to) for who, t in seen if t.reply_to] == [(b, a)]  # c's question: none
+    assert [s.reply for s in speeches(state)][:2] == [False, True]
+
+
+def test_other_intents_do_not_earn_a_reply() -> None:
+    state = new_game(seed=1, settings=DEFAULTS)
+    a, b = names(state)[:2]
+    seen: list[tuple[str, BidTask]] = []
+    play_day(state, bidders(state, {a: [say(2, "fyi", intent="share_info", target=b)]}, seen))
+    assert not [1 for _, t in seen if t.reply_to]

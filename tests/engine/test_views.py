@@ -74,6 +74,6 @@ def test_the_view_carries_the_public_rules_of_the_game() -> None:
     )
     rules = make_view(state, state.players[0].name).rules
     assert rules.speaking_mode == SpeakingMode.FREE_BID
-    assert (rules.speaking_turns, rules.max_rounds, rules.tokens_per_day) == (5, 6, 3)
+    assert (rules.speaking_turns, rules.max_rounds, rules.tokens_per_day) == (5, 6, 4)
     assert rules.max_message_chars == 300
     assert all(make_view(state, p.name).rules == rules for p in state.players)

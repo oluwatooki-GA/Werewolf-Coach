@@ -49,7 +49,12 @@ def test_setup_uses_only_its_own_seeded_random(monkeypatch: pytest.MonkeyPatch) 
 def test_default_settings_follow_the_design() -> None:
     s = Settings()
     assert s.speaking_mode is SpeakingMode.FLOOR_TOKENS
-    assert (s.speaking_turns, s.max_rounds, s.tokens_per_day, s.max_message_chars) == (8, 6, 3, 300)
+    assert (s.speaking_turns, s.max_rounds, s.tokens_per_day, s.max_message_chars) == (
+        10,
+        6,
+        4,
+        300,
+    )
     assert s.cards == {}
 
 

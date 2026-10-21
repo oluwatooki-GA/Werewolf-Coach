@@ -10,9 +10,14 @@ from werewolf.engine.setup import new_game
 from werewolf.engine.state import GameState, Settings, SpeakingMode
 from werewolf.engine.views import PlayerView
 
+DEFAULTS = Settings(speaking_turns=8, tokens_per_day=3)  # the rules these tests were written for
+
 
 def game(mode: SpeakingMode, seed: int = 1) -> GameState:
-    return new_game(seed=seed, settings=Settings(speaking_mode=mode))
+    return new_game(
+        seed=seed,
+        settings=Settings(speaking_mode=mode, speaking_turns=8, tokens_per_day=3),
+    )
 
 
 def names(state: GameState) -> list[str]:
