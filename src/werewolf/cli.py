@@ -502,7 +502,7 @@ def main(argv: list[str] | None = None) -> int:
         "--rpm", type=int, help="requests per minute to send (default: the provider's limit)"
     )
     play.add_argument(
-        "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
+        "--max-tokens", type=int, help="output limit per answer (default: 300, 1000 for Claude)"
     )
     play.add_argument(
         "--persona",
@@ -540,7 +540,7 @@ def main(argv: list[str] | None = None) -> int:
         "--rpm", type=int, help="requests per minute to send (default: the provider's limit)"
     )
     many.add_argument(
-        "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
+        "--max-tokens", type=int, help="output limit per answer (default: 300, 1000 for Claude)"
     )
     many.add_argument(
         "--persona",
@@ -612,7 +612,7 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--max-spend", help="dollars; required for paid models")
     check.add_argument("--show", action="store_true", help="print each raw model answer")
     check.add_argument(
-        "--max-tokens", type=int, help="output limit per answer (default: 300, 700 for Claude)"
+        "--max-tokens", type=int, help="output limit per answer (default: 300, 1000 for Claude)"
     )
     check.set_defaults(run=_smoke)
 
