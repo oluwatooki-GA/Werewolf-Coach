@@ -1,8 +1,11 @@
 """Small hand-made games for the coach tests: roles known, events chosen, winner chosen."""
 
 import asyncio
+import importlib
 import json
+import sys
 from collections.abc import Sequence
+from pathlib import Path
 from typing import cast
 
 from werewolf.agents.scripted import policy
@@ -13,6 +16,11 @@ from werewolf.engine.roles import Role, Team
 from werewolf.engine.setup import new_game
 from werewolf.engine.state import CallRecord
 from werewolf.tagger.tags import Claimed, Tag, TagFile
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agents"))  # the fake model is there
+_fake = importlib.import_module("test_llm_agent")
+MODEL: str = _fake.MODEL  # the fake model's name
+Rig = _fake.Rig  # a fake model behind the real client, cache and ledger
 
 Game = tuple[GameLog, TagFile | None]
 
