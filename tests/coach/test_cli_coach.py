@@ -81,7 +81,7 @@ class Rig:
 
 @pytest.fixture
 def rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Rig:
-    shutil.copytree(REPO / "cards", tmp_path / "cards")
+    shutil.copytree(REPO / "cards", tmp_path / "cards", ignore=shutil.ignore_patterns("coach"))
     monkeypatch.chdir(tmp_path)
     return Rig(tmp_path, monkeypatch)
 
@@ -200,7 +200,7 @@ def test_a_paid_model_without_its_limit_is_refused_before_any_call(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    shutil.copytree(REPO / "cards", tmp_path / "cards")
+    shutil.copytree(REPO / "cards", tmp_path / "cards", ignore=shutil.ignore_patterns("coach"))
     monkeypatch.chdir(tmp_path)
     code = main(["coach", "run", "--side", "wolf", "--evidence", str(evidence)])
     assert code == 2

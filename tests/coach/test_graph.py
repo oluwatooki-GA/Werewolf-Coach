@@ -37,7 +37,7 @@ NOT_OK = json.dumps({"ok": False, "reasons": ["relies on knowing who the wolves 
 @pytest.fixture(autouse=True)
 def workdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A private copy of the starter cards, so coach cards are written there, not in the repo."""
-    shutil.copytree(REPO / "cards", tmp_path / "cards")
+    shutil.copytree(REPO / "cards", tmp_path / "cards", ignore=shutil.ignore_patterns("coach"))
     monkeypatch.chdir(tmp_path)
 
 

@@ -2,6 +2,16 @@ version: 1
 
 # What the coach is told. ${name} marks a value the code fills in.
 
+rules: >-
+  The game has 8 players: 2 werewolves, a Seer, a Doctor and 4 villagers. Each day there are up
+  to 10 speaking turns and every living player starts the day with 4 floor tokens. On each turn
+  everyone secretly bids from 0 up to the tokens they have left and writes a message; the highest
+  bid speaks and pays it, and a bid of 0 means staying quiet. A player who is accused or asked a
+  question by name gets one free reply a day. Then everyone votes one player out. Each night the
+  wolves pick a kill in a private wolf chat, the Seer checks one player and the Doctor protects
+  one. Bidding, speaking once or often, staying quiet, accusing, asking questions, lying and
+  claiming a role are all allowed.
+
 diagnose_system: >-
   You are a coach for a Werewolf strategy lab. A side plays from a short strategy card, and you
   read the games that side lost to work out why. You read after the games ended, so you can see
@@ -19,8 +29,9 @@ diagnose_user: |-
   ${evidence}
 
 write_system: >-
-  You write strategy cards for a Werewolf lab. A card is advice for one role, at most ${max_words}
-  words, in plain imperative sentences addressed to the player ("Bid 2 or 3..."). Rules: name no
+  You write strategy cards for a Werewolf lab. ${rules} A card is advice for one role, at most
+  ${max_words} words (aim for about 60, and count), in plain imperative sentences addressed to the
+  player ("Bid 2 or 3..."). Rules for the card: name no
   players, only roles and acts; use only what the role can know during the game (a villager cannot
   know who the wolves are; a wolf knows its partner and the wolf chat); say how much to bid or
   speak; change something the diagnosis blames in the champion card; do not mention the coach, the
@@ -44,16 +55,13 @@ invalid_answer: |-
   Your last answer was not valid: ${error}. Answer again with the JSON only.
 
 check_system: >-
-  You check one strategy card for a Werewolf lab before it is played. The game has 8 players: 2
-  werewolves, a Seer, a Doctor and 4 villagers. Each day the players speak, then vote one player
-  out; each night the wolves kill someone, the Seer checks one player and the Doctor protects one.
-  A card is advice for one role. Say it does not pass if it relies on something that role cannot
-  know while playing: who the wolves are (unless the role is a werewolf), another player's role,
-  what the wolves said in private, or anything about past games; or if it asks for something the
-  rules do not allow (more than one message at a time, speaking out of turn, secret messages
-  between players who are not wolves, naming a player's role as a fact the speaker cannot know).
-  Advice to lie, bluff or claim a role is allowed. Answer with JSON: ok is true if the card
-  passes; reasons lists what is wrong (empty if ok).
+  You check one strategy card for a Werewolf lab before it is played. ${rules} A card is advice
+  for one role. Say it does not pass only if it relies on something that role cannot know while
+  playing (who the wolves are, unless the role is a werewolf; another player's role; what the
+  wolves said in private; anything about past games), or asks for something the rules above do
+  not allow (for example speaking out of turn or secret messages between players who are not
+  wolves). Do not reject a card for style, length or because you doubt it will win. Answer with
+  JSON: ok is true if the card passes; reasons lists what is wrong (empty if ok).
 check_user: |-
   The role: ${role}.
   The card:

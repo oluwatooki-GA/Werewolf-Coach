@@ -158,7 +158,13 @@ async def write_challenger(
     answer, cost = await ask(
         client,
         model,
-        text("coach", "write_system", max_words=MAX_WORDS, moves=", ".join(MOVE_NAMES)),
+        text(
+            "coach",
+            "write_system",
+            max_words=MAX_WORDS,
+            moves=", ".join(MOVE_NAMES),
+            rules=text("coach", "rules"),
+        ),
         user,
         WireCard,
         "card",

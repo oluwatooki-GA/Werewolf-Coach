@@ -18,7 +18,7 @@ from werewolf.prompts import text
 from werewolf.strategies.cards import Card, check_card
 
 MAX_ATTEMPTS = 3  # the first card and two rewrites
-CHECK_TOKENS = 400
+CHECK_TOKENS = 1000
 
 
 class WireCheck(BaseModel):
@@ -53,7 +53,7 @@ async def model_problems(client: LLMClient, model: str, card: Card) -> tuple[lis
     answer, cost = await ask(
         client,
         model,
-        text("coach", "check_system"),
+        text("coach", "check_system", rules=text("coach", "rules")),
         text(
             "coach",
             "check_user",
