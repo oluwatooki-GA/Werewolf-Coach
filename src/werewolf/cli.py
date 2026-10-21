@@ -10,6 +10,7 @@ import hashlib
 import io
 import sys
 from collections.abc import Callable
+from decimal import Decimal
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -389,6 +390,72 @@ def _adherence(args: argparse.Namespace) -> int:
     return 0
 
 
+def _spend(text: str | None) -> Decimal | None:
+    return Decimal(text) if text is not None else None
+
+
+def _coach_run(args: argparse.Namespace) -> int:
+    """Run coach generations. Exit 1 if a cap or an error stopped it, 2 if it could not start."""
+    from werewolf import runtime
+    from werewolf.coach.history import family_tree
+    from werewolf.coach.run import START_CHAMPION, CoachPlan, check_plan, run_coach
+    from werewolf.coach.steps import CoachError, CoachStopped
+
+    plan = CoachPlan(
+        side=args.side,
+        generations=args.generations,
+        games=args.games,
+        first_seed=args.first_seed,
+        champion=args.champion or START_CHAMPION[args.side],
+        evidence=args.evidence,
+        player_model=args.player_model,
+        coach_model=args.coach_model,
+        check_model=args.check_model,
+        parallel=args.parallel,
+        run=args.tag,
+    )
+    try:
+        check_plan(plan)
+        coach = runtime.build_client(
+            args.coach_model, _spend(args.max_spend_coach), flag="--max-spend-coach"
+        )
+        players = runtime.build_client(
+            args.player_model,
+            _spend(args.max_spend_players),
+            requests_per_minute=args.rpm,
+            flag="--max-spend-players",
+        )
+    except (RuntimeError, ValueError) as exc:
+        print(f"cannot start: {exc}", file=sys.stderr)
+        return 2
+    code = 0
+    try:
+        asyncio.run(
+            run_coach(
+                coach,
+                players,
+                plan,
+                settings=Settings(summarize_rounds=True),
+                say=lambda text: print(text, flush=True),
+            )
+        )
+    except CoachStopped as exc:
+        print(f"STOPPED: {exc}; the generation in progress was not saved, run again to resume")
+        code = 1
+    except CoachError as exc:
+        print(f"the coach could not finish: {exc}", file=sys.stderr)
+        code = 1
+    print(family_tree(args.side))
+    return code
+
+
+def _coach_show(args: argparse.Namespace) -> int:
+    from werewolf.coach.history import family_tree
+
+    print(family_tree(args.side))
+    return 0
+
+
 def _replay(args: argparse.Namespace) -> int:
     try:
         log = GameLog.from_json(Path(args.path).read_text(encoding="utf-8"))
@@ -615,6 +682,33 @@ def main(argv: list[str] | None = None) -> int:
         "--max-tokens", type=int, help="output limit per answer (default: 300, 1000 for Claude)"
     )
     check.set_defaults(run=_smoke)
+
+    coach = commands.add_parser("coach", help="the coach: write better cards from lost games")
+    coach_commands = coach.add_subparsers(dest="coach_command", required=True)
+    side_choices = ["wolf", "villager"]
+
+    coach_run = coach_commands.add_parser("run", help="run coach generations for one side")
+    coach_run.add_argument("--side", choices=side_choices, required=True)
+    coach_run.add_argument("--generations", type=int, default=1, help="how many in all")
+    coach_run.add_argument("--games", type=int, default=6, help="games per arm (default: 6)")
+    coach_run.add_argument("--first-seed", type=int, default=1000)
+    coach_run.add_argument("--champion", help="card to start from (default: the plan's choice)")
+    coach_run.add_argument(
+        "--evidence", nargs="+", required=True, help="folders of games the coach reads"
+    )
+    coach_run.add_argument("--player-model", default="gpt-4.1-nano")
+    coach_run.add_argument("--coach-model", default="claude-sonnet-5-5")
+    coach_run.add_argument("--check-model", default="claude-haiku-5-5")
+    coach_run.add_argument("--max-spend-players", help="dollars; required for paid models")
+    coach_run.add_argument("--max-spend-coach", help="dollars; required for paid models")
+    coach_run.add_argument("--parallel", type=int, default=3)
+    coach_run.add_argument("--rpm", type=int, help="player requests per minute")
+    coach_run.add_argument("--tag", default="", help="goes into new card ids (a fresh history)")
+    coach_run.set_defaults(run=_coach_run)
+
+    coach_show = coach_commands.add_parser("show", help="print a side's family tree of champions")
+    coach_show.add_argument("--side", choices=side_choices, required=True)
+    coach_show.set_defaults(run=_coach_show)
 
     args = parser.parse_args(argv)
     return int(args.run(args))

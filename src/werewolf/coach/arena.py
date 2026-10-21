@@ -17,6 +17,7 @@ from werewolf.engine.log import GameLog
 from werewolf.engine.state import Settings
 from werewolf.llm.client import LLMClient
 from werewolf.runner import run_batch
+from werewolf.runtime import default_max_tokens
 from werewolf.tagger.adherence import wilson
 
 MIN_GAP = Fraction(3, 10)  # DESIGN 6.1: under about 30 points is "not clear yet"
@@ -72,6 +73,7 @@ async def play_arm(
         parallel=parallel,
         cache="fresh",
         data_dir=data_dir,
+        max_tokens=default_max_tokens(model),
         cards_by_role={role: card_id},
     )
     logs = [played.log for played in report.played]

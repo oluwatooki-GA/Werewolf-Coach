@@ -88,6 +88,7 @@ async def run_generation(
     root: Path = COACH_DIR,
     run: str = "",
     parallel: int = 3,
+    player_client: LLMClient | None = None,
 ) -> Generation:
     """Run generation `number` of one side's coach and return it, saved. `champion` is the id of
     the card to beat; `games` are the earlier games the coach reads."""
@@ -132,7 +133,7 @@ async def run_generation(
         arms = await asyncio.gather(
             *(
                 play_arm(
-                    client,
+                    player_client or client,
                     player_model,
                     side,
                     c.id,

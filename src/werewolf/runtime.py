@@ -53,12 +53,13 @@ def build_client(
     root: Path = Path("."),
     max_concurrency: int = 8,
     requests_per_minute: int | None = None,
+    flag: str = "--max-spend",
 ) -> LLMClient:
     """A client for real calls. A paid model needs an explicit spending limit for this run."""
     transport = LiteLLMTransport()
     provider = transport.provider(model)
     if provider not in FREE_PROVIDERS and max_spend is None:
-        raise RuntimeError(f"{model} is a paid model: give a spending limit with --max-spend")
+        raise RuntimeError(f"{model} is a paid model: give a spending limit with {flag}")
     load_env(root / ".env")
     key = KEY_FOR.get(provider)
     if key is not None and not os.environ.get(key):
