@@ -38,7 +38,13 @@ def card(words: str) -> str:
         {
             "name": words,
             "summary": "Wait.",
-            "instructions": f"Take the lead and speak often: bid 2 or 3 on most turns. {words}",
+            "instructions": (
+                "Take the lead and speak often: bid 2 or 3 on most turns. "
+                "As soon as someone has said or voted something, accuse one player who is not "
+                "your partner and back it with a reason from the log. "
+                "Press again in later turns and call for a vote on them. "
+                f"{words}"
+            ),
             "expected_moves": ["accuse_reasoned"],
         }
     )

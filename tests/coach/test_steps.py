@@ -62,6 +62,7 @@ def test_the_diagnosis_prompt_holds_the_digest_and_the_champion_card(tmp_path: P
     text = " ".join(m["content"] for m in request.messages)
     assert DIGEST in text and "Take the lead and accuse early." in text
     assert "the wolf side" in text
+    assert "needs no bid" in text  # the diagnosis step is told the rules too
 
 
 def test_a_good_diagnosis_is_returned_with_its_evidence_and_its_cost(tmp_path: Path) -> None:
@@ -144,7 +145,8 @@ def test_the_writer_is_told_to_keep_the_base_and_the_champion_is_never_reused_as
     assert card.id == "wolf.accuse_early_2"  # the champion's own id is taken
     (request,) = fake.asked("WireCard")
     system = request.messages[0]["content"]
-    assert "keep every sentence" in system and "word for word" in system
+    assert "word for word" in system and "At least half of the base" in system
+    assert "free" in system and "needs no bid" in system
     assert "base to build on" in request.messages[1]["content"]
 
 

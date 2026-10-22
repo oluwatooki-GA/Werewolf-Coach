@@ -128,7 +128,7 @@ async def diagnose(
     answer, cost = await ask(
         client,
         model,
-        text("coach", "diagnose_system"),
+        text("coach", "diagnose_system", rules=text("coach", "rules")),
         text(
             "coach",
             "diagnose_user",

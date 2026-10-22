@@ -7,6 +7,7 @@ breaks a rule. A card that fails is written again with the reasons, twice at mos
 never passes is not returned.
 """
 
+import math
 import re
 from collections.abc import Collection
 from dataclasses import dataclass, field
@@ -19,6 +20,7 @@ from werewolf.llm.client import LLMClient
 from werewolf.prompts import text
 from werewolf.strategies.cards import Card, check_card
 
+MIN_KEPT = 0.5  # the share of the champion's sentences a new card must keep
 MAX_ATTEMPTS = 3  # the first card and two rewrites
 CHECK_TOKENS = 1000
 
@@ -57,11 +59,15 @@ def code_problems(card: Card, champion: Card) -> list[str]:
     problems = check_card(card)
     if card.prompt_text == champion.prompt_text:
         problems.append("the card has the same instructions as the champion; change something")
-    elif not set(sentences(card.prompt_text)) & set(sentences(champion.prompt_text)):
-        problems.append(
-            "the card does not build on the champion: keep, word for word, the champion's "
-            "sentences that the diagnosis does not blame"
-        )
+    else:
+        base = sentences(champion.prompt_text)
+        kept = [s for s in base if s in sentences(card.prompt_text)]
+        need = math.ceil(len(base) * MIN_KEPT)
+        if len(kept) < need:
+            problems.append(
+                f"the card keeps {len(kept)} of the champion's {len(base)} sentences; keep at "
+                f"least {need} word for word and change only what the diagnosis contradicts"
+            )
     return problems
 
 

@@ -28,7 +28,11 @@ CARD = json.dumps(
         "name": "wait a beat",
         "summary": "Wait.",
         "instructions": (
-            "Take the lead and speak often: bid 2 or 3 on most turns. Wait for two messages first."
+            "Take the lead and speak often: bid 2 or 3 on most turns. "
+            "As soon as someone has said or voted something, accuse one player who is not your "
+            "partner and back it with a reason from the log. "
+            "Press again in later turns and call for a vote on them. "
+            "Wait for two messages first."
         ),
         "expected_moves": ["accuse_reasoned"],
     }
@@ -205,7 +209,7 @@ def test_the_record_keeps_the_parent_and_what_changed(
     gen = generate(client, tmp_path)
     assert "+ Wait for two messages first." in gen.changes
     assert not any("Take the lead and speak often" in change for change in gen.changes)  # kept
-    assert any(change.startswith("- Press again") for change in gen.changes)  # dropped
+    assert "- Always give a reason." in gen.changes  # dropped, as the card says nothing of it
     text = (tmp_path / "cards" / "coach" / "wolf.wait_a_beat.yaml").read_text(encoding="utf-8")
     assert "parent: wolf.accuse_early@2" in text
     assert "+ Wait for two messages first." in family_tree("wolf", tmp_path / "coach")

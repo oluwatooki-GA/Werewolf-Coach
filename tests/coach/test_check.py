@@ -7,7 +7,7 @@ from pathlib import Path
 
 from coach_support import CoachFake, coach_client
 
-from werewolf.coach.check import CheckOutcome, changes, write_checked_card
+from werewolf.coach.check import CheckOutcome, changes, code_problems, write_checked_card
 from werewolf.coach.steps import Diagnosis
 from werewolf.engine.roles import Role
 from werewolf.strategies.cards import Card
@@ -114,7 +114,9 @@ def test_every_call_is_paid_for_and_counted(tmp_path: Path) -> None:
 def test_a_card_that_keeps_nothing_of_the_champion_is_sent_back(tmp_path: Path) -> None:
     fresh = reply("Stay quiet on day 1 and vote with the majority.", keep=False)
     outcome, _ = run(tmp_path, [fresh, reply()], [verdict(True)])
-    assert outcome.attempts == 2 and "does not build on the champion" in outcome.reasons[0][0]
+    assert (
+        outcome.attempts == 2 and "keeps 0 of the champion's 1 sentences" in outcome.reasons[0][0]
+    )
     assert outcome.card is not None and BASE in outcome.card.instructions
     assert outcome.card.parent == "wolf.accuse_early@2"
 
@@ -131,3 +133,14 @@ def test_the_changes_list_what_was_taken_out_and_what_was_put_in() -> None:
         "+ Never accuse your partner.",
     ]
     assert changes(base, base) == []
+
+
+def test_a_card_must_keep_at_least_half_of_a_longer_base_word_for_word(tmp_path: Path) -> None:
+    four = champion().model_copy(update={"instructions": "One a. Two b. Three c. Four d."})
+    keeps_one = four.model_copy(update={"instructions": "One a. New x. New y. New z."})
+    keeps_two = four.model_copy(update={"instructions": "One a. Two b. New x. New y."})
+    assert (
+        "keeps 1 of the champion's 4 sentences; keep at least 2"
+        in code_problems(keeps_one, four)[0]
+    )
+    assert code_problems(keeps_two, four) == []
