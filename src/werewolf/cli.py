@@ -455,6 +455,20 @@ def _coach_show(args: argparse.Namespace) -> int:
     return 0
 
 
+def _app_seed(args: argparse.Namespace) -> int:
+    """Load saved games, tags and coach generations into the database."""
+    from werewolf.store import make_engine, seed
+
+    report = seed(make_engine(args.database), Path(args.games_dir), Path(args.coach_dir))
+    print(
+        f"{report.games_added} games added ({report.games_existing} already there), "
+        f"{report.tags_added} tag files, {report.generations_added} coach generations"
+    )
+    for path, why in report.skipped.items():
+        print(f"skipped {path}: {why}", file=sys.stderr)
+    return 0
+
+
 def _replay(args: argparse.Namespace) -> int:
     try:
         log = GameLog.from_json(Path(args.path).read_text(encoding="utf-8"))
@@ -707,6 +721,16 @@ def main(argv: list[str] | None = None) -> int:
     coach_show = coach_commands.add_parser("show", help="print a side's family tree of champions")
     coach_show.add_argument("--side", choices=side_choices, required=True)
     coach_show.set_defaults(run=_coach_show)
+
+    app = commands.add_parser("app", help="the website's database and server")
+    app_commands = app.add_subparsers(dest="app_command", required=True)
+    app_seed = app_commands.add_parser("seed", help="load saved games and coach history")
+    app_seed.add_argument(
+        "--database", help="a database URL (default: DATABASE_URL or data/app.db)"
+    )
+    app_seed.add_argument("--games-dir", default="data/games")
+    app_seed.add_argument("--coach-dir", default="data/coach")
+    app_seed.set_defaults(run=_app_seed)
 
     args = parser.parse_args(argv)
     return int(args.run(args))
