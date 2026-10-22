@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
 from werewolf.api.deps import DB
+from werewolf.api.replay import Replay, build_replay
 from werewolf.api.schemas import GameDetail, GameList, GameSummary
 from werewolf.engine.log import GameLog
 from werewolf.store.tables import games, tags
@@ -60,3 +61,15 @@ def one_game(game_id: str, db: DB) -> GameDetail:
     tagfile = TagFile.model_validate_json(tag_row.tagfile) if tag_row else None
     derived = derive(log, tagfile.tags) if tagfile else []
     return GameDetail(id=game_id, game=log, tags=tagfile, derived=derived)
+
+
+@router.get("/games/{game_id}/replay")
+def replay(game_id: str, db: DB) -> Replay:
+    """The game as the replay page reads it: numbered lines beside private subtext."""
+    with db.connect() as conn:
+        row = conn.execute(select(games.c.log).where(games.c.id == game_id)).first()
+        if row is None:
+            raise HTTPException(404, f"no game {game_id}")
+        tag_row = conn.execute(select(tags.c.tagfile).where(tags.c.game_id == game_id)).first()
+    tagfile = TagFile.model_validate_json(tag_row.tagfile) if tag_row else None
+    return build_replay(game_id, GameLog.from_json(row.log), tagfile)
