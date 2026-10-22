@@ -10,8 +10,6 @@ type Props = {
   /** Show roles, the lab's findings and the private-note marker. Off is the public view. */
   showRoles: boolean;
   showMoves: boolean;
-  /** Fewer chips: only a lie is flagged. For the short demo on the home page. */
-  quiet?: boolean;
   selected: boolean;
   dim: boolean;
   /** Every public line by its number, so a cite can show the line it points at. */
@@ -49,7 +47,6 @@ export function Message({
   entry,
   showRoles,
   showMoves,
-  quiet = false,
   selected,
   dim,
   quotes,
@@ -118,17 +115,17 @@ export function Message({
           )}
 
           <ul className={styles.chips} aria-label="About this message">
-            {isLine && !quiet && (entry.reply || entry.paid > 0) ? (
+            {isLine && showMoves && (entry.reply || entry.paid > 0) ? (
               <li>{entry.reply ? "free reply" : plural(entry.paid, "token")}</li>
             ) : null}
             {isLine && showMoves ? entry.moves.map((move) => <li key={move}>{moveName(move)}</li>) : null}
             {marks
-              .filter((mark) => !quiet || mark.label === "lie")
+              .filter((mark) => showMoves || mark.label === "lie")
               .map((mark) => (
-              <li key={mark.label} data-flag={mark.label === "lie" ? "lie" : undefined}>
-                {moveName(mark.label)}
-              </li>
-            ))}
+                <li key={mark.label} data-flag={mark.label === "lie" ? "lie" : undefined}>
+                  {moveName(mark.label)}
+                </li>
+              ))}
           </ul>
         </div>
       </div>

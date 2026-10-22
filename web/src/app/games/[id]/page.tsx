@@ -27,23 +27,29 @@ function matchup(replay: Replay): string {
   return `${wolves ?? "default"} wolves against ${village ?? "default"} villagers`;
 }
 
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 export default async function ReplayPage({ params }: Props) {
   const { id } = await params;
   const replay = await apiOrNull<Replay>(`/games/${id}/replay`);
   if (!replay) notFound();
-  const winner = replay.winner === "Wolves" ? "wolves" : "village";
   return (
     <Room
       entries={replay.entries}
       players={replay.players}
       title={`seed-${replay.id}`}
-      topic={`${matchup(replay)}. Played by ${replay.model || "scripted agents"} on the ${replay.rule_version} rules. The ${winner} won in ${plural(replay.rounds, "round")}.`}
       label={`Seed ${replay.seed}`}
       welcome={
-        <p>
-          This is a recorded game, playing back like a live chat. Click any message to read what its
-          player was privately thinking. Pause, change the speed or skip to the end above.
-        </p>
+        <>
+          <p>
+            {sentence(matchup(replay))}, played by {replay.model || "scripted agents"} on the {replay.rule_version}{" "}
+            rules. It lasts {plural(replay.rounds, "round")}.
+          </p>
+          <p>
+            This is a recording that plays back like a live chat. Click any message to read what its
+            player was privately thinking. Pause, change the speed or skip to the end above.
+          </p>
+        </>
       }
     />
   );

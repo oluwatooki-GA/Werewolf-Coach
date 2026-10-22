@@ -9,7 +9,7 @@
   padding-bottom: var(--s6);
 }
 
-/* the channel header, pinned like a chat app's */
+/* the channel header, pinned like a chat app's: the name and the controls, then what to show */
 .bar {
   position: sticky;
   top: 0;
@@ -17,9 +17,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--s1) var(--s4);
-  min-height: var(--header-height);
-  padding: var(--s2) var(--s4);
+  gap: var(--s2) var(--s4);
+  padding: var(--s3) var(--s4);
   background: var(--feed);
   border-bottom: 1px solid var(--line);
 }
@@ -34,23 +33,16 @@
   font-weight: 600;
 }
 
-.topic {
-  flex: 1 1 14rem;
-  min-width: 0;
-  padding-left: var(--s4);
-  border-left: 1px solid var(--raise-2);
-  color: var(--dim);
-  font-size: 0.875rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.controls {
+  margin-left: auto;
 }
 
 .switches {
   display: flex;
-  gap: var(--s4);
-  margin-left: auto;
-  font-size: 0.875rem;
+  gap: var(--s5);
+  padding: var(--s3) var(--s4) 0;
+  color: var(--dim);
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
@@ -61,11 +53,15 @@
   cursor: pointer;
 }
 
+.switches label:has(input:checked) {
+  color: var(--text);
+}
+
 .switches input {
   appearance: none;
   position: relative;
-  width: 2.25rem;
-  height: 1.25rem;
+  width: 1.875rem;
+  height: 1.0625rem;
   margin: 0;
   border-radius: 1rem;
   background: var(--raise-2);
@@ -78,8 +74,8 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 1rem;
-  height: 1rem;
+  width: 0.8125rem;
+  height: 0.8125rem;
   border-radius: 50%;
   background: var(--strong);
   transition: translate 140ms var(--ease-out);
@@ -90,12 +86,17 @@
 }
 
 .switches input:checked::after {
-  translate: 1rem 0;
+  translate: 0.8125rem 0;
   background: #1c1530;
 }
 
 .feed {
-  padding-top: var(--s3);
+  padding: var(--s2) 0 var(--s5);
+}
+
+/* while a game plays, leave room under the newest message so the next one arrives into open space */
+.feed[data-live] {
+  padding-bottom: min(34vh, 18rem);
 }
 
 /* a message that has just arrived in the live chat */
@@ -122,10 +123,16 @@
 }
 
 .welcome {
-  margin: var(--s4) var(--s4) 0;
-  padding: var(--s4);
-  border-radius: 8px;
-  background: var(--raise);
+  display: grid;
+  gap: var(--s2);
+  max-width: 62ch;
+  margin: var(--s5) var(--s4) var(--s2);
+  color: var(--dim);
+}
+
+.welcome p:first-child {
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* the guided demo's narrator: one plain sentence about what is on screen */
@@ -207,29 +214,30 @@
   font-weight: 700;
 }
 
+/* the night and the Seer's check: plain dim lines with a violet lock, not boxes */
 .secret {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--s2);
-  margin: var(--s1) var(--s4) var(--s1) 3.5rem;
-  padding: var(--s2) var(--s3);
-  border-radius: 6px;
-  background: var(--think-bg);
-  color: var(--think);
+  margin: var(--s2) var(--s4) var(--s2) 3.25rem;
+  color: var(--dim);
   font-size: 0.875rem;
 }
 
 .secret svg {
   flex: none;
+  margin-top: 0.2em;
+  color: var(--think);
 }
 
+/* wolf chat is the one private conversation, so it gets a quiet raised block */
 .wolves {
   display: flex;
   gap: var(--s3);
-  margin: var(--s1) var(--s4);
-  padding: var(--s2) var(--s3);
-  border-radius: 6px;
-  background: var(--wolf-bg);
+  margin: var(--s2) var(--s4);
+  padding: var(--s3);
+  border-radius: 8px;
+  background: var(--side);
 }
 
 .wolves[data-dim] {
@@ -292,16 +300,8 @@
     font-weight: 700;
     cursor: pointer;
   }
-  .bar {
-    position: static;
-  }
   .switches {
     margin-left: 0;
     width: 100%;
-  }
-  .topic {
-    padding-left: 0;
-    border-left: 0;
-    flex-basis: 100%;
   }
 }

@@ -1,6 +1,7 @@
 /** How players look in the chat: a stable avatar colour and a colour per role. */
 
-const AVATARS = ["#e8776f", "#e3a65a", "#9bc96e", "#52bfa5", "#5eaee8", "#928ee8", "#c97bd6", "#d97aa6"];
+// eight hues at one lightness and one softness, so no avatar shouts over the others
+const AVATARS = ["#d9948d", "#d4ac7a", "#a9bf86", "#7fbfae", "#84aed6", "#a09fda", "#bc95c9", "#cb94b0"];
 
 /** The same name always gets the same avatar colour (FNV-1a, then a final mix). */
 export function avatarColor(name: string): string {
@@ -15,16 +16,7 @@ export function initial(name: string): string {
   return name.trim().charAt(0).toUpperCase();
 }
 
-/** The role's tag colour: coral wolves, gold Seer, green Doctor, slate Villager. */
+/** Only wolves get a colour. Every village role is neutral and told apart by its word. */
 export function roleColor(role: string): string {
-  switch (role) {
-    case "Werewolf":
-      return "var(--wolf)";
-    case "Seer":
-      return "var(--gold)";
-    case "Doctor":
-      return "var(--green)";
-    default:
-      return "var(--slate)";
-  }
+  return role === "Werewolf" ? "var(--wolf)" : "var(--dim)";
 }

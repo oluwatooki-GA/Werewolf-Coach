@@ -12,7 +12,6 @@ function open(props: Partial<React.ComponentProps<typeof Room>> = {}) {
       entries={replay.entries}
       players={replay.players}
       title="seed-1-845496ae"
-      topic="A recorded game"
       label="A recorded game"
       autoplay={false}
       {...props}
@@ -92,11 +91,13 @@ describe("Room", () => {
     expect(screen.getAllByRole("heading", { name: /Players, 8 players/ }).length).toBeGreaterThan(0);
   });
 
-  it("groups the member list by team", () => {
+  it("lists the players once, each with their role in words and a team mark", () => {
     open();
     const members = panel().getByLabelText("Players");
-    expect(within(members).getByRole("heading", { name: "Wolves, 2 players" })).toBeInTheDocument();
-    expect(within(members).getByRole("heading", { name: "Village, 6 players" })).toBeInTheDocument();
+    expect(within(members).getByRole("heading", { name: "Players, 8 players" })).toBeInTheDocument();
+    expect(within(members).getAllByRole("button")).toHaveLength(8);
+    expect(within(members).getAllByText("Werewolf")).toHaveLength(2);
+    expect(within(members).getByText("Seer")).toBeInTheDocument();
   });
 
   it("follows one player: everyone else's messages dim, and clicking again clears it", () => {
@@ -133,7 +134,7 @@ describe("Room", () => {
   });
 
   it("is an excerpt with no header, no dividers and no member list when compact", () => {
-    open({ compact: true, title: undefined, topic: undefined, startAt: "R1-1" });
+    open({ compact: true, title: undefined, startAt: "R1-1" });
     expect(screen.queryByRole("heading", { name: "Round 1" })).toBeNull();
     expect(screen.queryByLabelText("Players")).toBeNull();
     expect(panel().getByLabelText("Private thoughts of Hal")).toBeInTheDocument();

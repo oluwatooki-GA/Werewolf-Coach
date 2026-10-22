@@ -1,57 +1,43 @@
 import type { ReplayPlayer } from "@/lib/api";
 import { cardParts, plural } from "@/lib/format";
 import { Avatar } from "./Avatar";
-import { RoleTag } from "./RoleTag";
+import { TeamMark } from "./TeamMark";
 import styles from "./Members.module.css";
 
 type Props = {
   players: ReplayPlayer[];
-  /** Roles are hidden until you ask for them: the public view groups everyone as players. */
+  /** Roles are hidden until you ask for them: the public view lists names only. */
   showRoles: boolean;
   isolated: string | null;
   onIsolate: (name: string | null) => void;
 };
 
-/** The member list, grouped by team like roles in a chat server. Click a name to follow them. */
+/** Who is at the table. Click a name to follow only their messages. */
 export function Members({ players, showRoles, isolated, onIsolate }: Props) {
-  const groups = showRoles
-    ? (["Wolves", "Village"] as const).map((team) => ({
-        title: team,
-        people: players.filter((p) => p.team === team),
-      }))
-    : [{ title: "Players" as const, people: players }];
-
   return (
     <nav className={styles.members} aria-label="Players">
-      {groups.map((group) => (
-        <section key={group.title}>
-          <h3>
-            {group.title}, {plural(group.people.length, "player")}
-          </h3>
-          <ul>
-            {group.people.map((p) => (
-              <li key={p.name}>
-                <button
-                  type="button"
-                  aria-pressed={isolated === p.name}
-                  onClick={() => onIsolate(isolated === p.name ? null : p.name)}
-                >
-                  <Avatar name={p.name} size={32} />
-                  <span className={styles.who}>
-                    <b>{p.name}</b>
-                    {showRoles ? (
-                      <>
-                        <RoleTag role={p.role} team={p.team} />
-                        {p.card ? <small>{cardParts(p.card).name}</small> : null}
-                      </>
-                    ) : null}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      <h3>Players, {plural(players.length, "player")}</h3>
+      <ul>
+        {players.map((p) => (
+          <li key={p.name}>
+            <button
+              type="button"
+              aria-pressed={isolated === p.name}
+              onClick={() => onIsolate(isolated === p.name ? null : p.name)}
+            >
+              <Avatar name={p.name} size={28} />
+              <b>{p.name}</b>
+              {showRoles ? (
+                <span className={styles.role} data-team={p.team}>
+                  <TeamMark team={p.team} />
+                  {p.role}
+                </span>
+              ) : null}
+              {showRoles && p.card ? <small>{cardParts(p.card).name}</small> : null}
+            </button>
+          </li>
+        ))}
+      </ul>
       <p className={styles.tip}>
         {isolated ? `Following ${isolated}. Click again to see everyone.` : "Click a player to follow only their messages."}
       </p>

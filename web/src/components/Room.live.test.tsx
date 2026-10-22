@@ -13,7 +13,6 @@ function open(props: Partial<React.ComponentProps<typeof Room>> = {}) {
       entries={replay.entries}
       players={replay.players}
       title="seed-1-845496ae"
-      topic="A recorded game"
       label="A recorded game"
       {...props}
     />,
@@ -111,7 +110,7 @@ describe("live replay", () => {
 describe("guided demo", () => {
   const part = excerpt(replay.entries, "R1-1");
   const demo = () =>
-    open({ entries: part, title: undefined, topic: undefined, compact: true, story: true, startAt: "R1-1" });
+    open({ entries: part, title: undefined, compact: true, story: true, startAt: "R1-1" });
 
   it("keeps the roles hidden until the featured message arrives, then reveals them", () => {
     demo();

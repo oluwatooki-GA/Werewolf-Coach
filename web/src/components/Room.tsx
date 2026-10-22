@@ -1,8 +1,19 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import type { ReplayEntry, ReplayLine, ReplayPlayer, ReplayVote } from "@/lib/api";
-import { delayFor, isHidden, speakerOf, talks, type Speed } from "@/lib/playback";
+import type {
+  ReplayEntry,
+  ReplayLine,
+  ReplayPlayer,
+  ReplayVote,
+} from "@/lib/api";
+import {
+  delayFor,
+  isHidden,
+  speakerOf,
+  talks,
+  type Speed,
+} from "@/lib/playback";
 import { storyCaption } from "@/lib/replay";
 import { Avatar } from "./Avatar";
 import { Members } from "./Members";
@@ -16,9 +27,8 @@ import styles from "./Room.module.css";
 type Props = {
   entries: ReplayEntry[];
   players: ReplayPlayer[];
-  /** The channel's name and topic. With none, the room has no header (an excerpt). */
+  /** The channel's name. With none, the room has no header (an excerpt). */
   title?: string;
-  topic?: string;
   /** A message to select when the page opens, so its private note is already showing. */
   startAt?: string;
   /** An excerpt: no member list and no round dividers. */
@@ -34,7 +44,13 @@ type Props = {
 
 function Lock() {
   return (
-    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 16 16"
+      width="14"
+      height="14"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path
         d="M8 1.5a3.5 3.5 0 0 0-3.5 3.5v2H3.8A1.3 1.3 0 0 0 2.5 8.3v5.4a1.3 1.3 0 0 0 1.3 1.3h8.4a1.3 1.3 0 0 0 1.3-1.3V8.3A1.3 1.3 0 0 0 12.2 7H11.5V5A3.5 3.5 0 0 0 8 1.5Zm-2 3.5a2 2 0 1 1 4 0v2H6V5Z"
         fill="currentColor"
@@ -49,7 +65,6 @@ export function Room({
   entries,
   players,
   title,
-  topic,
   startAt,
   compact = false,
   autoplay = true,
@@ -68,13 +83,17 @@ export function Room({
   const [typingAt, setTypingAt] = useState<number | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [roles, setRoles] = useState(true);
-  const [moves, setMoves] = useState(!compact);
-  const [selected, setSelected] = useState<string | null>(story ? null : (startAt ?? null));
+  const [moves, setMoves] = useState(false);
+  const [selected, setSelected] = useState<string | null>(
+    story ? null : (startAt ?? null),
+  );
   const [isolated, setIsolated] = useState<string | null>(null);
 
   const count = Math.min(shown, total);
   const finished = shown >= total;
-  const ids = entries.map((e, i) => (e.kind === "line" ? e.ref : e.kind === "vote" ? `vote-${i}` : ""));
+  const ids = entries.map((e, i) =>
+    e.kind === "line" ? e.ref : e.kind === "vote" ? `vote-${i}` : "",
+  );
   const startIndex = startAt ? ids.indexOf(startAt) : -1;
   // in the guided demo the roles appear when the start message arrives, never before
   const revealed = !story || (startIndex >= 0 && count > startIndex);
@@ -82,20 +101,25 @@ export function Room({
   const chosen = selected ?? (story && revealed ? (startAt ?? null) : null);
   const index = ids.indexOf(chosen ?? "\0");
   const entry = index >= 0 ? (entries[index] as Selectable) : null;
-  const typing = playing && !finished && typingAt === shown ? entries[shown] : undefined;
+  const typing =
+    playing && !finished && typingAt === shown ? entries[shown] : undefined;
   const cast = new Map(players.map((p) => [p.name, p]));
   const quotes = new Map(
-    entries.flatMap((e) => (e.kind === "line" ? [[e.ref, e] as [string, ReplayLine]] : [])),
+    entries.flatMap((e) =>
+      e.kind === "line" ? [[e.ref, e] as [string, ReplayLine]] : [],
+    ),
   );
   const live = autoplay && speed !== "instant";
 
   const nearBottom = () =>
-    (end.current?.getBoundingClientRect().top ?? 0) < window.innerHeight + 200;
+    (end.current?.getBoundingClientRect().top ?? 0) < window.innerHeight + 400;
 
   // a deep link or a reader who asks for less motion gets the whole game at once
   useEffect(() => {
     if (!autoplay) return;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const hash = window.location.hash.slice(1);
     if (!reduce && (compact || !hash)) return;
     /* eslint-disable react-hooks/set-state-in-effect -- reads the browser once, after hydration */
@@ -104,7 +128,10 @@ export function Room({
     setPlaying(false);
     if (hash && ids.includes(hash)) setSelected(hash);
     /* eslint-enable react-hooks/set-state-in-effect */
-    if (hash) requestAnimationFrame(() => document.getElementById(hash)?.scrollIntoView?.());
+    if (hash)
+      requestAnimationFrame(() =>
+        document.getElementById(hash)?.scrollIntoView?.(),
+      );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoplay, compact, total]);
 
@@ -113,7 +140,10 @@ export function Room({
     if (!playing || speed === "instant" || shown >= total) return;
     const next = entries[shown];
     if (!next) return;
-    const hidden = isHidden(next, showRoles);
+    // private entries and the "who is listening" lines are not shown, so they take no time
+    const hidden =
+      isHidden(next, showRoles) ||
+      (next.kind === "direction" && next.tone === "listening" && !moves);
     const wait = delayFor(next, speed, hidden);
     const timers: number[] = [];
     if (talks(next) && !hidden && wait > 0) {
@@ -131,20 +161,54 @@ export function Room({
       }, wait),
     );
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [playing, speed, shown, total, entries, showRoles]);
+  }, [playing, speed, shown, total, entries, showRoles, moves]);
 
-  // follow the newest message while the reader is at the bottom
+  // follow the newest message while the reader is at the bottom, gliding rather than jumping
+  const glide = useRef(0);
+  function follow() {
+    const page = document.scrollingElement;
+    const target = feed.current; // its bottom padding is the room left under the newest message
+    if (!page || !target) return;
+    cancelAnimationFrame(glide.current);
+    const from = page.scrollTop;
+    const to =
+      from + target.getBoundingClientRect().bottom - window.innerHeight;
+    if (to - from < 2) return;
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 450);
+      page.scrollTop = from + (to - from) * (1 - (1 - t) ** 3);
+      if (t < 1) glide.current = requestAnimationFrame(step);
+    };
+    glide.current = requestAnimationFrame(step);
+  }
+
   useEffect(() => {
     if (compact || shown === 0 || !stick.current) return;
-    end.current?.scrollIntoView?.({ block: "end" });
+    follow();
   }, [shown, typingAt, compact]);
+
+  // a reader who scrolls takes over from the glide
+  useEffect(() => {
+    const stop = () => cancelAnimationFrame(glide.current);
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+    };
+  }, []);
 
   useEffect(() => {
     const target = end.current;
-    if (compact || !target || typeof IntersectionObserver === "undefined") return;
-    const watcher = new IntersectionObserver(([seen]) => setAtBottom(seen?.isIntersecting ?? true), {
-      rootMargin: "0px 0px 200px 0px",
-    });
+    if (compact || !target || typeof IntersectionObserver === "undefined")
+      return;
+    const watcher = new IntersectionObserver(
+      ([seen]) => setAtBottom(seen?.isIntersecting ?? true),
+      {
+        rootMargin: "0px 0px 400px 0px",
+      },
+    );
     watcher.observe(target);
     return () => watcher.disconnect();
   }, [compact]);
@@ -171,8 +235,13 @@ export function Room({
   function onKeyDown(event: React.KeyboardEvent<HTMLElement>) {
     if (event.key === "Escape") return setSelected(null);
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-    const all = [...(feed.current?.querySelectorAll<HTMLElement>("[data-msg]") ?? [])];
-    const next = all[all.indexOf(event.currentTarget) + (event.key === "ArrowDown" ? 1 : -1)];
+    const all = [
+      ...(feed.current?.querySelectorAll<HTMLElement>("[data-msg]") ?? []),
+    ];
+    const next =
+      all[
+        all.indexOf(event.currentTarget) + (event.key === "ArrowDown" ? 1 : -1)
+      ];
     if (next) {
       event.preventDefault();
       next.focus();
@@ -180,7 +249,8 @@ export function Room({
     }
   }
 
-  const speaker = (e: ReplayEntry) => (e.kind === "line" ? e.speaker : e.kind === "vote" ? e.voter : "");
+  const speaker = (e: ReplayEntry) =>
+    e.kind === "line" ? e.speaker : e.kind === "vote" ? e.voter : "";
   const rounds = [...new Set(entries.map((e) => e.round))].filter((r) => r > 0);
 
   return (
@@ -191,38 +261,57 @@ export function Room({
             <h1>
               <span aria-hidden="true">#</span> {title}
             </h1>
-            {topic ? <p className={styles.topic} title={topic}>
-                {topic}
-              </p> : null}
             {autoplay ? (
-              <Playback
-                playing={playing}
-                finished={finished}
-                speed={speed}
-                shown={count}
-                total={total}
-                onToggle={() => setPlaying((p) => !p)}
-                onRestart={restart}
-                onSpeed={chooseSpeed}
-              />
+              <div className={styles.controls}>
+                <Playback
+                  playing={playing}
+                  finished={finished}
+                  speed={speed}
+                  shown={count}
+                  total={total}
+                  onToggle={() => setPlaying((p) => !p)}
+                  onRestart={restart}
+                  onSpeed={chooseSpeed}
+                />
+              </div>
             ) : null}
-            <div className={styles.switches} role="group" aria-label="What to show">
-              <label>
-                <input type="checkbox" checked={roles} onChange={(e) => setRoles(e.target.checked)} />
-                <span>Roles and private notes</span>
-              </label>
-              <label>
-                <input type="checkbox" checked={moves} onChange={(e) => setMoves(e.target.checked)} />
-                <span>Moves</span>
-              </label>
-            </div>
           </header>
+        ) : null}
+
+        {title ? (
+          <div
+            className={styles.switches}
+            role="group"
+            aria-label="What to show"
+          >
+            <label>
+              <input
+                type="checkbox"
+                checked={roles}
+                onChange={(e) => setRoles(e.target.checked)}
+              />
+              <span>Roles and private notes</span>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={moves}
+                onChange={(e) => setMoves(e.target.checked)}
+              />
+              <span>Show moves</span>
+            </label>
+          </div>
         ) : null}
 
         {title && !compact ? (
           <details className={styles.mobileMembers}>
             <summary>Players ({players.length})</summary>
-            <Members players={players} showRoles={roles} isolated={isolated} onIsolate={setIsolated} />
+            <Members
+              players={players}
+              showRoles={roles}
+              isolated={isolated}
+              onIsolate={setIsolated}
+            />
           </details>
         ) : null}
 
@@ -239,7 +328,13 @@ export function Room({
           </div>
         ) : null}
 
-        <div ref={feed} role="feed" aria-label={`${label}, messages`} className={styles.feed}>
+        <div
+          ref={feed}
+          role="feed"
+          aria-label={`${label}, messages`}
+          className={styles.feed}
+          data-live={(!compact && autoplay && !finished) || undefined}
+        >
           {entries.slice(0, count).map((e, i) => {
             const first = i === 0 || entries[i - 1]?.round !== e.round;
             const divider =
@@ -253,8 +348,14 @@ export function Room({
             const fresh = live && i === count - 1;
 
             if (e.kind === "direction") {
+              if (e.tone === "listening" && !moves)
+                return <Fragment key={i}>{divider}</Fragment>;
               return (
-                <div key={i} className={styles.item} data-fresh={fresh || undefined}>
+                <div
+                  key={i}
+                  className={styles.item}
+                  data-fresh={fresh || undefined}
+                >
                   {divider}
                   <p className={styles.system} data-tone={e.tone}>
                     {e.text}
@@ -264,14 +365,17 @@ export function Room({
             }
             if (e.kind === "line" || e.kind === "vote") {
               return (
-                <div key={i} className={styles.item} data-fresh={fresh || undefined}>
+                <div
+                  key={i}
+                  className={styles.item}
+                  data-fresh={fresh || undefined}
+                >
                   {divider}
                   <Message
                     id={id}
                     entry={e}
                     showRoles={showRoles}
                     showMoves={moves}
-                    quiet={compact}
                     selected={isSelected}
                     dim={isolated !== null && speaker(e) !== isolated}
                     quotes={quotes}
@@ -280,7 +384,12 @@ export function Room({
                   />
                   {isSelected ? (
                     <div className={styles.inline}>
-                      <Thoughts entry={e} cast={cast} showRoles={showRoles} surface="inline" />
+                      <Thoughts
+                        entry={e}
+                        cast={cast}
+                        showRoles={showRoles}
+                        surface="inline"
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -289,14 +398,26 @@ export function Room({
             // wolf chat, the night and the Seer's check: only shown with roles, and marked private
             if (!showRoles) return <Fragment key={i}>{divider}</Fragment>;
             return (
-              <div key={i} className={styles.item} data-fresh={fresh || undefined}>
+              <div
+                key={i}
+                className={styles.item}
+                data-fresh={fresh || undefined}
+              >
                 {divider}
                 {e.kind === "wolf_chat" ? (
-                  <div className={styles.wolves} data-dim={isolated !== null && isolated !== e.speaker ? "" : undefined}>
+                  <div
+                    className={styles.wolves}
+                    data-dim={
+                      isolated !== null && isolated !== e.speaker
+                        ? ""
+                        : undefined
+                    }
+                  >
                     <Avatar name={e.speaker} size={32} />
                     <div>
                       <p className={styles.private}>
-                        <Lock /> <b>{e.speaker}</b> <TeamMark team="Wolves" word /> only the wolves saw this
+                        <Lock /> <b>{e.speaker}</b>{" "}
+                        <TeamMark team="Wolves" word /> only the wolves saw this
                       </p>
                       <p>{e.text}</p>
                     </div>
@@ -307,8 +428,12 @@ export function Room({
                     <span>
                       {e.kind === "night"
                         ? [
-                            e.kill ? `The wolves chose ${e.kill}.` : "The wolves chose nobody.",
-                            e.protect ? `The Doctor protected ${e.protect}.` : null,
+                            e.kill
+                              ? `The wolves chose ${e.kill}.`
+                              : "The wolves chose nobody.",
+                            e.protect
+                              ? `The Doctor protected ${e.protect}.`
+                              : null,
                             e.check ? `The Seer checked ${e.check}.` : null,
                             e.saved ? "The kill was saved." : null,
                           ]
@@ -321,7 +446,9 @@ export function Room({
               </div>
             );
           })}
-          {typing && speakerOf(typing) ? <Typing name={speakerOf(typing) ?? ""} /> : null}
+          {typing && speakerOf(typing) ? (
+            <Typing name={speakerOf(typing) ?? ""} />
+          ) : null}
           <div ref={end} className={styles.end} />
         </div>
 
@@ -331,7 +458,7 @@ export function Room({
             className={styles.latest}
             onClick={() => {
               stick.current = true;
-              end.current?.scrollIntoView?.({ block: "end" });
+              follow();
             }}
           >
             Jump to the latest message
@@ -350,9 +477,19 @@ export function Room({
       </section>
 
       <aside className={styles.panel} aria-label="Details">
-        <Thoughts entry={entry} cast={cast} showRoles={showRoles} surface="panel" />
+        <Thoughts
+          entry={entry}
+          cast={cast}
+          showRoles={showRoles}
+          surface="panel"
+        />
         {compact ? null : (
-          <Members players={players} showRoles={showRoles} isolated={isolated} onIsolate={setIsolated} />
+          <Members
+            players={players}
+            showRoles={showRoles}
+            isolated={isolated}
+            onIsolate={setIsolated}
+          />
         )}
       </aside>
     </div>
