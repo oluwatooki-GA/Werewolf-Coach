@@ -174,3 +174,22 @@ def test_featured_picks_the_fake_claim_with_a_private_note_and_says_which_line(
     body = client.get("/featured").json()
     assert body["focus"] == "R1-3"
     assert client.get(f"/games/{body['game_id']}/replay").status_code == 200
+
+
+def test_beliefs_are_read_in_the_form_real_games_store_them() -> None:
+    """Real model answers keep beliefs as {player: {suspicion, reason}}, not a list."""
+    log, tags = game()
+    answer = {
+        "bid": 2, "message": "Nobody sleeps that well.", "intent": "ask", "target": WOLF_A,
+        "note": "suspicious",
+        "beliefs": {WOLF_A: {"suspicion": 0.8, "reason": "lied"}, V2: {"suspicion": 0.1}},
+    }  # fmt: skip
+    call = CallRecord(
+        round=1, player=V1, task={"kind": "bid", "max_bid": 4}, responses=[json.dumps(answer)],
+        errors=[], rejected=0, failed=False,
+    )  # fmt: skip
+    other = log.model_copy(update={"calls": [call]})
+    said = lines(build_replay("g1", other, tags))[1]
+    assert said.subtext is not None
+    beliefs = {b.player: (b.suspicion, b.reason) for b in said.subtext.beliefs}
+    assert beliefs == {WOLF_A: (0.8, "lied"), V2: (0.1, "")}

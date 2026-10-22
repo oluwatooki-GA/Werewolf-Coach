@@ -189,14 +189,20 @@ def _answer(responses: list[Any]) -> dict[str, Any] | None:
 
 def _subtext(answer: dict[str, Any]) -> Subtext | None:
     note = str(answer.get("note") or "").strip()
+    raw = answer.get("beliefs") or []
+    # models answer with a list of {player, suspicion, reason} or a {player: {suspicion, reason}}
+    items = (
+        [{"player": k, **v} for k, v in raw.items() if isinstance(v, dict)]
+        if isinstance(raw, dict)
+        else [b for b in raw if isinstance(b, dict)]
+    )
     beliefs = [
         BeliefOut(
             player=str(b.get("player", "")),
             suspicion=float(b.get("suspicion", 0)),
             reason=str(b.get("reason", "")),
         )
-        for b in answer.get("beliefs") or []
-        if isinstance(b, dict)
+        for b in items
     ]
     bid = answer.get("bid")
     if not note and not beliefs and bid is None:
