@@ -25,6 +25,9 @@ games = Table(
     Column("rounds", Integer, nullable=False),
     Column("model", String(64), nullable=False, default=""),
     Column("cards", JSON, nullable=False),  # seat -> "id@version"
+    Column(
+        "card_ids", Text, nullable=False, default=""
+    ),  # "|wolf.a|villager.b|": to filter by card
     Column("cost", Float, nullable=False, default=0.0),
     Column("clean", Boolean, nullable=False),
     Column("rule_version", String(8), nullable=False),

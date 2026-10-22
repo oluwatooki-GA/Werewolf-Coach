@@ -6,8 +6,10 @@ import pytest
 from api_support import VILLAGER_CARD, WOLF_CARD, build, played
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from starlette.websockets import WebSocketDisconnect
 
 from werewolf.api.app import create_app
+from werewolf.api.deps import ApiSettings, get_engine
 from werewolf.engine.log import GameLog
 from werewolf.tagger.adherence import wilson
 
@@ -24,7 +26,9 @@ def logs() -> list[GameLog]:
 @pytest.fixture
 def client(tmp_path: Path, logs: list[GameLog]) -> TestClient:
     engine = build(tmp_path, logs, tagged=(1,))
-    return TestClient(create_app(engine, cards_dir=REPO / "cards", web_origin="http://site.test"))
+    return TestClient(
+        create_app(engine, ApiSettings(web_origin="http://site.test", cards_dir=REPO / "cards"))
+    )
 
 
 def test_health_is_ok_with_a_database_and_503_without_one(client: TestClient) -> None:
@@ -122,3 +126,49 @@ def test_the_serve_command_runs_the_app_on_the_given_host_and_port(
     assert main(["app", "serve", "--database", url, "--host", "0.0.0.0", "--port", "8123"]) == 0
     assert (seen["host"], seen["port"]) == ("0.0.0.0", 8123)
     assert TestClient(seen["app"]).get("/health").status_code == 200  # type: ignore[arg-type]
+
+
+def test_a_card_filter_matches_the_whole_id_and_treats_underscores_as_letters(
+    client: TestClient,
+) -> None:
+    assert client.get("/games", params={"card": "wolf.accuse_early"}).json()["total"] == 6
+    assert client.get("/games", params={"card": "wolf.accuse"}).json()["total"] == 0
+    assert client.get("/games", params={"card": "wolf.accuseXearly"}).json()["total"] == 0
+
+
+def test_paging_and_the_total_come_from_the_database(client: TestClient) -> None:
+    seeds = [
+        g["seed"] for g in client.get("/games", params={"limit": 3, "offset": 2}).json()["games"]
+    ]
+    assert seeds == [3, 4, 5]
+    assert client.get("/games", params={"limit": 3, "offset": 2}).json()["total"] == 7
+
+
+def test_every_answer_has_a_documented_shape(client: TestClient) -> None:
+    schemas = client.get("/openapi.json").json()["components"]["schemas"]
+    for name in ("GameList", "GameDetail", "CardResult", "CoachHistory", "Health", "PlayStatus"):
+        assert name in schemas, name
+
+
+def test_the_database_can_be_swapped_with_a_dependency_override(
+    client: TestClient, tmp_path: Path
+) -> None:
+    from werewolf.store import make_engine
+
+    app = client.app
+    app.dependency_overrides[get_engine] = lambda: make_engine(f"sqlite:///{tmp_path / 'empty.db'}")  # type: ignore[attr-defined]
+    assert client.get("/games").json() == {"total": 0, "games": []}
+
+
+def test_play_mode_and_coach_runs_are_skeletons_that_say_so(client: TestClient) -> None:
+    assert client.get("/play/status").json() == {
+        "available": False,
+        "reason": "play mode is not built yet",
+    }
+    assert client.post("/play").status_code == 501
+    assert client.post("/coach/wolf/runs", json={}).status_code == 501
+    assert client.get("/coach/runs/abc").status_code == 501
+    with pytest.raises(WebSocketDisconnect) as closed:
+        with client.websocket_connect("/play/abc"):
+            pass
+    assert closed.value.code == 1011 and "not built" in closed.value.reason

@@ -13,6 +13,12 @@ def game_id(log: GameLog) -> str:
     return f"{log.seed}-{hashlib.sha256(log.to_json().encode()).hexdigest()[:8]}"
 
 
+def card_ids(log: GameLog) -> str:
+    """The card ids played in a game as "|a|b|" (no versions), so a query can ask for one card."""
+    ids = sorted({ref.split("@")[0] for ref in log.settings.cards.values()})
+    return f"|{'|'.join(ids)}|" if ids else ""
+
+
 def rule_version(log: GameLog) -> str:
     """v2 is the rule set from Oct 21, 2026 (4 tokens a day, 10 turns); E1 was played on v1."""
     s = log.settings
@@ -43,6 +49,7 @@ def add_game(
                 rounds=log.rounds,
                 model=log.model,
                 cards=log.settings.cards,
+                card_ids=card_ids(log),
                 cost=float(log.stats.cost),
                 clean=log.stats.clean,
                 rule_version=rule_version(log),
