@@ -1,0 +1,41 @@
+# The whole app on this machine: `docker compose up --build`.
+# Ports are 8000 (API) and 3100 (site) because 3000 is often taken; change them in .env.
+name: werewolf-coach
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: werewolf
+      POSTGRES_PASSWORD: werewolf  # local only; the cloud database has its own
+      POSTGRES_DB: werewolf
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U werewolf -d werewolf"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://werewolf:werewolf@db:5432/werewolf
+      WEB_ORIGIN: http://localhost:${WEB_PORT:-3100}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./data/games:/app/data/games:ro
+      - ./data/coach:/app/data/coach:ro
+      - ./cards:/app/cards:ro
+    # load what the experiments produced (safe to repeat), then serve
+    command: >
+      sh -c "python -m werewolf.cli app seed && python -m werewolf.cli app serve --host 0.0.0.0 --port 8000"
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+volumes:
+  dbdata:
