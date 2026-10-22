@@ -1,0 +1,66 @@
+.figure {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(7rem, 14rem) auto;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.axis {
+  stroke: var(--paper-edge);
+  stroke-width: 1;
+}
+
+.half {
+  stroke: var(--paper-edge);
+  stroke-width: 1;
+}
+
+.interval {
+  stroke: var(--ink);
+  stroke-width: 4;
+  stroke-linecap: butt;
+}
+
+.thin {
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}
+
+.dot {
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 1.5;
+}
+
+.figure figcaption {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  white-space: nowrap;
+}
+
+.figure b {
+  font-family: var(--font-cue);
+  font-size: 1.125rem;
+}
+
+.figure span {
+  color: var(--graphite);
+  font-size: 0.8125rem;
+}
+
+.figure em {
+  font-family: var(--font-cue);
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+}

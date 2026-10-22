@@ -1,0 +1,368 @@
+{
+ "id": "1-845496ae",
+ "seed": 1,
+ "winner": "Village",
+ "rounds": 3,
+ "model": "gpt-4.1-nano",
+ "rule_version": "v1",
+ "players": [
+  {
+   "name": "Di",
+   "role": "Seer",
+   "team": "Village",
+   "card": null
+  },
+  {
+   "name": "Gus",
+   "role": "Villager",
+   "team": "Village",
+   "card": "villager.quiet_observer@2"
+  },
+  {
+   "name": "Bo",
+   "role": "Villager",
+   "team": "Village",
+   "card": "villager.quiet_observer@2"
+  },
+  {
+   "name": "Fay",
+   "role": "Werewolf",
+   "team": "Wolves",
+   "card": "wolf.fake_seer@2"
+  },
+  {
+   "name": "Hal",
+   "role": "Werewolf",
+   "team": "Wolves",
+   "card": "wolf.fake_seer@2"
+  },
+  {
+   "name": "Ada",
+   "role": "Doctor",
+   "team": "Village",
+   "card": null
+  },
+  {
+   "name": "Eve",
+   "role": "Villager",
+   "team": "Village",
+   "card": "villager.quiet_observer@2"
+  },
+  {
+   "name": "Cy",
+   "role": "Villager",
+   "team": "Village",
+   "card": "villager.quiet_observer@2"
+  }
+ ],
+ "entries": [
+  {
+   "kind": "wolf_chat",
+   "private": true,
+   "round": 1,
+   "speaker": "Fay",
+   "text": "Hal, I suggest we kill Eve tonight. No particular reason, just a shot."
+  },
+  {
+   "kind": "wolf_chat",
+   "private": true,
+   "round": 1,
+   "speaker": "Hal",
+   "text": "Fay, kill Gus tonight. No reason, just a guess."
+  },
+  {
+   "kind": "seer_result",
+   "private": true,
+   "round": 1,
+   "seer": "Di",
+   "target": "Eve",
+   "role": "Villager"
+  },
+  {
+   "kind": "night",
+   "private": true,
+   "round": 1,
+   "kill": "Eve",
+   "protect": "Ada",
+   "check": "Eve",
+   "saved": false
+  },
+  {
+   "kind": "direction",
+   "private": false,
+   "round": 1,
+   "tone": "morning",
+   "text": "Morning: Eve was killed in the night."
+  },
+  {
+   "kind": "line",
+   "private": false,
+   "round": 1,
+   "ref": "R1-1",
+   "speaker": "Hal",
+   "role": "Werewolf",
+   "team": "Wolves",
+   "text": "I am the Seer. Last night I checked Fay. She is villager. Who do you trust?",
+   "paid": 3,
+   "reply": false,
+   "cites": [],
+   "invented": [],
+   "moves": [
+    "result_claim",
+    "probe"
+   ],
+   "target": "Fay",
+   "claim": {
+    "role": "Seer",
+    "checked": "Fay",
+    "result": "not_wolf",
+    "vote": ""
+   },
+   "marks": [
+    {
+     "label": "lie",
+     "why": "the claimed check does not match the log",
+     "target": null
+    },
+    {
+     "label": "fake_claim",
+     "why": "a wolf claimed Seer",
+     "target": null
+    }
+   ],
+   "subtext": {
+    "note": "Claimed Seer to gain trust and deflect suspicion.",
+    "bid": 3,
+    "intent": "share_info",
+    "target": null,
+    "beliefs": []
+   }
+  },
+  {
+   "kind": "direction",
+   "private": false,
+   "round": 1,
+   "tone": "listening",
+   "text": "Listening: Di, Bo, Ada, Cy"
+  },
+  {
+   "kind": "line",
+   "private": false,
+   "round": 1,
+   "ref": "R1-2",
+   "speaker": "Fay",
+   "role": "Werewolf",
+   "team": "Wolves",
+   "text": "I am the Seer. Last night I checked Cy. He is villager. Who do you trust?",
+   "paid": 3,
+   "reply": false,
+   "cites": [
+    {
+     "line": "R1-1",
+     "speaker": "Hal"
+    }
+   ],
+   "invented": [],
+   "moves": [
+    "result_claim",
+    "role_claim"
+   ],
+   "target": "Cy",
+   "claim": {
+    "role": "Seer",
+    "checked": "Cy",
+    "result": "not_wolf",
+    "vote": ""
+   },
+   "marks": [
+    {
+     "label": "lie",
+     "why": "claimed Seer; the speaker is Werewolf",
+     "target": null
+    },
+    {
+     "label": "fake_claim",
+     "why": "a wolf claimed Seer",
+     "target": null
+    },
+    {
+     "label": "counter_claim",
+     "why": "Hal already claimed Seer",
+     "target": null
+    }
+   ],
+   "subtext": {
+    "note": "Claiming Seer to gain trust.",
+    "bid": 3,
+    "intent": "share_info",
+    "target": "Cy",
+    "beliefs": []
+   }
+  },
+  {
+   "kind": "direction",
+   "private": false,
+   "round": 1,
+   "tone": "listening",
+   "text": "Listening: Di, Ada"
+  },
+  {
+   "kind": "line",
+   "private": false,
+   "round": 1,
+   "ref": "R1-3",
+   "speaker": "Ada",
+   "role": "Doctor",
+   "team": "Village",
+   "text": "Fay's claim as Seer is suspicious. Why claim after Eve's death?",
+   "paid": 2,
+   "reply": false,
+   "cites": [
+    {
+     "line": "R1-2",
+     "speaker": "Fay"
+    }
+   ],
+   "invented": [],
+   "moves": [
+    "accuse_reasoned"
+   ],
+   "target": "Fay",
+   "claim": null,
+   "marks": [
+    {
+     "label": "hit",
+     "why": "Fay is a wolf",
+     "target": "Fay"
+    }
+   ],
+   "subtext": {
+    "note": "Questioning Fay's claim now.",
+    "bid": 2,
+    "intent": "accuse",
+    "target": "Fay",
+    "beliefs": []
+   }
+  },
+  {
+   "kind": "direction",
+   "private": false,
+   "round": 1,
+   "tone": "listening",
+   "text": "Listening: Di, Bo, Cy"
+  },
+  {
+   "kind": "line",
+   "private": false,
+   "round": 1,
+   "ref": "R1-4",
+   "speaker": "Fay",
+   "role": "Werewolf",
+   "team": "Wolves",
+   "text": "I checked Cy last night, he's villager. Ada is suspicious for doubting my claim. Why attack me?",
+   "paid": 0,
+   "reply": true,
+   "cites": [
+    {
+     "line": "R1-2",
+     "speaker": "Fay"
+    }
+   ],
+   "invented": [],
+   "moves": [
+    "result_claim",
+    "accuse_reasoned"
+   ],
+   "target": "Ada",
+   "claim": {
+    "role": "Seer",
+    "checked": "Cy",
+    "result": "not_wolf",
+    "vote": ""
+   },
+   "marks": [
+    {
+     "label": "lie",
+     "why": "the claimed check does not match the log",
+     "target": null
+    },
+    {
+     "label": "fake_claim",
+     "why": "a wolf claimed Seer",
+     "target": null
+    },
+    {
+     "label": "counter_claim",
+     "why": "Hal already claimed Seer",
+     "target": null
+    }
+   ],
+   "subtext": {
+    "note": "Reinforcing my seer claim.",
+    "bid": 3,
+    "intent": "share_info",
+    "target": "Cy",
+    "beliefs": []
+   }
+  },
+  {
+   "kind": "line",
+   "private": false,
+   "round": 1,
+   "ref": "R1-5",
+   "speaker": "Cy",
+   "role": "Villager",
+   "team": "Village",
+   "text": "Fay, your claim as Seer seems inconsistent with Ada's suspicion. Why claim now?",
+   "paid": 1,
+   "reply": false,
+   "cites": [
+    {
+     "line": "R1-4",
+     "speaker": "Fay"
+    }
+   ],
+   "invented": [],
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Fay",
+   "claim": {
+    "role": "",
+    "checked": "",
+    "result": "",
+    "vote": "Fay"
+   },
+   "marks": [
+    {
+     "label": "hit",
+     "why": "Fay is a wolf",
+     "target": "Fay"
+    }
+   ],
+   "subtext": {
+    "note": "Questioning Fay's claim for clarity.",
+    "bid": 1,
+    "intent": "ask",
+    "target": "Fay",
+    "beliefs": []
+   }
+  },
+  {
+   "kind": "direction",
+   "private": false,
+   "round": 1,
+   "tone": "listening",
+   "text": "Listening: Di, Bo, Ada"
+  }
+ ],
+ "tagged": true,
+ "stats": {
+  "cost": 0.0233374,
+  "responses": 90,
+  "rejected": 1,
+  "failed_calls": 0,
+  "clean": true
+ }
+}

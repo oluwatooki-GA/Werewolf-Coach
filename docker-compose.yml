@@ -1,5 +1,6 @@
 # The whole app on this machine: `docker compose up --build`.
-# Ports are 8000 (API) and 3100 (site) because 3000 is often taken; change them in .env.
+# The site is at http://localhost:3100 and the API at http://localhost:8000 (3000 is often taken).
+# Change the ports with WEB_PORT and API_PORT in .env.
 name: werewolf-coach
 
 services:
@@ -34,8 +35,24 @@ services:
     # load what the experiments produced (safe to repeat), then serve
     command: >
       sh -c "python -m werewolf.cli app seed && python -m werewolf.cli app serve --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+      start_period: 15s
     ports:
       - "${API_PORT:-8000}:8000"
+
+  web:
+    build: ./web
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_URL: http://api:8000  # the site's server asks the API; the browser never does
+    ports:
+      - "${WEB_PORT:-3100}:3100"
 
 volumes:
   dbdata:

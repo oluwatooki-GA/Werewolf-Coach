@@ -1,0 +1,33 @@
+.page {
+  max-width: var(--measure);
+}
+
+.script {
+  line-height: 1.8;
+}
+
+.cut {
+  color: var(--red);
+  text-decoration-line: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.add {
+  color: var(--blue);
+  font-style: italic;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+
+.add svg {
+  display: inline-block;
+  margin-right: 0.35em;
+  translate: 0 -0.3em;
+}
+
+.legend {
+  margin-top: var(--s3);
+  font-size: 0.8125rem;
+  color: var(--graphite);
+}

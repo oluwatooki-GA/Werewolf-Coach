@@ -13,3 +13,4 @@ web/.next/
 .ruff_cache/
 .pytest_cache/
 *.md
+web/

@@ -1,0 +1,139 @@
+.sheet {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 0 3px 3px 3px;
+  padding: var(--s7) clamp(1rem, 3vw, 3rem) var(--s7);
+}
+
+.head {
+  display: grid;
+  gap: var(--s4);
+  margin-bottom: var(--s6);
+}
+
+.head h1 {
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+}
+
+.head p {
+  max-width: 60ch;
+  color: var(--graphite);
+}
+
+.versions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2) var(--s4);
+  font-family: var(--font-cue);
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.versions a {
+  text-decoration: none;
+}
+
+.versions a[aria-current="true"] {
+  text-decoration: underline;
+  text-decoration-color: var(--ink);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+}
+
+.versions span {
+  font-weight: 500;
+  color: var(--graphite);
+}
+
+.role {
+  margin-top: var(--s7);
+}
+
+.role h2 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 2px solid var(--ink);
+}
+
+.role h2 small {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--graphite);
+}
+
+.cards li {
+  border-bottom: 1px solid var(--paper-edge);
+  padding: var(--s4) 0;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) minmax(5rem, 7rem) 1fr;
+  align-items: center;
+  gap: var(--s3) var(--s5);
+}
+
+.line h3 {
+  text-transform: none;
+  font-size: 1.5rem;
+}
+
+.line h3 small {
+  display: block;
+  margin-top: var(--s1);
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--graphite);
+}
+
+.games {
+  color: var(--graphite);
+  font-size: 0.875rem;
+}
+
+.cards details {
+  margin-top: var(--s2);
+}
+
+.cards summary {
+  cursor: pointer;
+  width: fit-content;
+  list-style: none;
+  font-family: var(--font-cue);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.cards summary::-webkit-details-marker {
+  display: none;
+}
+
+.script {
+  max-width: var(--measure);
+  margin-top: var(--s3);
+}
+
+.source {
+  max-width: var(--measure);
+  margin-top: var(--s2);
+  font-size: 0.8125rem;
+  color: var(--graphite);
+}
+
+.empty {
+  color: var(--graphite);
+}
+
+@media (max-width: 52rem) {
+  .line {
+    grid-template-columns: 1fr auto;
+  }
+  .line > :last-child {
+    grid-column: 1 / -1;
+  }
+}

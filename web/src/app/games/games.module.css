@@ -1,0 +1,159 @@
+.sheet {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 0 3px 3px 3px;
+  padding: var(--s7) clamp(1rem, 3vw, 3rem) var(--s6);
+}
+
+.head {
+  display: grid;
+  gap: var(--s4);
+  margin-bottom: var(--s6);
+}
+
+.head h1 {
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+}
+
+.head p {
+  max-width: 56ch;
+  color: var(--graphite);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s6);
+  font-family: var(--font-cue);
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2) var(--s4);
+}
+
+.group span {
+  color: var(--graphite);
+  font-weight: 500;
+}
+
+.filters a {
+  text-decoration: none;
+}
+
+.filters a:hover {
+  text-decoration: underline;
+}
+
+.filters a[aria-current="true"] {
+  text-decoration: underline;
+  text-decoration-color: var(--ink);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+}
+
+.table {
+  font-size: 0.9375rem;
+}
+
+.table th,
+.table td {
+  padding: 0.7rem var(--s3);
+  text-align: left;
+  vertical-align: baseline;
+  border-top: 1px solid var(--paper-edge);
+}
+
+.table thead th {
+  border-top: 0;
+  padding-bottom: var(--s2);
+  font-family: var(--font-cue);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--graphite);
+}
+
+.table tbody th {
+  position: relative;
+  font-family: var(--font-cue);
+  font-size: 1.25rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* the game's tab, a small swatch in its lighting-gel colour */
+.table tbody th::before {
+  content: "";
+  display: inline-block;
+  width: 0.55rem;
+  height: 1.2rem;
+  margin-right: var(--s3);
+  vertical-align: -0.2rem;
+  background: var(--gel);
+  border-radius: 1px;
+}
+
+.table tbody th a {
+  text-decoration: none;
+}
+
+.table tbody tr:hover {
+  background: var(--paper-2);
+}
+
+.table small {
+  display: block;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--graphite);
+}
+
+.dim,
+.empty {
+  color: var(--graphite);
+}
+
+.empty {
+  padding: var(--s6) 0;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--s5);
+  font-family: var(--font-cue);
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+@media (max-width: 52rem) {
+  .table thead {
+    display: none;
+  }
+  .table,
+  .table tbody,
+  .table tr,
+  .table th,
+  .table td {
+    display: block;
+  }
+  .table tr {
+    position: relative;
+    padding: var(--s3) 0;
+    border-top: 1px solid var(--paper-edge);
+  }
+  .table th,
+  .table td {
+    border: 0;
+    padding: 0.1rem var(--s4);
+  }
+  .table td[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--graphite);
+  }
+}

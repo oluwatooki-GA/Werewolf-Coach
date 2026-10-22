@@ -22,3 +22,9 @@ node_modules/
 
 # IDE
 .idea/
+web/AGENTS.md
+.impeccable/
+web/next-env.d.ts
+web/AGENTS.md
+web/CLAUDE.md
+*.tsbuildinfo

@@ -1,0 +1,141 @@
+.sheet {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 0 3px 3px 3px;
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--paper);
+  border-bottom: 1px solid var(--paper-edge);
+  border-radius: 0 3px 0 0;
+  padding: var(--s3) var(--s6);
+}
+
+.top {
+  padding: var(--s4) var(--s6);
+  border-bottom: 1px solid var(--paper-edge);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s5);
+  font-family: var(--font-cue);
+  font-weight: 600;
+  font-size: 1.0625rem;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  cursor: pointer;
+}
+
+.switch input {
+  appearance: none;
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  margin: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 1rem;
+  background: var(--paper);
+  cursor: inherit;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.switch input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: translate 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+
+.switch input:checked {
+  background: var(--ink);
+}
+
+.switch input:checked::after {
+  translate: 1rem 0;
+  background: var(--paper);
+}
+
+.switch input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rounds {
+  margin-left: auto;
+  display: flex;
+  gap: var(--s4);
+}
+
+.rounds a {
+  color: var(--graphite);
+}
+
+.cast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s5);
+  font-family: var(--font-cue);
+  font-size: 1rem;
+}
+
+.cast li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+}
+
+.cast b {
+  font-weight: 700;
+}
+
+.cast span,
+.cast small {
+  color: var(--graphite);
+}
+
+.cast small {
+  font-family: var(--font-script);
+  font-size: 0.75rem;
+}
+
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s5) var(--s6);
+  border-top: 1px solid var(--paper-edge);
+  font-family: var(--font-cue);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.verdict p {
+  max-width: none;
+}
+
+@media (max-width: 52rem) {
+  .bar,
+  .top,
+  .verdict {
+    padding-inline: var(--s4);
+  }
+  .rounds {
+    margin-left: 0;
+    width: 100%;
+  }
+}

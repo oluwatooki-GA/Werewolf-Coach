@@ -1,0 +1,161 @@
+.sheet {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 0 3px 3px 3px;
+  padding: var(--s7) 0 0;
+}
+
+.head {
+  display: grid;
+  gap: var(--s4);
+  justify-items: start;
+  padding: 0 clamp(1rem, 3vw, 3rem) var(--s7);
+}
+
+.head h1 {
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+}
+
+.head p {
+  max-width: 60ch;
+  color: var(--graphite);
+}
+
+/* the verdict, stamped on the page */
+.head .stamp {
+  padding: var(--s2) var(--s4);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  rotate: -1deg;
+  font-family: var(--font-cue);
+  font-weight: 700;
+  font-size: clamp(1.375rem, 3vw, 1.875rem);
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.sides {
+  display: flex;
+  gap: var(--s5);
+  font-family: var(--font-cue);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.sides a {
+  text-decoration: none;
+  color: var(--graphite);
+}
+
+.sides a[aria-current="true"] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--ink);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+}
+
+/* a revision is a two-page spread: the coach's reasoning facing the card it produced */
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  background: linear-gradient(to right, var(--paper-2) 41.6667%, var(--paper) 41.6667%);
+  border-top: 2px solid var(--ink);
+}
+
+.facing {
+  padding: var(--s6) var(--s6) var(--s6) clamp(1rem, 3vw, 3rem);
+  display: grid;
+  align-content: start;
+  gap: var(--s3);
+  border-right: 1px solid var(--paper-edge);
+}
+
+.script {
+  padding: var(--s6) clamp(1rem, 3vw, 3rem) var(--s6) var(--s6);
+  display: grid;
+  align-content: start;
+  gap: var(--s3);
+}
+
+.script > p:first-child,
+.script > div {
+  max-width: var(--measure);
+}
+
+.pair h3 {
+  margin-top: var(--s3);
+  font-size: 1.25rem;
+  color: var(--graphite);
+}
+
+.pair h3:first-child {
+  margin-top: 0;
+}
+
+.sub {
+  color: var(--graphite);
+  font-size: 0.875rem;
+  max-width: var(--measure);
+}
+
+/* the coach's reasoning, in blue pencil: it is private working, written beside the card */
+.notes {
+  max-width: var(--measure);
+  color: var(--blue);
+  font-style: italic;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.arms {
+  display: grid;
+  gap: var(--s3);
+}
+
+.arms li {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(6rem, 9rem) 1fr;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.arms li > span {
+  color: var(--graphite);
+  font-size: 0.875rem;
+}
+
+.arms li > b {
+  font-family: var(--font-cue);
+  font-size: 1.25rem;
+}
+
+.verdict {
+  margin-top: var(--s3);
+  font-family: var(--font-cue);
+  font-weight: 700;
+  font-size: 1.375rem;
+  color: var(--ink);
+}
+
+@media (max-width: 64rem) {
+  .arms li {
+    grid-template-columns: 1fr;
+    gap: var(--s1);
+  }
+}
+
+@media (max-width: 52rem) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+    background: var(--paper);
+  }
+  .facing {
+    background: var(--paper-2);
+    border-right: 0;
+    padding-inline: clamp(1rem, 4vw, 2rem);
+  }
+  .script {
+    padding-inline: clamp(1rem, 4vw, 2rem);
+  }
+}
