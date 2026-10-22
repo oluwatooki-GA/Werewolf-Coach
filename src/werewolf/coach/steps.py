@@ -22,8 +22,8 @@ from werewolf.strategies.cards import MAX_WORDS, Card
 from werewolf.tagger.moves import MOVE_NAMES
 
 TEMPERATURE = 0.4
-DIAGNOSE_TOKENS = 1500
-WRITE_TOKENS = 1000
+DIAGNOSE_TOKENS = 3000
+WRITE_TOKENS = 3000
 T = TypeVar("T", bound=BaseModel)
 
 

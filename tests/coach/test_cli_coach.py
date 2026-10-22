@@ -30,7 +30,7 @@ from werewolf.tagger.tags import save_tags
 REPO = Path(__file__).resolve().parents[2]
 CHAMPION = "wolf.accuse_early"
 DIAGNOSIS = json.dumps({"diagnosis": "They accused too early.", "evidence": ["Game 1."]})
-OK = json.dumps({"ok": True, "reasons": []})
+OK = json.dumps({"problems": []})
 
 
 def card(words: str) -> str:

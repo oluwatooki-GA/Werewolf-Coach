@@ -30,7 +30,7 @@ def reply(extra: str = INSTRUCTIONS, *, keep: bool = True) -> str:
 
 
 def verdict(ok: bool, *reasons: str) -> str:
-    return json.dumps({"ok": ok, "reasons": list(reasons)})
+    return json.dumps({"problems": [] if ok else list(reasons)})
 
 
 def champion() -> Card:

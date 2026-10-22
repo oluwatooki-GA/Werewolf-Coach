@@ -28,8 +28,7 @@ CHECK_TOKENS = 1000
 class WireCheck(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    ok: bool
-    reasons: list[str]
+    problems: list[str]  # each real violation; an empty list means the card passes
 
 
 @dataclass
@@ -88,9 +87,7 @@ async def model_problems(client: LLMClient, model: str, card: Card) -> tuple[lis
         CHECK_TOKENS,
         temperature=0.0,
     )
-    if answer.ok:
-        return [], cost
-    return answer.reasons or ["the check model rejected the card without a reason"], cost
+    return [problem.strip() for problem in answer.problems if problem.strip()], cost
 
 
 async def write_checked_card(

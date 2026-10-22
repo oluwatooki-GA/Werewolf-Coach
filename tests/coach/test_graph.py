@@ -37,8 +37,8 @@ CARD = json.dumps(
         "expected_moves": ["accuse_reasoned"],
     }
 )
-OK = json.dumps({"ok": True, "reasons": []})
-NOT_OK = json.dumps({"ok": False, "reasons": ["relies on knowing who the wolves are"]})
+OK = json.dumps({"problems": []})
+NOT_OK = json.dumps({"problems": ["relies on knowing who the wolves are"]})
 
 
 @pytest.fixture(autouse=True)

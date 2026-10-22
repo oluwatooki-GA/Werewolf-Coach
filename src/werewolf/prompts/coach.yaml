@@ -72,8 +72,10 @@ check_system: >-
   wolves said in private; anything about past games), asks for something the rules above do not
   allow (for example speaking out of turn or secret messages between players who are not wolves),
   or gives advice that contradicts them (for example paying tokens to answer an accusation, which
-  is a free reply, or bidding more tokens than a player has). Do not reject a card for style, length or because you doubt it will win. Answer with
-  JSON: ok is true if the card passes; reasons lists what is wrong (empty if ok).
+  is a free reply, or bidding more tokens than a player has).
+  Do not reject a card for style, length or because you doubt it will win. Answer with JSON:
+  problems lists each real violation in one short sentence. Do not list doubts or things that are
+  fine. An empty list means the card passes.
 check_user: |-
   The role: ${role}.
   The card:
