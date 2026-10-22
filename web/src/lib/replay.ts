@@ -1,26 +1,5 @@
 import type { ReplayEntry } from "./api";
 
-const PRIVATE_KINDS = new Set(["wolf_chat", "night", "seer_result"]);
-
-/** An entry, or a run of private entries (wolf chat, the night) shown together on the facing page. */
-export type Block = ReplayEntry | { kind: "private"; round: number; entries: ReplayEntry[] };
-
-/** Consecutive private entries become one block, so the night is one note, not four empty rows. */
-export function blocks(entries: ReplayEntry[]): Block[] {
-  const out: Block[] = [];
-  for (const entry of entries) {
-    const last = out[out.length - 1];
-    if (!PRIVATE_KINDS.has(entry.kind)) {
-      out.push(entry);
-    } else if (last && last.kind === "private") {
-      last.entries.push(entry);
-    } else {
-      out.push({ kind: "private", round: entry.round, entries: [entry] });
-    }
-  }
-  return out;
-}
-
 /**
  * A few entries around one line, for the home page: the setup before it (the wolves' plan, the
  * morning) and the replies after it. Falls back to the start of the game if the line is missing.

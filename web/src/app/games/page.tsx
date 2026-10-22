@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
+import { ChannelHeader } from "@/components/ChannelHeader";
 import { TeamMark } from "@/components/TeamMark";
 import { api } from "@/lib/api";
 import type { GameList, GameSummary } from "@/lib/api";
-import { cardParts, gel, plural, ruleLabel } from "@/lib/format";
+import { cardParts, plural, ruleLabel } from "@/lib/format";
 import styles from "./games.module.css";
 
 /** Reads live data from the API, so it is rendered per request, never at build time. */
@@ -33,7 +35,7 @@ function href(search: Search, change: Partial<Search>): string {
   return query ? `/games?${query}` : "/games";
 }
 
-function Choice({
+function Pill({
   search,
   field,
   value,
@@ -46,7 +48,11 @@ function Choice({
 }) {
   const current = (search[field] ?? (field === "players" ? "ai" : "")) === value;
   return (
-    <Link href={href(search, { [field]: value })} aria-current={current ? "true" : undefined}>
+    <Link
+      href={href(search, { [field]: value })}
+      className={styles.pill}
+      aria-current={current ? "true" : undefined}
+    >
       {children}
     </Link>
   );
@@ -65,123 +71,81 @@ export default async function GamesPage({ searchParams }: { searchParams: Promis
   const pages = Math.max(1, Math.ceil(total / PAGE));
 
   return (
-    <section className={styles.sheet} aria-labelledby="games">
-      <header className={styles.head}>
-        <h1 id="games">Replays</h1>
-        <p>
-          {plural(total, "game")}
-          {players === "ai"
+    <>
+      <ChannelHeader
+        name="replays"
+        topic={`${plural(total, "game")}${
+          players === "ai"
             ? " played by AI agents. Scripted test games are one filter away."
             : players === "scripted"
               ? " played by scripted test agents."
-              : " in all."}{" "}
-          Open one to read it as a script, with each player&apos;s private notes on the facing page.
-        </p>
+              : " in all."
+        }`}
+      />
+      <div className={styles.page}>
         <nav className={styles.filters} aria-label="Filter the games">
           <div className={styles.group}>
             <span>Winner</span>
-          <Choice search={search} field="winner" value="">
-            Any
-          </Choice>
-          <Choice search={search} field="winner" value="Wolves">
-            Wolves
-          </Choice>
-          <Choice search={search} field="winner" value="Village">
-            Village
-          </Choice>
+            <Pill search={search} field="winner" value="">Any</Pill>
+            <Pill search={search} field="winner" value="Wolves">Wolves</Pill>
+            <Pill search={search} field="winner" value="Village">Village</Pill>
           </div>
           <div className={styles.group}>
             <span>Players</span>
-          <Choice search={search} field="players" value="ai">
-            AI agents
-          </Choice>
-          <Choice search={search} field="players" value="scripted">
-            Scripted tests
-          </Choice>
-          <Choice search={search} field="players" value="any">
-            Any
-          </Choice>
+            <Pill search={search} field="players" value="ai">AI agents</Pill>
+            <Pill search={search} field="players" value="scripted">Scripted tests</Pill>
+            <Pill search={search} field="players" value="any">Any</Pill>
           </div>
           <div className={styles.group}>
             <span>Rules</span>
-          <Choice search={search} field="rules" value="">
-            Any
-          </Choice>
-          <Choice search={search} field="rules" value="v1">
-            v1
-          </Choice>
-          <Choice search={search} field="rules" value="v2">
-            v2
-          </Choice>
+            <Pill search={search} field="rules" value="">Any</Pill>
+            <Pill search={search} field="rules" value="v1">v1</Pill>
+            <Pill search={search} field="rules" value="v2">v2</Pill>
           </div>
         </nav>
-      </header>
 
-      {games.length === 0 ? (
-        <p className={styles.empty}>No games match. Clear a filter to see them all.</p>
-      ) : (
-        <table className={styles.table}>
-          <caption className="visually-hidden">Saved games</caption>
-          <thead>
-            <tr>
-              <th scope="col">Game</th>
-              <th scope="col">Winner</th>
-              <th scope="col">Rounds</th>
-              <th scope="col">Strategies</th>
-              <th scope="col">Played by</th>
-              <th scope="col">Rules</th>
-            </tr>
-          </thead>
-          <tbody>
+        {games.length === 0 ? (
+          <p className={styles.empty}>No games match. Clear a filter to see them all.</p>
+        ) : (
+          <ul className={styles.list}>
             {games.map((game) => {
               const cards = cardsOf(game);
               return (
-                <tr key={game.id} style={{ ["--gel" as string]: gel(game.id) }}>
-                  <th scope="row">
-                    <Link href={`/games/${game.id}`}>Seed {game.seed}</Link>
-                    <small>{game.id}</small>
-                  </th>
-                  <td data-label="Winner">
-                    <TeamMark team={game.winner} word />
-                  </td>
-                  <td data-label="Rounds">{game.rounds}</td>
-                  <td data-label="Strategies">
-                    {cards.wolves || cards.village ? (
-                      <>
-                        {cards.wolves ?? "default"} wolves, {cards.village ?? "default"} villagers
-                      </>
-                    ) : (
-                      <span className={styles.dim}>defaults</span>
-                    )}
-                  </td>
-                  <td data-label="Played by">{game.model || "scripted"}</td>
-                  <td data-label="Rules" title={ruleLabel(game.rule_version)}>
-                    {game.rule_version}
-                  </td>
-                </tr>
+                <li key={game.id}>
+                  <Link href={`/games/${game.id}`} className={styles.row}>
+                    <Avatar name={game.id} size={40} />
+                    <span className={styles.main}>
+                      <b>seed-{game.id}</b>
+                      <span>
+                        {cards.wolves || cards.village
+                          ? `${cards.wolves ?? "default"} wolves, ${cards.village ?? "default"} villagers`
+                          : "Default strategies"}
+                      </span>
+                    </span>
+                    <span className={styles.meta}>
+                      <TeamMark team={game.winner} word />
+                      <small>
+                        {plural(game.rounds, "round")}, {game.model || "scripted"},{" "}
+                        <span title={ruleLabel(game.rule_version)}>{game.rule_version}</span>
+                      </small>
+                    </span>
+                  </Link>
+                </li>
               );
             })}
-          </tbody>
-        </table>
-      )}
+          </ul>
+        )}
 
-      {pages > 1 ? (
-        <nav className={styles.pager} aria-label="Pages">
-          {page > 1 ? (
-            <Link href={href(search, { page: String(page - 1) })}>Earlier</Link>
-          ) : (
-            <span />
-          )}
-          <span>
-            Page {page} of {pages}
-          </span>
-          {page < pages ? (
-            <Link href={href(search, { page: String(page + 1) })}>Later</Link>
-          ) : (
-            <span />
-          )}
-        </nav>
-      ) : null}
-    </section>
+        {pages > 1 ? (
+          <nav className={styles.pager} aria-label="Pages">
+            {page > 1 ? <Link href={href(search, { page: String(page - 1) })}>Earlier</Link> : <span />}
+            <span>
+              Page {page} of {pages}
+            </span>
+            {page < pages ? <Link href={href(search, { page: String(page + 1) })}>Later</Link> : <span />}
+          </nav>
+        ) : null}
+      </div>
+    </>
   );
 }

@@ -1,20 +1,21 @@
 .page {
-  max-width: var(--measure);
+  max-width: 70ch;
 }
 
 .script {
-  line-height: 1.8;
+  line-height: 1.7;
 }
 
+/* what the coach cut */
 .cut {
-  color: var(--red);
+  color: var(--wolf);
   text-decoration-line: line-through;
   text-decoration-thickness: 2px;
 }
 
+/* what the coach added */
 .add {
-  color: var(--blue);
-  font-style: italic;
+  color: var(--think);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.25em;
@@ -23,11 +24,11 @@
 .add svg {
   display: inline-block;
   margin-right: 0.35em;
-  translate: 0 -0.3em;
+  translate: 0 -0.15em;
 }
 
 .legend {
   margin-top: var(--s3);
   font-size: 0.8125rem;
-  color: var(--graphite);
+  color: var(--dim);
 }

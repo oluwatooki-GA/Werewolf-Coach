@@ -13,31 +13,32 @@
 }
 
 .axis {
-  stroke: var(--paper-edge);
+  stroke: var(--raise-2);
   stroke-width: 1;
 }
 
 .half {
-  stroke: var(--paper-edge);
+  stroke: var(--raise-2);
   stroke-width: 1;
 }
 
 .interval {
-  stroke: var(--ink);
+  stroke: var(--link);
   stroke-width: 4;
   stroke-linecap: butt;
 }
 
+/* too few games: dashed and dim, and the words say so */
 .thin {
-  stroke: var(--ink);
+  stroke: var(--link);
   stroke-width: 3;
   stroke-dasharray: 3 3;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .dot {
-  fill: var(--ink);
-  stroke: var(--paper);
+  fill: var(--strong);
+  stroke: var(--feed);
   stroke-width: 1.5;
 }
 
@@ -49,18 +50,21 @@
 }
 
 .figure b {
-  font-family: var(--font-cue);
-  font-size: 1.125rem;
+  color: var(--strong);
+  font-size: 1.0625rem;
 }
 
 .figure span {
-  color: var(--graphite);
+  color: var(--dim);
   font-size: 0.8125rem;
 }
 
 .figure em {
-  font-family: var(--font-cue);
+  padding: 0.05rem 0.45rem;
+  border-radius: 6px;
+  background: rgb(245 196 81 / 0.15);
+  color: var(--gold);
   font-style: normal;
-  font-weight: 600;
-  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
 }

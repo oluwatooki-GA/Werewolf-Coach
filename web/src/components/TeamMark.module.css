@@ -2,7 +2,6 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35em;
-  font-family: var(--font-cue);
   font-weight: 600;
   vertical-align: baseline;
 }
@@ -13,17 +12,9 @@
 }
 
 .mark[data-team="Wolves"] {
-  color: var(--red);
+  color: var(--wolf);
 }
 
 .mark[data-team="Village"] {
-  color: var(--ink);
-}
-
-:global(.on-house) .mark[data-team="Wolves"] {
-  color: var(--red-house);
-}
-
-:global(.on-house) .mark[data-team="Village"] {
-  color: var(--on-house);
+  color: var(--village);
 }

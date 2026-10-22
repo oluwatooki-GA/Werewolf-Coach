@@ -1,27 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Replay } from "./api";
 import fixture from "../test/replay.fixture.json";
-import { blocks, excerpt, momentHeadline } from "./replay";
+import { excerpt, momentHeadline } from "./replay";
 
 const replay = fixture as unknown as Replay;
-
-describe("blocks", () => {
-  it("joins the run of private entries before the first line into one block", () => {
-    const first = blocks(replay.entries)[0];
-    expect(first?.kind).toBe("private");
-    expect(first && "entries" in first ? first.entries.map((e) => e.kind) : []).toEqual([
-      "wolf_chat",
-      "wolf_chat",
-      "seer_result",
-      "night",
-    ]);
-  });
-
-  it("keeps public entries, in order, as they are", () => {
-    const rest = blocks(replay.entries).slice(1).map((b) => b.kind);
-    expect(rest.slice(0, 3)).toEqual(["direction", "line", "direction"]);
-  });
-});
 
 describe("excerpt", () => {
   it("starts just before the focus line and runs a few entries after it", () => {

@@ -1,41 +1,31 @@
-/* A plain page for one short message: play mode, a missing game, an error. */
-.sheet {
-  background: var(--paper);
-  color: var(--ink);
-  border-radius: 0 3px 3px 3px;
-  padding: var(--s7) clamp(1rem, 3vw, 3rem) var(--s8);
+/* A plain channel page for one short message: play mode, a missing game, an error. */
+.page {
   display: grid;
   gap: var(--s4);
   justify-items: start;
+  padding: var(--s6) var(--s5) var(--s8);
 }
 
-.sheet h1 {
-  font-size: clamp(2.5rem, 6vw, 4.25rem);
-}
-
-.sheet p {
+.page p {
   max-width: 56ch;
 }
 
 .dim {
-  color: var(--graphite);
+  color: var(--dim);
   font-size: 0.875rem;
 }
 
 .action {
-  font-family: var(--font-cue);
-  font-weight: 700;
-  font-size: 1.25rem;
-  padding: var(--s2) var(--s4);
-  border: 2px solid var(--ink);
-  border-radius: 3px;
-  background: transparent;
-  color: var(--ink);
+  padding: 0.5rem var(--s4);
+  border: 0;
+  border-radius: 6px;
+  background: var(--link);
+  color: #0b1626;
+  font-weight: 800;
   cursor: pointer;
   text-decoration: none;
 }
 
 .action:hover {
-  background: var(--ink);
-  color: var(--paper);
+  filter: brightness(1.1);
 }

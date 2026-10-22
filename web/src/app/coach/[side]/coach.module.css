@@ -1,110 +1,81 @@
-.sheet {
-  background: var(--paper);
-  color: var(--ink);
-  border-radius: 0 3px 3px 3px;
-  padding: var(--s7) 0 0;
-}
-
-.head {
-  display: grid;
-  gap: var(--s4);
-  justify-items: start;
-  padding: 0 clamp(1rem, 3vw, 3rem) var(--s7);
-}
-
-.head h1 {
-  font-size: clamp(2.5rem, 6vw, 4.25rem);
-}
-
-.head p {
-  max-width: 60ch;
-  color: var(--graphite);
-}
-
-/* the verdict, stamped on the page */
-.head .stamp {
-  padding: var(--s2) var(--s4);
-  border: 2px solid var(--ink);
-  border-radius: 2px;
-  rotate: -1deg;
-  font-family: var(--font-cue);
-  font-weight: 700;
-  font-size: clamp(1.375rem, 3vw, 1.875rem);
-  line-height: 1.1;
-  color: var(--ink);
+.thread {
+  padding: var(--s3) 0 var(--s7);
+  max-width: 62rem;
 }
 
 .sides {
   display: flex;
-  gap: var(--s5);
-  font-family: var(--font-cue);
-  font-weight: 600;
-  font-size: 1.25rem;
-}
-
-.sides a {
-  text-decoration: none;
-  color: var(--graphite);
-}
-
-.sides a[aria-current="true"] {
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-color: var(--ink);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.25em;
-}
-
-/* a revision is a two-page spread: the coach's reasoning facing the card it produced */
-.pair {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  background: linear-gradient(to right, var(--paper-2) 41.6667%, var(--paper) 41.6667%);
-  border-top: 2px solid var(--ink);
-}
-
-.facing {
-  padding: var(--s6) var(--s6) var(--s6) clamp(1rem, 3vw, 3rem);
-  display: grid;
-  align-content: start;
-  gap: var(--s3);
-  border-right: 1px solid var(--paper-edge);
-}
-
-.script {
-  padding: var(--s6) clamp(1rem, 3vw, 3rem) var(--s6) var(--s6);
-  display: grid;
-  align-content: start;
-  gap: var(--s3);
-}
-
-.script > p:first-child,
-.script > div {
-  max-width: var(--measure);
-}
-
-.pair h3 {
-  margin-top: var(--s3);
-  font-size: 1.25rem;
-  color: var(--graphite);
-}
-
-.pair h3:first-child {
-  margin-top: 0;
-}
-
-.sub {
-  color: var(--graphite);
+  gap: var(--s2);
   font-size: 0.875rem;
-  max-width: var(--measure);
+  font-weight: 600;
 }
 
-/* the coach's reasoning, in blue pencil: it is private working, written beside the card */
-.notes {
-  max-width: var(--measure);
-  color: var(--blue);
+.pill {
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  background: var(--side);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.pill:hover {
+  background: var(--raise);
+}
+
+.pill[aria-current="true"] {
+  background: var(--raise-2);
+  color: var(--strong);
+}
+
+/* the headline result, pinned like a pinned message */
+.pinned {
+  margin: var(--s3) var(--s5) var(--s4);
+  padding: var(--s3) var(--s4);
+  max-width: 62ch;
+  border-radius: 8px;
+  background: var(--side);
+  color: var(--dim);
+}
+
+.pinned b {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--strong);
+  font-size: 1.125rem;
+}
+
+.empty {
+  padding: var(--s5);
+  color: var(--dim);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin: var(--s5) var(--s5) var(--s2);
+  color: var(--dim);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--raise-2);
+}
+
+.concluded {
+  color: var(--text);
   font-size: 0.9375rem;
-  line-height: 1.6;
+  line-height: 1.55;
+}
+
+.note {
+  color: var(--dim);
+  font-size: 0.8125rem;
 }
 
 .arms {
@@ -120,21 +91,18 @@
 }
 
 .arms li > span {
-  color: var(--graphite);
+  color: var(--dim);
   font-size: 0.875rem;
 }
 
 .arms li > b {
-  font-family: var(--font-cue);
-  font-size: 1.25rem;
+  color: var(--strong);
 }
 
 .verdict {
-  margin-top: var(--s3);
-  font-family: var(--font-cue);
+  margin: var(--s2) var(--s5) 0 calc(var(--s5) + 40px + var(--s4));
+  color: var(--strong);
   font-weight: 700;
-  font-size: 1.375rem;
-  color: var(--ink);
 }
 
 @media (max-width: 64rem) {
@@ -145,16 +113,11 @@
 }
 
 @media (max-width: 52rem) {
-  .pair {
-    grid-template-columns: minmax(0, 1fr);
-    background: var(--paper);
+  .pinned,
+  .divider {
+    margin-inline: var(--s3);
   }
-  .facing {
-    background: var(--paper-2);
-    border-right: 0;
-    padding-inline: clamp(1rem, 4vw, 2rem);
-  }
-  .script {
-    padding-inline: clamp(1rem, 4vw, 2rem);
+  .verdict {
+    margin-inline: var(--s3);
   }
 }

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ReplayView } from "@/components/ReplayView";
+import { Room } from "@/components/Room";
 import { apiOrNull } from "@/lib/api";
 import type { Replay } from "@/lib/api";
-import { cardParts } from "@/lib/format";
-import styles from "./replay.module.css";
+import { cardParts, plural } from "@/lib/format";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,24 +23,22 @@ function matchup(replay: Replay): string {
   };
   const wolves = pick("Werewolf");
   const village = pick("Villager");
-  if (!wolves && !village) return "Default strategies on both sides.";
-  return `${wolves ?? "default"} wolves against ${village ?? "default"} villagers.`;
+  if (!wolves && !village) return "Default strategies on both sides";
+  return `${wolves ?? "default"} wolves against ${village ?? "default"} villagers`;
 }
 
 export default async function ReplayPage({ params }: Props) {
   const { id } = await params;
   const replay = await apiOrNull<Replay>(`/games/${id}/replay`);
   if (!replay) notFound();
+  const winner = replay.winner === "Wolves" ? "wolves" : "village";
   return (
-    <>
-      <div className={`on-house ${styles.heading}`}>
-        <h1>Seed {replay.seed}</h1>
-        <p>
-          {matchup(replay)} Played by {replay.model || "scripted agents"} on the {replay.rule_version}{" "}
-          rules.
-        </p>
-      </div>
-      <ReplayView replay={replay} />
-    </>
+    <Room
+      entries={replay.entries}
+      players={replay.players}
+      title={`seed-${replay.id}`}
+      topic={`${matchup(replay)}. Played by ${replay.model || "scripted agents"} on the ${replay.rule_version} rules. The ${winner} won in ${plural(replay.rounds, "round")}.`}
+      label={`Seed ${replay.seed}`}
+    />
   );
 }

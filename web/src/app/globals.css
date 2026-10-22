@@ -1,39 +1,33 @@
 /*
-  The prompt book. Backstage black around script-white pages.
-  Three pencils carry meaning: blue = private (the player's subtext, the coach),
-  red = a lie or the wolf team, yellow highlighter = the line you are on.
+  A chat app. Layered dark surfaces (rail, sidebar, feed, raised), one friendly sans.
+  Violet means a player's private thoughts. Coral means a lie or the wolf team.
+  Role tags carry a word and a drawn mark, so nothing depends on colour alone.
 */
 
 :root {
-  --house: #0e1013;
-  --house-2: #15181d;
-  --house-3: #1d2128;
-  --house-line: #2a2f37;
-  --on-house: #d5d9e0;
-  --on-house-dim: #959dab;
+  --rail: #1e1f22;
+  --side: #2b2d31;
+  --feed: #313338;
+  --feed-hover: #2e3035;
+  --raise: #383a40;
+  --raise-2: #404249;
+  --line: #26282c;
 
-  --paper: #f4f4f1;
-  --paper-2: #ebebe5;
-  --paper-edge: #d3d3cb;
-  --ink: #16181d;
-  --graphite: #565b66;
+  --text: #dbdee1;
+  --dim: #a0a7b2;
+  --strong: #f2f3f5;
 
-  --blue: #2447c9;
-  --blue-house: #94acff;
-  --red: #b8271f;
-  --red-house: #ff8576;
-  --hilite: #f6d64a;
+  --link: #6bb4ff;
+  --think: #bda8ff;
+  --think-bg: rgb(189 168 255 / 0.13);
+  --wolf: #ff8076;
+  --wolf-bg: rgb(255 128 118 / 0.15);
+  --village: #62d6bb;
+  --gold: #f5c451;
+  --green: #7bd88f;
+  --slate: #9db0d3;
 
-  /* lighting-gel colours, one per game tab */
-  --gel-0: #d9962b;
-  --gel-1: #5a8bb8;
-  --gel-2: #7d9c58;
-  --gel-3: #9684c4;
-  --gel-4: #cb6d83;
-  --gel-5: #6dbac0;
-
-  --font-script: var(--font-courier), "Courier New", Courier, monospace;
-  --font-cue: var(--font-barlow), "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font: var(--font-figtree), "Segoe UI", system-ui, sans-serif;
 
   --s1: 0.25rem;
   --s2: 0.5rem;
@@ -43,10 +37,10 @@
   --s6: 2rem;
   --s7: 3rem;
   --s8: 4rem;
-  --s9: 6rem;
 
-  --measure: 62ch;
-  --page-width: 78rem;
+  --side-width: 15rem;
+  --panel-width: 21rem;
+  --header-height: 3.25rem;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   color-scheme: dark;
@@ -59,62 +53,51 @@
 }
 
 html {
-  background: var(--house);
-  scrollbar-color: #3b414b var(--house);
-  scroll-padding-top: 4.5rem;
+  background: var(--feed);
+  scrollbar-color: #1a1b1e var(--feed);
+  scroll-padding-top: calc(var(--header-height) + 1rem);
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--house);
-  color: var(--on-house);
-  font-family: var(--font-script);
+  background: var(--feed);
+  color: var(--text);
+  font-family: var(--font);
   font-size: 1rem;
-  line-height: 1.55;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--hilite);
-  color: var(--ink);
+  background: rgb(107 180 255 / 0.4);
+  color: var(--strong);
 }
 
 :focus-visible {
-  outline: 2px solid var(--hilite);
-  outline-offset: 3px;
-  border-radius: 2px;
-}
-
-/* paper is light, so the ring there is ink; anything marked on-house sits on the dark ground */
-main :focus-visible {
-  outline-color: var(--ink);
-}
-
-main .on-house :focus-visible {
-  outline-color: var(--hilite);
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--house);
+  background: var(--feed);
 }
 ::-webkit-scrollbar-thumb {
-  background: #3b414b;
-  border: 3px solid var(--house);
+  background: #1a1b1e;
+  border: 3px solid var(--feed);
   border-radius: 8px;
 }
 
 a {
-  color: inherit;
+  color: var(--link);
   text-underline-offset: 0.2em;
-  text-decoration-thickness: 1px;
 }
 
 h1,
@@ -122,23 +105,20 @@ h2,
 h3,
 h4 {
   margin: 0;
-  font-family: var(--font-cue);
+  color: var(--strong);
   font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.01em;
+  line-height: 1.15;
   text-wrap: balance;
 }
 
 h1 {
-  font-size: clamp(2.5rem, 6vw, 4.25rem);
-  letter-spacing: -0.025em;
-  line-height: 0.92;
+  font-size: clamp(1.75rem, 3.2vw, 2.25rem);
 }
 h2 {
-  font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+  font-size: 1.375rem;
 }
 h3 {
-  font-size: 1.375rem;
+  font-size: 1.0625rem;
 }
 
 p {
@@ -181,12 +161,12 @@ table {
   position: absolute;
   left: var(--s4);
   top: -4rem;
-  z-index: 20;
-  background: var(--hilite);
-  color: var(--ink);
+  z-index: 30;
+  background: var(--link);
+  color: #0b1626;
   padding: var(--s2) var(--s4);
-  font-family: var(--font-cue);
-  font-weight: 600;
+  font-weight: 700;
+  border-radius: 4px;
   text-decoration: none;
 }
 .skip:focus {

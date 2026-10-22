@@ -1,0 +1,232 @@
+.room {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--panel-width);
+  align-items: start;
+}
+
+.channel {
+  min-width: 0;
+  padding-bottom: var(--s6);
+}
+
+/* the channel header, pinned like a chat app's */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s4);
+  min-height: var(--header-height);
+  padding: var(--s2) var(--s4);
+  background: var(--feed);
+  border-bottom: 1px solid var(--line);
+}
+
+.bar h1 {
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+
+.bar h1 span {
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.topic {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding-left: var(--s4);
+  border-left: 1px solid var(--raise-2);
+  color: var(--dim);
+  font-size: 0.875rem;
+}
+
+.switches {
+  display: flex;
+  gap: var(--s4);
+  margin-left: auto;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.switches label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  cursor: pointer;
+}
+
+.switches input {
+  appearance: none;
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  margin: 0;
+  border-radius: 1rem;
+  background: var(--raise-2);
+  cursor: inherit;
+  transition: background-color 140ms var(--ease-out);
+}
+
+.switches input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--strong);
+  transition: translate 140ms var(--ease-out);
+}
+
+.switches input:checked {
+  background: var(--think);
+}
+
+.switches input:checked::after {
+  translate: 1rem 0;
+  background: #1c1530;
+}
+
+.feed {
+  padding-top: var(--s3);
+}
+
+/* a round is a day divider */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin: var(--s5) var(--s4) var(--s2);
+  color: var(--dim);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--raise-2);
+}
+
+.divider:first-child {
+  margin-top: var(--s2);
+}
+
+.system {
+  margin: var(--s2) var(--s4);
+  padding-left: 3.5rem;
+  color: var(--dim);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.system[data-tone="listening"] {
+  font-size: 0.8125rem;
+}
+
+.system[data-tone="end"] {
+  color: var(--strong);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.secret {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: var(--s1) var(--s4) var(--s1) 3.5rem;
+  padding: var(--s2) var(--s3);
+  border-radius: 6px;
+  background: var(--think-bg);
+  color: var(--think);
+  font-size: 0.875rem;
+}
+
+.secret svg {
+  flex: none;
+}
+
+.wolves {
+  display: flex;
+  gap: var(--s3);
+  margin: var(--s1) var(--s4);
+  padding: var(--s2) var(--s3);
+  border-radius: 6px;
+  background: var(--wolf-bg);
+}
+
+.wolves[data-dim] {
+  opacity: 0.32;
+}
+
+.private {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.private b {
+  color: var(--strong);
+}
+
+.jump {
+  display: flex;
+  gap: var(--s4);
+  margin: var(--s5) var(--s4) 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* the side panel: the selected message's private thoughts, then the player list */
+.panel {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+  background: var(--side);
+  border-left: 1px solid var(--line);
+}
+
+.inline,
+.mobileMembers {
+  display: none;
+}
+
+@media (max-width: 72rem) {
+  .room {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .panel {
+    display: none;
+  }
+  .inline {
+    display: block;
+  }
+  .mobileMembers {
+    display: block;
+    border-bottom: 1px solid var(--line);
+  }
+  .mobileMembers summary {
+    padding: var(--s3) var(--s4);
+    color: var(--dim);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .switches {
+    margin-left: 0;
+    width: 100%;
+  }
+  .topic {
+    padding-left: 0;
+    border-left: 0;
+  }
+}

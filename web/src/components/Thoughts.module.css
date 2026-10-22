@@ -1,0 +1,120 @@
+.box {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  align-content: start;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.head b {
+  color: var(--strong);
+}
+
+.head p {
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.note {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-radius: 8px;
+  background: var(--think-bg);
+  color: var(--think);
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.hint {
+  color: var(--dim);
+  font-size: 0.9375rem;
+}
+
+.cue {
+  color: var(--dim);
+  font-size: 0.875rem;
+}
+
+.box h3 {
+  font-size: 1rem;
+}
+
+.box h4 {
+  margin-top: var(--s2);
+  color: var(--dim);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.beliefs {
+  display: grid;
+  gap: var(--s2);
+}
+
+.beliefs li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.15rem var(--s2);
+  font-size: 0.9375rem;
+}
+
+.who {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.track {
+  fill: var(--raise);
+}
+
+.fill {
+  fill: var(--think);
+}
+
+.beliefs small {
+  grid-column: 1 / -1;
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.findings {
+  display: grid;
+  gap: var(--s2);
+}
+
+.findings li {
+  padding: var(--s2) var(--s3);
+  border-radius: 6px;
+  background: var(--side);
+  color: var(--dim);
+  font-size: 0.875rem;
+}
+
+.findings b {
+  color: var(--strong);
+}
+
+.findings li[data-flag="lie"] {
+  background: var(--wolf-bg);
+  color: var(--text);
+}
+
+.findings li[data-flag="lie"] b {
+  color: var(--wolf);
+}
+
+/* inline under a message on a phone, the panel's content sits in the feed */
+.box[data-surface="inline"] {
+  margin: var(--s2) var(--s3) var(--s3) 3.5rem;
+  border-radius: 8px;
+  background: var(--side);
+}

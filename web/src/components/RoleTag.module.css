@@ -1,0 +1,18 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--role) 16%, var(--feed));
+  color: var(--role);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+/* the team mark inside a tag takes the tag's colour */
+.tag > span {
+  color: inherit;
+}

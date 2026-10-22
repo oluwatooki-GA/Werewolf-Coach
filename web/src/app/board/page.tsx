@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChannelHeader } from "@/components/ChannelHeader";
 import { IntervalBar } from "@/components/IntervalBar";
 import { TeamMark } from "@/components/TeamMark";
 import { api } from "@/lib/api";
@@ -31,19 +32,18 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
   const text = new Map(cards.map((c) => [`${c.id}@${c.version}`, c]));
 
   return (
-    <section className={styles.sheet} aria-labelledby="board">
-      <header className={styles.head}>
-        <h1 id="board">Strategy board</h1>
-        <p>
-          How each strategy card did in the saved games. A bar is the 95% interval for the win rate
-          and the dot is what was observed. With fewer than {ENOUGH_GAMES} games a gap between two
-          cards is not clear yet, and the bar is dashed.
-        </p>
+    <>
+      <ChannelHeader
+        name="strategies"
+        topic={`How each card did in the saved games. A bar is the 95% interval for the win rate and the dot is what was observed. With fewer than ${ENOUGH_GAMES} games a gap between two cards is not clear yet.`}
+      />
+      <div className={styles.page}>
         <nav className={styles.versions} aria-label="Rule set">
           {versions.map((v) => (
             <Link
               key={v}
               href={`/board?rules=${v}`}
+              className={styles.pill}
               aria-current={v === version ? "true" : undefined}
             >
               {v}
@@ -51,60 +51,60 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
           ))}
           <span>{ruleLabel(version)}</span>
         </nav>
-      </header>
 
-      {shown.length === 0 ? (
-        <p className={styles.empty}>No games have been saved under these rules yet.</p>
-      ) : null}
+        {shown.length === 0 ? (
+          <p className={styles.empty}>No games have been saved under these rules yet.</p>
+        ) : null}
 
-      {ROLES.map((role) => {
-        const rows = shown.filter((r) => r.role === role);
-        if (rows.length === 0) return null;
-        const team = role === "Werewolf" ? "Wolves" : "Village";
-        return (
-          <section key={role} className={styles.role} aria-labelledby={`role-${role}`}>
-            <h2 id={`role-${role}`}>
-              {role === "Werewolf" ? "Werewolves" : `${role}s`}
-              <small>
-                <TeamMark team={team} word /> win
-              </small>
-            </h2>
-            <ol className={styles.cards}>
-              {rows.map((row) => {
-                const parts = cardParts(row.card);
-                const card = text.get(row.card);
-                return (
-                  <li key={row.card}>
-                    <div className={styles.line}>
-                      <h3>
-                        {parts.name}
-                        <small>version {parts.version}</small>
-                      </h3>
-                      <p className={styles.games}>{plural(row.games, "game")}</p>
-                      <IntervalBar
-                        wins={row.wins}
-                        games={row.games}
-                        enough={row.enough}
-                        of={`${team === "Wolves" ? "Wolves" : "The village"} won`}
-                      />
-                    </div>
-                    {card ? (
-                      <details>
-                        <summary>Read the card</summary>
-                        <p className={styles.script}>{card.instructions}</p>
-                        <p className={styles.source}>
-                          {card.parent ? `Built on ${cardParts(card.parent).name}. ` : ""}
-                          {card.source}
-                        </p>
-                      </details>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        );
-      })}
-    </section>
+        {ROLES.map((role) => {
+          const rows = shown.filter((r) => r.role === role);
+          if (rows.length === 0) return null;
+          const team = role === "Werewolf" ? "Wolves" : "Village";
+          return (
+            <section key={role} className={styles.role} aria-labelledby={`role-${role}`}>
+              <h2 id={`role-${role}`}>
+                {role === "Werewolf" ? "Werewolves" : `${role}s`}
+                <span>
+                  {plural(rows.length, "card")}, <TeamMark team={team} word /> win
+                </span>
+              </h2>
+              <ol className={styles.cards}>
+                {rows.map((row) => {
+                  const parts = cardParts(row.card);
+                  const card = text.get(row.card);
+                  return (
+                    <li key={row.card}>
+                      <div className={styles.line}>
+                        <h3>
+                          {parts.name}
+                          <small>version {parts.version}</small>
+                        </h3>
+                        <p className={styles.games}>{plural(row.games, "game")}</p>
+                        <IntervalBar
+                          wins={row.wins}
+                          games={row.games}
+                          enough={row.enough}
+                          of={`${team === "Wolves" ? "Wolves" : "The village"} won`}
+                        />
+                      </div>
+                      {card ? (
+                        <details>
+                          <summary>Read the card</summary>
+                          <p className={styles.script}>{card.instructions}</p>
+                          <p className={styles.source}>
+                            {card.parent ? `Built on ${cardParts(card.parent).name}. ` : ""}
+                            {card.source}
+                          </p>
+                        </details>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          );
+        })}
+      </div>
+    </>
   );
 }
