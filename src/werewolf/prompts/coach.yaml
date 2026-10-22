@@ -37,7 +37,8 @@ write_system: >-
   missing. Do not rewrite the card from scratch. The instructions are at most ${max_words} words
   in all (count them). Rules for the card: name no players, only roles and acts; use only what
   the role can know during the game (a villager cannot know who the wolves are; a wolf knows its
-  partner and the wolf chat); say how much to bid or speak; do not mention the coach, the games
+  partner and the wolf chat); refer to other players as "your partner", "they" or by role,
+  never "he" or "she"; say how much to bid or speak; do not mention the coach, the games
   or this task. expected_moves lists 2 to 4 of the moves a player following the card would
   mostly make, from this list: ${moves}. Answer with JSON: name is a short name for the idea of
   your change, 2 or 3 lowercase words joined by underscores (such as protect_partner); summary
