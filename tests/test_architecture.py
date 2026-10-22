@@ -4,6 +4,8 @@ A. engine/ imports only the stdlib (minus network and clock modules), pydantic, 
 B. agents/ may import from werewolf.engine only `views` and `actions`.
 C. litellm, openai and anthropic are imported only under llm/.
 D. No dynamic imports (`__import__`, importlib) outside llm/.
+E. The web layer (api/, store/, play/) is imported only by itself and the command line: the game,
+   agents, cards, tagger, coach and llm never depend on the website.
 """
 
 import ast
@@ -18,6 +20,7 @@ ENGINE_BANNED_STDLIB = {
 }  # fmt: skip
 AGENT_ENGINE_ALLOWED = ("werewolf.engine.views", "werewolf.engine.actions")
 LLM_PACKAGES = {"litellm", "openai", "anthropic"}
+WEB_LAYER = ("api", "store", "play")
 
 
 def _targets(tree: ast.AST, package: list[str]) -> list[str]:
@@ -70,6 +73,14 @@ def violations(src_root: Path) -> list[str]:
             if area == "agents" and _is_under(target, "werewolf.engine"):
                 if not any(_is_under(target, ok) for ok in AGENT_ENGINE_ALLOWED):
                     found.append(f"{where}: agents may not import {target}")
+            if (
+                area not in WEB_LAYER
+                and where != "cli.py"
+                and any(_is_under(target, f"werewolf.{w}") for w in WEB_LAYER)
+            ):
+                found.append(
+                    f"{where}: only the web layer and the command line may import {target}"
+                )
             if area != "llm" and top in LLM_PACKAGES:
                 found.append(f"{where}: only llm/ may import {target}")
             if area != "llm" and top == "importlib":
@@ -167,3 +178,22 @@ def test_dynamic_imports_are_rejected_outside_llm(tmp_path: Path) -> None:
     found = violations(tmp_path)
     assert any("agents/bad.py" in v for v in found)
     assert any("tagger/bad.py" in v for v in found)
+
+
+def test_core_packages_may_not_import_the_web_layer(tmp_path: Path) -> None:
+    write(tmp_path, "coach/bad.py", "from werewolf.store import make_engine\n")
+    write(tmp_path, "agents/bad.py", "import werewolf.api.app\n")
+    found = violations(tmp_path)
+    assert any("coach/bad.py" in v and "werewolf.store" in v for v in found)
+    assert any("agents/bad.py" in v for v in found)
+
+
+def test_the_web_layer_may_import_the_core(tmp_path: Path) -> None:
+    write(
+        tmp_path,
+        "api/ok.py",
+        "from werewolf.store import make_engine\nfrom werewolf.coach import history\n",
+    )
+    write(tmp_path, "store/ok.py", "from werewolf.tagger.tags import TagFile\n")
+    write(tmp_path, "cli.py", "from werewolf.api.app import create_app\n")
+    assert violations(tmp_path) == []

@@ -469,6 +469,17 @@ def _app_seed(args: argparse.Namespace) -> int:
     return 0
 
 
+def _app_serve(args: argparse.Namespace) -> int:
+    """Run the website's API."""
+    import uvicorn
+
+    from werewolf.api.app import create_app
+    from werewolf.store import make_engine
+
+    uvicorn.run(create_app(make_engine(args.database)), host=args.host, port=args.port)
+    return 0
+
+
 def _replay(args: argparse.Namespace) -> int:
     try:
         log = GameLog.from_json(Path(args.path).read_text(encoding="utf-8"))
@@ -731,6 +742,13 @@ def main(argv: list[str] | None = None) -> int:
     app_seed.add_argument("--games-dir", default="data/games")
     app_seed.add_argument("--coach-dir", default="data/coach")
     app_seed.set_defaults(run=_app_seed)
+    app_serve = app_commands.add_parser("serve", help="run the API")
+    app_serve.add_argument(
+        "--database", help="a database URL (default: DATABASE_URL or data/app.db)"
+    )
+    app_serve.add_argument("--host", default="127.0.0.1")
+    app_serve.add_argument("--port", type=int, default=8000)
+    app_serve.set_defaults(run=_app_serve)
 
     args = parser.parse_args(argv)
     return int(args.run(args))
