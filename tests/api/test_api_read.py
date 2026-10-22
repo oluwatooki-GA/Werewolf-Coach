@@ -172,3 +172,10 @@ def test_play_mode_and_coach_runs_are_skeletons_that_say_so(client: TestClient) 
         with client.websocket_connect("/play/abc"):
             pass
     assert closed.value.code == 1011 and "not built" in closed.value.reason
+
+
+def test_games_can_be_filtered_to_ai_players_or_scripted_test_games(client: TestClient) -> None:
+    # every game in this fixture is scripted (no model), so the AI filter finds none
+    assert client.get("/games", params={"players": "scripted"}).json()["total"] == 7
+    assert client.get("/games", params={"players": "ai"}).json()["total"] == 0
+    assert client.get("/games", params={"players": "robots"}).status_code == 422

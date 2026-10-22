@@ -51,3 +51,24 @@ def test_docker_compose_accepts_the_file() -> None:
         capture_output=True, text=True, timeout=60,
     )  # fmt: skip
     assert result.returncode == 0, result.stderr
+
+
+def test_the_site_runs_beside_the_api_and_reaches_it_by_its_service_name() -> None:
+    web = COMPOSE["services"]["web"]
+    assert web["build"] == "./web"
+    assert web["depends_on"]["api"]["condition"] == "service_healthy"
+    assert web["environment"]["API_URL"] == "http://api:8000"
+    assert "${WEB_PORT:-3100}:3100" in web["ports"]
+    assert "healthcheck" in COMPOSE["services"]["api"]  # the site waits for a working API
+
+
+def test_the_site_image_holds_no_secret_and_runs_as_a_normal_user() -> None:
+    dockerfile = (ROOT / "web" / "Dockerfile").read_text(encoding="utf-8")
+    assert "USER node" in dockerfile and ".next/standalone" in dockerfile
+    assert "API_KEY" not in dockerfile and "NEXT_PUBLIC" not in dockerfile
+    ignored = (ROOT / "web" / ".dockerignore").read_text(encoding="utf-8").split()
+    assert {"node_modules", ".next", ".env*"} <= set(ignored)
+    web_env = COMPOSE["services"]["web"]["environment"]
+    assert not any(
+        "KEY" in name or "NEXT_PUBLIC" in name for name in web_env
+    )  # no key reaches the browser

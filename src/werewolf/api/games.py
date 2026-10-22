@@ -26,10 +26,13 @@ def list_games(
     winner: Literal["Village", "Wolves"] | None = None,
     source: str | None = None,
     rule_version: str | None = None,
+    players: Literal["ai", "scripted"] | None = None,
 ) -> GameList:
     filters = []
     if card is not None:
         filters.append(games.c.card_ids.contains(f"|{card}|", autoescape=True))
+    if players is not None:  # scripted test games have no model name
+        filters.append(games.c.model == "" if players == "scripted" else games.c.model != "")
     for column, value in (
         (games.c.winner, winner),
         (games.c.source, source),
