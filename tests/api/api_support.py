@@ -41,16 +41,21 @@ def generation(number: int) -> Generation:
     )  # fmt: skip
 
 
-def build(tmp_path: Path, logs: list[GameLog], tagged: tuple[int, ...] = ()) -> Engine:
+def build(
+    tmp_path: Path,
+    logs: list[GameLog],
+    tagged: tuple[int, ...] = (),
+    tagfile: TagFile | None = None,
+) -> Engine:
     """Write the games (and tags for the seeds in `tagged`) to files and seed a database."""
     games_dir, coach_dir = tmp_path / "games", tmp_path / "coach"
-    games_dir.mkdir()
+    games_dir.mkdir(parents=True)
     for index, log in enumerate(logs):
         path = games_dir / f"{log.seed}-{index}.json"
         path.write_bytes(log.to_json().encode("utf-8"))
         if log.seed in tagged:
             tag = Tag(line="R1-1", speaker=log.players[0].name, round=1, moves=("probe",))
-            save_tags(path, TagFile(model="m", tags=[tag]))
+            save_tags(path, tagfile or TagFile(model="m", tags=[tag]))
     save_generation(generation(1), coach_dir)
     engine = make_engine(f"sqlite:///{tmp_path / 'app.db'}")
     seed(engine, games_dir, coach_dir)

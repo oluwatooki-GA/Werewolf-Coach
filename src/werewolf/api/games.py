@@ -2,12 +2,12 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import func, select
 
 from werewolf.api.deps import DB
-from werewolf.api.replay import Replay, build_replay
-from werewolf.api.schemas import GameDetail, GameList, GameSummary
+from werewolf.api.replay import Replay, best_moment, build_replay
+from werewolf.api.schemas import Featured, GameDetail, GameList, GameSummary
 from werewolf.engine.log import GameLog
 from werewolf.store.tables import games, tags
 from werewolf.tagger.derive import derive
@@ -73,3 +73,24 @@ def replay(game_id: str, db: DB) -> Replay:
         tag_row = conn.execute(select(tags.c.tagfile).where(tags.c.game_id == game_id)).first()
     tagfile = TagFile.model_validate_json(tag_row.tagfile) if tag_row else None
     return build_replay(game_id, GameLog.from_json(row.log), tagfile)
+
+
+@router.get("/featured")
+def featured(db: DB, request: Request) -> Featured:
+    """The clearest lie with the speaker's private note, to open the site on."""
+    with db.connect() as conn:
+        rows = conn.execute(
+            select(games.c.id, games.c.log, tags.c.tagfile)
+            .join(tags, tags.c.game_id == games.c.id)
+            .order_by(games.c.id)
+        ).all()
+    cache = request.app.state.__dict__.setdefault("featured", {})
+    if len(rows) not in cache:  # recomputed only when the number of tagged games changes
+        cache[len(rows)] = best_moment(
+            build_replay(r.id, GameLog.from_json(r.log), TagFile.model_validate_json(r.tagfile))
+            for r in rows
+        )
+    found = cache[len(rows)]
+    if found is None:
+        raise HTTPException(404, "no game has a lie with a private note yet")
+    return Featured(game_id=found[0], focus=found[1])

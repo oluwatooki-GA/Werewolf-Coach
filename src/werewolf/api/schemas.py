@@ -37,6 +37,13 @@ class GameList(BaseModel):
     games: list[GameSummary]
 
 
+class Featured(BaseModel):
+    """The moment the site opens on: a game and the line in it to show."""
+
+    game_id: str
+    focus: str  # a line number such as "R1-3"
+
+
 class GameDetail(BaseModel):
     id: str
     game: GameLog

@@ -6,6 +6,7 @@ Private entries are marked `private` and are only sent because a stored game is 
 """
 
 import json
+from collections.abc import Iterable
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
@@ -362,3 +363,22 @@ def build_replay(game_id: str, log: GameLog, tagfile: TagFile | None) -> Replay:
             clean=stats.clean,
         ),  # fmt: skip
     )
+
+
+def best_moment(replays: Iterable[Replay]) -> tuple[str, str] | None:
+    """The clearest lie to open the site on: a line the lab marked as a lie whose speaker left a
+    private note, preferring a false role claim, a real note and a short line. Returns the game id
+    and the line's number, or None if no game has one."""
+    best: tuple[int, str, str] | None = None
+    for replay in replays:
+        for entry in replay.entries:
+            if entry.kind != "line" or not entry.subtext or not entry.subtext.note:
+                continue
+            labels = {mark.label for mark in entry.marks}
+            if "lie" not in labels:
+                continue
+            score = 1 + 2 * ("fake_claim" in labels) + (len(entry.subtext.note) >= 20)
+            score += len(entry.text) <= 220
+            if best is None or score > best[0]:
+                best = (score, replay.id, entry.ref)
+    return (best[1], best[2]) if best else None

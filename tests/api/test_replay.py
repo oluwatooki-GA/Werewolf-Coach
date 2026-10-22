@@ -160,3 +160,17 @@ def test_the_replay_endpoint_returns_it_and_404s_for_an_unknown_game(tmp_path: P
     body = client.get(f"/games/{listed[0]['id']}/replay").json()
     assert body["winner"] == "Village" and body["entries"][0]["kind"] == "wolf_chat"
     assert client.get("/games/nope/replay").status_code == 404
+
+
+def test_featured_picks_the_fake_claim_with_a_private_note_and_says_which_line(
+    tmp_path: Path,
+) -> None:
+    log, _ = game()
+    plain = build(tmp_path / "plain", [log], tagged=(log.seed,))
+    assert TestClient(create_app(plain, ApiSettings())).get("/featured").status_code == 404
+    claim = tags_for(claim_tag("R1-3", WOLF_A, "Seer"))
+    engine = build(tmp_path / "claim", [log], tagged=(log.seed,), tagfile=claim)
+    client = TestClient(create_app(engine, ApiSettings()))
+    body = client.get("/featured").json()
+    assert body["focus"] == "R1-3"
+    assert client.get(f"/games/{body['game_id']}/replay").status_code == 200
