@@ -5,6 +5,7 @@ Set-Location (Split-Path $PSScriptRoot)
 
 function Step([string]$name, [scriptblock]$cmd) {
     Write-Host "== $name"
+    $global:LASTEXITCODE = 0
     & $cmd
     if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: $name"; exit 1 }
 }

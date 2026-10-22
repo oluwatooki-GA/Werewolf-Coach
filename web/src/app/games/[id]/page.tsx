@@ -39,6 +39,12 @@ export default async function ReplayPage({ params }: Props) {
       title={`seed-${replay.id}`}
       topic={`${matchup(replay)}. Played by ${replay.model || "scripted agents"} on the ${replay.rule_version} rules. The ${winner} won in ${plural(replay.rounds, "round")}.`}
       label={`Seed ${replay.seed}`}
+      welcome={
+        <p>
+          This is a recorded game, playing back like a live chat. Click any message to read what its
+          player was privately thinking. Pause, change the speed or skip to the end above.
+        </p>
+      }
     />
   );
 }

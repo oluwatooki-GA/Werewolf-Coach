@@ -3,16 +3,44 @@
   gap: var(--s3);
   justify-items: start;
   padding: var(--s6) var(--s5) var(--s5);
-  border-bottom: 1px solid var(--line);
 }
 
 .intro h1 {
-  max-width: 24ch;
+  max-width: 26ch;
 }
 
 .intro p {
   max-width: 60ch;
   color: var(--dim);
+}
+
+/* the demo is a small chat window, not the full-height room */
+.demo {
+  margin: 0 var(--s5);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.demo [role="feed"] {
+  min-height: 22rem;
+}
+
+.demo aside {
+  position: static;
+  height: auto;
+}
+
+.after {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line);
+  background: var(--side);
+  color: var(--dim);
+  font-size: 0.875rem;
 }
 
 .read {
@@ -29,53 +57,63 @@
   filter: brightness(1.1);
 }
 
-.provenance {
+.empty {
   padding: var(--s4) var(--s5);
   color: var(--dim);
-  font-size: 0.875rem;
-  border-top: 1px solid var(--line);
 }
 
-.contents {
-  display: grid;
+.more {
+  padding: var(--s6) var(--s3) var(--s7);
   max-width: 52rem;
-  padding: 0 var(--s3) var(--s7);
 }
 
-.contents a {
+.more h2 {
+  padding: 0 var(--s3) var(--s2);
+  font-size: 1rem;
+  color: var(--dim);
+}
+
+.more ul {
+  display: grid;
+}
+
+.more a {
   display: grid;
   grid-template-columns: minmax(8rem, 11rem) 1fr;
   gap: 0 var(--s4);
   align-items: baseline;
-  padding: var(--s3) var(--s3);
+  padding: var(--s3);
   border-radius: 8px;
   color: var(--text);
   text-decoration: none;
   transition: background-color 120ms var(--ease-out);
 }
 
-.contents a:hover {
+.more a:hover {
   background: var(--feed-hover);
 }
 
-.contents b {
+.more b {
   color: var(--strong);
   font-size: 1.0625rem;
 }
 
-.contents b span {
+.more b span {
   color: var(--dim);
 }
 
-.contents a > span {
+.more a > span {
   color: var(--dim);
 }
 
 @media (max-width: 40rem) {
-  .contents a {
+  .more a {
     grid-template-columns: 1fr;
   }
   .intro {
     padding-inline: var(--s4);
+  }
+  .demo {
+    margin-inline: var(--s3);
   }
 }

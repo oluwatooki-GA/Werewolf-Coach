@@ -14,6 +14,7 @@ function open(props: Partial<React.ComponentProps<typeof Room>> = {}) {
       title="seed-1-845496ae"
       topic="A recorded game"
       label="A recorded game"
+      autoplay={false}
       {...props}
     />,
   );

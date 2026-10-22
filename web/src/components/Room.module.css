@@ -41,6 +41,9 @@
   border-left: 1px solid var(--raise-2);
   color: var(--dim);
   font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .switches {
@@ -93,6 +96,74 @@
 
 .feed {
   padding-top: var(--s3);
+}
+
+/* a message that has just arrived in the live chat */
+.item[data-fresh] {
+  animation: arrive 260ms var(--ease-out) both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    translate: 0 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item[data-fresh] {
+    animation: none;
+  }
+}
+
+.end {
+  height: 1px;
+  scroll-margin-bottom: var(--s4);
+}
+
+.welcome {
+  margin: var(--s4) var(--s4) 0;
+  padding: var(--s4);
+  border-radius: 8px;
+  background: var(--raise);
+}
+
+/* the guided demo's narrator: one plain sentence about what is on screen */
+.caption {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  padding: var(--s3) var(--s4);
+  background: var(--raise);
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.caption p {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.caption button,
+.latest {
+  padding: 0.3rem var(--s3);
+  border: 0;
+  border-radius: 6px;
+  background: var(--link);
+  color: #0b1626;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.latest {
+  position: sticky;
+  bottom: var(--s4);
+  display: block;
+  margin: 0 auto;
 }
 
 /* a round is a day divider */
@@ -221,6 +292,9 @@
     font-weight: 700;
     cursor: pointer;
   }
+  .bar {
+    position: static;
+  }
   .switches {
     margin-left: 0;
     width: 100%;
@@ -228,5 +302,6 @@
   .topic {
     padding-left: 0;
     border-left: 0;
+    flex-basis: 100%;
   }
 }

@@ -3,7 +3,7 @@ import { Room } from "@/components/Room";
 import { api, apiOrNull } from "@/lib/api";
 import type { Card, CoachHistory, Featured, GameList, Replay } from "@/lib/api";
 import { plural } from "@/lib/format";
-import { excerpt, momentHeadline } from "@/lib/replay";
+import { excerpt } from "@/lib/replay";
 import styles from "./home.module.css";
 
 /** Reads live data from the API, so it is rendered per request, never at build time. */
@@ -23,63 +23,64 @@ export default async function Home() {
   return (
     <>
       <section className={styles.intro} aria-labelledby="title">
-        <h1 id="title">
-          {replay && featured
-            ? momentHeadline(replay.entries, featured.focus)
-            : "Eight AI agents play Werewolf."}
-        </h1>
+        <h1 id="title">Eight AI agents play Werewolf. Some of them lie.</h1>
         <p>
-          Eight AI agents play Werewolf in a group chat. Click a message to read what its player
-          privately thought when it sent it.
+          Werewolf is a chat game. Two players are secretly wolves, the other six are villagers, and
+          everyone talks and votes someone out each day. Here you can watch AI agents play it, and
+          read what each one was privately thinking.
         </p>
-        {replay && featured ? (
-          <Link href={`/games/${replay.id}#${featured.focus}`} className={styles.read}>
-            Read the whole game
-          </Link>
-        ) : null}
       </section>
 
       {replay && moment && featured ? (
-        <>
+        <section className={styles.demo} aria-label="A short demo">
           <Room
             entries={moment}
             players={replay.players}
             compact
+            story
             startAt={featured.focus}
-            label="An excerpt of one game"
+            label="A moment from one game"
           />
-          <p className={styles.provenance}>
-            Seed {replay.seed}, played by {replay.model || "scripted agents"} under the{" "}
-            {replay.rule_version} rules. The {replay.winner === "Wolves" ? "wolves" : "village"} won
-            in {plural(replay.rounds, "round")}.
+          <p className={styles.after}>
+            <Link href={`/games/${replay.id}`} className={styles.read}>
+              Watch the whole game
+            </Link>
+            <span>
+              Seed {replay.seed}, played by {replay.model || "scripted agents"}. The{" "}
+              {replay.winner === "Wolves" ? "wolves" : "village"} won in{" "}
+              {plural(replay.rounds, "round")}.
+            </span>
           </p>
-        </>
+        </section>
       ) : (
-        <p className={styles.provenance}>
+        <p className={styles.empty}>
           No game with a lie and a private note is stored yet. Seed the database with{" "}
           <code>app seed</code> and reload.
         </p>
       )}
 
-      <ul className={styles.contents}>
-        <Entry href="/games" title="replays">
-          {games.total} saved games, each one a chat you can read with every private note.
-        </Entry>
-        <Entry href="/board" title="strategies">
-          {plural(cards.length, "strategy card")} and how each one did, with the odds that a gap is
-          real.
-        </Entry>
-        <Entry href="/coach/wolf" title="coach">
-          {wolf.generations.length === 0
-            ? "The coach has not run for the wolves yet."
-            : `${plural(wolf.generations.length, "generation")} on the wolf side. ${
-                promoted === 0 ? "None beat the champion." : `${promoted} beat the champion.`
-              }`}
-        </Entry>
-        <Entry href="/play" title="play">
-          Take a seat against the agents. Not built yet.
-        </Entry>
-      </ul>
+      <section className={styles.more} aria-labelledby="more">
+        <h2 id="more">Keep going</h2>
+        <ul>
+          <Entry href="/games" title="replays">
+            {games.total} saved games. Each plays back like a live chat, with every private note.
+          </Entry>
+          <Entry href="/board" title="strategies">
+            {plural(cards.length, "strategy card")} that tell an agent how to play, and how each one
+            did.
+          </Entry>
+          <Entry href="/coach/wolf" title="coach">
+            {wolf.generations.length === 0
+              ? "An AI coach that rewrites the wolves' strategy. It has not run yet."
+              : `An AI coach that rewrites the wolves' strategy. ${plural(wolf.generations.length, "try")} so far, ${
+                  promoted === 0 ? "none better than the current champion" : `${promoted} better than the champion`
+                }.`}
+          </Entry>
+          <Entry href="/play" title="play">
+            Take a seat against the agents. Not built yet.
+          </Entry>
+        </ul>
+      </section>
     </>
   );
 }
