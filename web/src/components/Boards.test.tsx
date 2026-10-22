@@ -41,9 +41,10 @@ describe("Revision", () => {
     expect(container.querySelector("del")?.textContent).not.toContain("Press again");
   });
 
-  it("says so when nothing changed", () => {
+  it("never claims the coach changed nothing: an empty list may only mean it was not recorded", () => {
     render(<Revision base={base} changes={[]} />);
-    expect(screen.getByText("The coach changed nothing in this card.")).toBeInTheDocument();
+    expect(screen.queryByText(/changed nothing/i)).toBeNull();
+    expect(screen.getByText(/Take the lead/)).toBeInTheDocument();
   });
 
   it("still shows what was cut when the base text is not on the site", () => {

@@ -96,7 +96,11 @@ export default async function CoachPage({ params }: Props) {
             <div className={styles.facing}>
               <h2 id={`g${gen.number}`}>Generation {gen.number}</h2>
               <p className={styles.sub}>
-                Read {gen.evidence}. Cost ${spent(gen).toFixed(2)}.
+                Read {gen.evidence}.
+                {gen.champion_arm
+                  ? ` Each card then played ${plural(gen.champion_arm.games, "game")}.`
+                  : ""}{" "}
+                Cost ${spent(gen).toFixed(2)}.
               </p>
               <h3>What the coach concluded</h3>
               <p className={styles.notes}>{gen.diagnosis}</p>

@@ -47,11 +47,7 @@ export function Revision({ base, changes }: Props) {
           </ins>
         ))}
       </p>
-      <p className={styles.legend}>
-        {added.length === 0 && cut.size === 0
-          ? "The coach changed nothing in this card."
-          : `Struck through: cut. Marked with a caret: added by the coach.`}
-      </p>
+      <p className={styles.legend}>Struck through: cut. Marked with a caret: added by the coach.</p>
     </div>
   );
 }
