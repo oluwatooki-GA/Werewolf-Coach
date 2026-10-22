@@ -2,10 +2,12 @@
 
 Both go through the one model door (`LLMClient`) with a strict answer shape. An answer that does
 not fit is asked for once more with the reason; a second miss is an error. Code, not the model,
-decides the card's id, version, role and source.
+decides the card's id (from the name the coach chose), version, role, source and parent.
 """
 
 import json
+import re
+from collections.abc import Collection
 from decimal import Decimal
 from typing import Any, TypeVar
 
@@ -47,6 +49,7 @@ class WireDiagnosis(BaseModel):
 class WireCard(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    name: str
     summary: str
     instructions: str
     expected_moves: list[str]
@@ -57,9 +60,15 @@ class Diagnosis(BaseModel):
     evidence: list[str]
 
 
-def card_id(side: str, generation: int, run: str = "") -> str:
-    """A card id that no earlier run used: the run tag keeps separate runs apart."""
-    return f"{side}.coach_{run}_g{generation}" if run else f"{side}.coach_g{generation}"
+def card_id(side: str, name: str, taken: Collection[str] = ()) -> str:
+    """`side.name` from the idea name the coach chose: lowercase words joined by underscores,
+    made unique with _2, _3 if the id is already used."""
+    slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")[:30].strip("_") or "idea"
+    slug = slug.removeprefix(f"{side}_")
+    chosen, number = f"{side}.{slug}", 2
+    while chosen in taken:
+        chosen, number = f"{side}.{slug}_{number}", number + 1
+    return chosen
 
 
 def _schema(wire: type[BaseModel]) -> dict[str, Any]:
@@ -69,7 +78,7 @@ def _schema(wire: type[BaseModel]) -> dict[str, Any]:
 
 
 def _describe(card: Card) -> str:
-    return f"{card.summary}\n{card.prompt_text}"
+    return f"Summary: {card.summary}\nInstructions: {card.prompt_text}"
 
 
 async def ask(
@@ -143,7 +152,7 @@ async def write_challenger(
     champion: Card,
     feedback: list[str] | None,
     *,
-    run: str = "",
+    taken: Collection[str] = (),
 ) -> tuple[Card, Decimal]:
     """A new card for the side. `feedback` is why the last attempt was rejected; it is shown to
     the model only in this prompt, so a rejected card never carries over by itself."""
@@ -171,12 +180,13 @@ async def write_challenger(
         WRITE_TOKENS,
     )
     card = Card(
-        id=card_id(side, generation, run),
+        id=card_id(side, answer.name, {*taken, champion.id}),
         version=1,
         role=SIDES[side][0],
         source=f"the coach, generation {generation}, {side} side",
         summary=answer.summary.strip(),
         instructions=answer.instructions.strip(),
         expected_moves=tuple(answer.expected_moves),
+        parent=champion.ref,
     )
     return card, cost

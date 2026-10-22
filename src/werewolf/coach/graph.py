@@ -15,7 +15,7 @@ from typing import TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from werewolf.coach.arena import Arm, Verdict, decide, play_arm
-from werewolf.coach.check import CheckOutcome, write_checked_card
+from werewolf.coach.check import CheckOutcome, changes, write_checked_card
 from werewolf.coach.evidence import Evidence, build_evidence
 from werewolf.coach.history import (
     COACH_DIR,
@@ -33,6 +33,7 @@ from werewolf.strategies.cards import (
     CARDS_DIR,
     COACH_FOLDER,
     Card,
+    load_all,
     load_card,
     read_card,
     write_card,
@@ -64,7 +65,7 @@ def _keep_card(card: Card) -> None:
     if not path.exists():
         write_card(card)
     elif read_card(path) != card:
-        raise CoachError(f"{path.name} already holds a different card; use another run tag")
+        raise CoachError(f"{path.name} already holds a different card; rename or remove it")
 
 
 def _seen(evidence: Evidence) -> str:
@@ -86,7 +87,6 @@ async def run_generation(
     settings: Settings,
     data_dir: Path,
     root: Path = COACH_DIR,
-    run: str = "",
     parallel: int = 3,
     player_client: LLMClient | None = None,
 ) -> Generation:
@@ -98,6 +98,8 @@ async def run_generation(
     if number != len(saved) + 1:
         raise ValueError(f"generation {number} cannot run: {len(saved)} are finished")
     champion_card = load_card(champion)
+    # ids a new card may not take: the starter cards and the cards this side's history made
+    taken = {*load_all(), *(g.challenger_card.split("@")[0] for g in saved if g.challenger_card)}
     coach_cost = Decimal("0")
 
     async def read(state: State) -> State:
@@ -114,7 +116,7 @@ async def run_generation(
         try:
             outcome = await write_checked_card(
                 client, coach_model, check_model, side, number, state["diagnosis"], champion_card,
-                run=run,
+                taken=taken,
             )  # fmt: skip
         except CoachError as exc:
             coach_cost += exc.cost
@@ -167,6 +169,7 @@ async def run_generation(
             diagnosis=diagnosis.text,
             challenger_card=card.ref if card else None,
             challenger_text=f"{card.summary}\n{card.prompt_text}" if card else "",
+            changes=changes(champion_card, card) if card else [],
             check=CheckSummary(
                 attempts=outcome.attempts, passed=card is not None, reasons=outcome.reasons
             ),

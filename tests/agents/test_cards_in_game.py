@@ -83,11 +83,11 @@ def test_a_bad_card_file_or_option_stops_the_run_before_any_call(
     rig: Rig, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     (tmp_path / "cards" / "wolf.long.yaml").write_text(
-        WOLF.replace("wolf.lie_low", "wolf.long").replace(WOLF_TEXT, "word " * 90),
+        WOLF.replace("wolf.lie_low", "wolf.long").replace(WOLF_TEXT, "word " * 130),
         encoding="utf-8",
     )
     assert batch(tmp_path, "--cards", "wolf=wolf.lie_low") == 2
-    assert "90 words" in capsys.readouterr().err
+    assert "130 words" in capsys.readouterr().err
     assert batch(tmp_path, "--cards", "bear=wolf.lie_low") == 2
     assert batch(tmp_path, "--cards", "wolf=wolf.missing") == 2
     assert rig.model.calls == []

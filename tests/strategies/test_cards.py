@@ -52,7 +52,7 @@ def test_an_unknown_id_names_the_cards_that_exist(tmp_path: Path) -> None:
 
 
 def test_too_many_words_fails(tmp_path: Path) -> None:
-    assert "81 words" in bad(tmp_path, instructions=" ".join(["word"] * 81))
+    assert "121 words" in bad(tmp_path, instructions=" ".join(["word"] * 121))
 
 
 def test_an_id_with_the_wrong_prefix_fails(tmp_path: Path) -> None:

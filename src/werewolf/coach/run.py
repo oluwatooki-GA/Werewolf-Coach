@@ -38,7 +38,6 @@ class CoachPlan:
     coach_model: str
     check_model: str
     parallel: int = 3
-    run: str = ""  # a tag in new card ids, so a fresh history does not meet an old card
 
 
 def load_games(paths: Sequence[str], skip_seeds: set[int]) -> list[Game]:
@@ -120,7 +119,6 @@ async def run_coach(
             data_dir=arm_games,
             root=root,
             parallel=plan.parallel,
-            run=plan.run,
         )
         say(f"generation {number}: {generation.decision} (${generation.cost:.4f})")
         champion = generation.champion_after.split("@")[0]

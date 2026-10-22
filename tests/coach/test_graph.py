@@ -13,7 +13,7 @@ from coach_support import WOLF_A, Game, both_client, make_log, removed, speech, 
 
 from werewolf.coach import graph
 from werewolf.coach.arena import Arm
-from werewolf.coach.history import Generation, load_history
+from werewolf.coach.history import Generation, family_tree, load_history
 from werewolf.coach.steps import CoachStopped
 from werewolf.engine.roles import Team
 from werewolf.engine.state import Settings
@@ -25,8 +25,11 @@ SEEDS = list(range(10))
 DIAGNOSIS = json.dumps({"diagnosis": "They accused too early.", "evidence": ["Game 1: out in R1."]})
 CARD = json.dumps(
     {
+        "name": "wait a beat",
         "summary": "Wait.",
-        "instructions": "Bid 1 on day 1. Wait for two messages, then accuse with a cited line.",
+        "instructions": (
+            "Take the lead and speak often: bid 2 or 3 on most turns. Wait for two messages first."
+        ),
         "expected_moves": ["accuse_reasoned"],
     }
 )
@@ -84,10 +87,10 @@ def test_a_challenger_that_clearly_wins_becomes_the_champion(
     coach_replies(coach)
     played = fake_arms(monkeypatch, champion=3, challenger=8)
     gen = generate(client, tmp_path)
-    assert gen.promote and gen.champion_after == "wolf.coach_g1@1"
+    assert gen.promote and gen.champion_after == "wolf.wait_a_beat@1"
     assert gen.champion_before == f"{CHAMPION}@2" and "clear win" in gen.decision
-    assert sorted(played) == sorted([CHAMPION, "wolf.coach_g1"])
-    assert (tmp_path / "cards" / "coach" / "wolf.coach_g1.yaml").exists()
+    assert sorted(played) == sorted([CHAMPION, "wolf.wait_a_beat"])
+    assert (tmp_path / "cards" / "coach" / "wolf.wait_a_beat.yaml").exists()
     assert load_history("wolf", tmp_path / "coach") == [gen]
 
 
@@ -99,7 +102,7 @@ def test_a_challenger_that_does_not_clearly_win_leaves_the_champion(
     fake_arms(monkeypatch, champion=5, challenger=7)
     gen = generate(client, tmp_path)
     assert not gen.promote and gen.champion_after == gen.champion_before
-    assert gen.challenger_card == "wolf.coach_g1@1" and "not clear yet" in gen.decision
+    assert gen.challenger_card == "wolf.wait_a_beat@1" and "not clear yet" in gen.decision
 
 
 def test_a_card_that_never_passes_its_checks_plays_no_games(
@@ -191,3 +194,18 @@ def test_only_the_graph_module_imports_langgraph() -> None:
         if pattern.search(path.read_text(encoding="utf-8"))
     }
     assert users == {"graph.py"}
+
+
+def test_the_record_keeps_the_parent_and_what_changed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, coach, _ = both_client(tmp_path / "rig")
+    coach_replies(coach)
+    fake_arms(monkeypatch, 5, 5)
+    gen = generate(client, tmp_path)
+    assert "+ Wait for two messages first." in gen.changes
+    assert not any("Take the lead and speak often" in change for change in gen.changes)  # kept
+    assert any(change.startswith("- Press again") for change in gen.changes)  # dropped
+    text = (tmp_path / "cards" / "coach" / "wolf.wait_a_beat.yaml").read_text(encoding="utf-8")
+    assert "parent: wolf.accuse_early@2" in text
+    assert "+ Wait for two messages first." in family_tree("wolf", tmp_path / "coach")

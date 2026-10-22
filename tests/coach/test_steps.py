@@ -30,8 +30,9 @@ GOOD_DIAGNOSIS = json.dumps(
 )
 GOOD_CARD = json.dumps(
     {
+        "name": "Wait For Second!",
         "summary": "Wait for a second message.",
-        "instructions": "Bid 1 on day 1. Wait for two messages, then accuse with a cited line.",
+        "instructions": "Take the lead and accuse early. Wait for two messages first.",
         "expected_moves": ["accuse_reasoned", "hedge"],
     }
 )
@@ -119,11 +120,32 @@ def run_write(
 
 def test_the_card_is_built_from_the_reply_but_its_identity_is_set_by_code(tmp_path: Path) -> None:
     card, _, _ = run_write(tmp_path)
-    assert (card.id, card.version, card.role) == ("wolf.coach_g2", 1, Role.WEREWOLF)
+    assert (card.id, card.version, card.role) == ("wolf.wait_for_second", 1, Role.WEREWOLF)
     assert card.source == "the coach, generation 2, wolf side"
-    assert card.instructions.startswith("Bid 1 on day 1")
+    assert card.parent == "wolf.accuse_early@2"  # set by code from the champion
+    assert card.instructions.startswith("Take the lead and accuse early.")
     assert card.expected_moves == ("accuse_reasoned", "hedge")
-    assert card_id("villager", 3, "r7") == "villager.coach_r7_g3"
+
+
+def test_a_card_id_is_the_side_and_a_clean_name_made_unique() -> None:
+    assert card_id("wolf", "Protect Partner") == "wolf.protect_partner"
+    assert card_id("wolf", "wolf_protect_partner") == "wolf.protect_partner"
+    assert card_id("wolf", "!!!") == "wolf.idea"
+    taken = {"wolf.protect_partner", "wolf.protect_partner_2"}
+    assert card_id("wolf", "protect partner", taken) == "wolf.protect_partner_3"
+
+
+def test_the_writer_is_told_to_keep_the_base_and_the_champion_is_never_reused_as_an_id(
+    tmp_path: Path,
+) -> None:
+    client, fake = coach_client(tmp_path)
+    fake.replies["WireCard"] = [GOOD_CARD.replace("Wait For Second!", "accuse early")]
+    card, _ = asyncio.run(write_challenger(client, MODEL, "wolf", 1, diagnosis(), champion(), None))
+    assert card.id == "wolf.accuse_early_2"  # the champion's own id is taken
+    (request,) = fake.asked("WireCard")
+    system = request.messages[0]["content"]
+    assert "keep every sentence" in system and "word for word" in system
+    assert "base to build on" in request.messages[1]["content"]
 
 
 def test_feedback_from_a_failed_check_appears_only_when_given(tmp_path: Path) -> None:
@@ -140,7 +162,7 @@ def test_the_prompt_lists_the_diagnosis_the_champion_and_the_allowed_moves(tmp_p
     (request,) = fake.asked("WireCard")
     text = " ".join(m["content"] for m in request.messages)
     assert "They accused too early." in text and "Take the lead and accuse early." in text
-    assert "accuse_reasoned" in text and "hedge" in text and "at most 80 words" in text
+    assert "accuse_reasoned" in text and "hedge" in text and "at most 120 words" in text
 
 
 def test_an_unreadable_card_reply_is_asked_again_once_then_fails(tmp_path: Path) -> None:

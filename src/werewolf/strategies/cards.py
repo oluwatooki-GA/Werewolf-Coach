@@ -12,7 +12,7 @@ from werewolf.engine.state import DEFAULT_NAMES
 from werewolf.tagger.moves import MOVE_NAMES
 
 CARDS_DIR = Path("cards")
-MAX_WORDS = 80
+MAX_WORDS = 120
 ID_PREFIX = {
     Role.WEREWOLF: "wolf",
     Role.VILLAGER: "villager",
@@ -37,6 +37,7 @@ class Card(BaseModel):
     summary: str
     instructions: str
     expected_moves: tuple[str, ...]
+    parent: str | None = None  # id@version of the card this one was built on (coach cards)
 
     @property
     def ref(self) -> str:
@@ -123,6 +124,8 @@ def write_card(card: Card, directory: Path = CARDS_DIR) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     data = card.model_dump(mode="json")
     data["expected_moves"] = list(card.expected_moves)
+    if card.parent is None:
+        del data["parent"]
     path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True, width=100), "utf-8")
     return path
 

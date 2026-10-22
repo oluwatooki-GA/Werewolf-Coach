@@ -35,7 +35,12 @@ OK = json.dumps({"ok": True, "reasons": []})
 
 def card(words: str) -> str:
     return json.dumps(
-        {"summary": "Wait.", "instructions": words, "expected_moves": ["accuse_reasoned"]}
+        {
+            "name": words,
+            "summary": "Wait.",
+            "instructions": f"Take the lead and speak often: bid 2 or 3 on most turns. {words}",
+            "expected_moves": ["accuse_reasoned"],
+        }
     )
 
 

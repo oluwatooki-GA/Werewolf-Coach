@@ -412,7 +412,6 @@ def _coach_run(args: argparse.Namespace) -> int:
         coach_model=args.coach_model,
         check_model=args.check_model,
         parallel=args.parallel,
-        run=args.tag,
     )
     try:
         check_plan(plan)
@@ -703,7 +702,6 @@ def main(argv: list[str] | None = None) -> int:
     coach_run.add_argument("--max-spend-coach", help="dollars; required for paid models")
     coach_run.add_argument("--parallel", type=int, default=3)
     coach_run.add_argument("--rpm", type=int, help="player requests per minute")
-    coach_run.add_argument("--tag", default="", help="goes into new card ids (a fresh history)")
     coach_run.set_defaults(run=_coach_run)
 
     coach_show = coach_commands.add_parser("show", help="print a side's family tree of champions")

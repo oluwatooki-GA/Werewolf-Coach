@@ -7,6 +7,8 @@ breaks a rule. A card that fails is written again with the reasons, twice at mos
 never passes is not returned.
 """
 
+import re
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -41,10 +43,25 @@ class CheckOutcome:
         return (1 if self.card else 0) / self.attempts if self.attempts else 0
 
 
+def sentences(text: str) -> list[str]:
+    return [part for part in re.split(r"(?<=[.!?])\s+", " ".join(text.split())) if part]
+
+
+def changes(base: Card, card: Card) -> list[str]:
+    """What the card took out of its base and what it put in, one sentence per line."""
+    old, new = sentences(base.prompt_text), sentences(card.prompt_text)
+    return [f"- {s}" for s in old if s not in new] + [f"+ {s}" for s in new if s not in old]
+
+
 def code_problems(card: Card, champion: Card) -> list[str]:
     problems = check_card(card)
     if card.prompt_text == champion.prompt_text:
         problems.append("the card has the same instructions as the champion; change something")
+    elif not set(sentences(card.prompt_text)) & set(sentences(champion.prompt_text)):
+        problems.append(
+            "the card does not build on the champion: keep, word for word, the champion's "
+            "sentences that the diagnosis does not blame"
+        )
     return problems
 
 
@@ -79,7 +96,7 @@ async def write_checked_card(
     diagnosis: Diagnosis,
     champion: Card,
     *,
-    run: str = "",
+    taken: Collection[str] = (),
 ) -> CheckOutcome:
     """Write a card and check it; rewrite with the reasons until one passes or tries run out."""
     outcome = CheckOutcome(card=None, attempts=0)
@@ -87,7 +104,7 @@ async def write_checked_card(
     for _ in range(MAX_ATTEMPTS):
         try:
             card, cost = await write_challenger(
-                client, write_model, side, generation, diagnosis, champion, feedback, run=run
+                client, write_model, side, generation, diagnosis, champion, feedback, taken=taken
             )
             outcome.cost += cost
             outcome.attempts += 1

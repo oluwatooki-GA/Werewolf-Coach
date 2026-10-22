@@ -39,6 +39,7 @@ class Generation(BaseModel):
     diagnosis: str
     challenger_card: str | None  # id@version, or None if no card ever passed its checks
     challenger_text: str
+    changes: list[str] = []  # "- sentence" taken out of the champion, "+ sentence" put in
     check: CheckSummary
     champion_arm: ArmResult | None
     challenger_arm: ArmResult | None
@@ -128,6 +129,7 @@ def family_tree(side: str, root: Path = COACH_DIR) -> str:
         lines.append(f"  diagnosis: {_first_line(gen.diagnosis)}")
         if gen.challenger_text:
             lines.append(f"  card: {_first_line(gen.challenger_text, 160)}")
+        lines += [f"  {change}" for change in gen.changes]
     lines.append(
         f"Champion now: {history[-1].champion_after}. Cost so far: ${total_cost(side, root):.4f}."
     )

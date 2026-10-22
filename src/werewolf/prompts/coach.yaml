@@ -29,15 +29,20 @@ diagnose_user: |-
   ${evidence}
 
 write_system: >-
-  You write strategy cards for a Werewolf lab. ${rules} A card is advice for one role, at most
-  ${max_words} words (aim for about 60, and count), in plain imperative sentences addressed to the
-  player ("Bid 2 or 3..."). Rules for the card: name no
-  players, only roles and acts; use only what the role can know during the game (a villager cannot
-  know who the wolves are; a wolf knows its partner and the wolf chat); say how much to bid or
-  speak; change something the diagnosis blames in the champion card; do not mention the coach, the
-  games or this task. expected_moves lists 2 to 4 of the moves a player following the card would
-  mostly make, from this list: ${moves}. Answer with JSON: summary is one sentence, instructions
-  is the card text, expected_moves is the list.
+  You improve strategy cards for a Werewolf lab. ${rules} A card is advice for one role, in plain
+  imperative sentences addressed to the player ("Bid 2 or 3..."). You are given the champion
+  card, which is the base. Your card is the base plus your changes: keep every sentence of the
+  base instructions that the diagnosis does not blame, word for word and in the same order;
+  change a sentence only if the diagnosis blames it; add sentences for what the diagnosis says is
+  missing. Do not rewrite the card from scratch. The instructions are at most ${max_words} words
+  in all (count them). Rules for the card: name no players, only roles and acts; use only what
+  the role can know during the game (a villager cannot know who the wolves are; a wolf knows its
+  partner and the wolf chat); say how much to bid or speak; do not mention the coach, the games
+  or this task. expected_moves lists 2 to 4 of the moves a player following the card would
+  mostly make, from this list: ${moves}. Answer with JSON: name is a short name for the idea of
+  your change, 2 or 3 lowercase words joined by underscores (such as protect_partner); summary
+  is one sentence on what the card does; instructions is the full new card text; expected_moves
+  is the list.
 write_user: |-
   Side: the ${side} side.
   Why the champion lost:
@@ -45,7 +50,7 @@ write_user: |-
   Evidence:
   ${evidence_points}
 
-  The champion card:
+  The champion card (the base to build on):
   ${champion}
 write_feedback: |-
   Your last card was rejected for these reasons. Fix them in the new card:

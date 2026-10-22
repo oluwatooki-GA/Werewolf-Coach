@@ -7,18 +7,25 @@ from pathlib import Path
 
 from coach_support import CoachFake, coach_client
 
-from werewolf.coach.check import CheckOutcome, write_checked_card
+from werewolf.coach.check import CheckOutcome, changes, write_checked_card
 from werewolf.coach.steps import Diagnosis
 from werewolf.engine.roles import Role
 from werewolf.strategies.cards import Card
 
 WRITER, CHECKER = "claude-sonnet-5-5", "claude-haiku-5-5"
+BASE = "Take the lead and accuse early."
 INSTRUCTIONS = "Bid 1 on day 1. Wait for two messages, then accuse with a cited line."
 
 
-def reply(instructions: str = INSTRUCTIONS, moves: tuple[str, ...] = ("hedge",)) -> str:
+def reply(extra: str = INSTRUCTIONS, *, keep: bool = True) -> str:
+    """A card reply that keeps the champion's sentence and adds `extra` (or stands alone)."""
     return json.dumps(
-        {"summary": "Wait.", "instructions": instructions, "expected_moves": list(moves)}
+        {
+            "name": "wait a beat",
+            "summary": "Wait.",
+            "instructions": f"{BASE} {extra}" if keep else extra,
+            "expected_moves": ["hedge"],
+        }
     )
 
 
@@ -62,7 +69,7 @@ def test_a_card_that_fails_a_code_check_never_reaches_the_model_check(tmp_path: 
 
 
 def test_a_card_that_repeats_the_champion_fails(tmp_path: Path) -> None:
-    same = reply("Take the lead  and accuse early.")  # same words, different spacing
+    same = reply("Take the lead  and accuse early.", keep=False)  # same words, different spacing
     outcome, _ = run(tmp_path, [same, reply()], [verdict(True)])
     assert outcome.attempts == 2 and "same instructions as the champion" in outcome.reasons[0][0]
 
@@ -73,7 +80,7 @@ def test_a_card_the_model_rejects_is_rewritten_with_the_reasons(tmp_path: Path) 
         tmp_path, [reply(), reply("Bid 2 on day 1.")], [verdict(False, reasons), verdict(True)]
     )
     assert outcome.attempts == 2 and outcome.card is not None
-    assert outcome.card.instructions == "Bid 2 on day 1."
+    assert outcome.card.instructions == f"{BASE} Bid 2 on day 1."
     assert outcome.reasons == [[reasons]]
     first, second = fake.asked("WireCard")
     assert reasons not in first.messages[1]["content"]
@@ -95,10 +102,32 @@ def test_the_model_check_sees_only_the_role_and_the_card(tmp_path: Path) -> None
     (request,) = fake.asked("WireCheck")
     text = " ".join(m["content"] for m in request.messages)
     assert INSTRUCTIONS in text and "werewolf" in text.lower()
-    assert "They accused too early." not in text and "Take the lead" not in text
+    assert "They accused too early." not in text and "Game 1." not in text
     assert request.model == CHECKER and request.temperature == 0
 
 
 def test_every_call_is_paid_for_and_counted(tmp_path: Path) -> None:
     outcome, fake = run(tmp_path, [reply(), reply("Bid 2.")], [verdict(False, "x"), verdict(True)])
     assert outcome.cost == Decimal("0.01") * len(fake.requests) == Decimal("0.04")
+
+
+def test_a_card_that_keeps_nothing_of_the_champion_is_sent_back(tmp_path: Path) -> None:
+    fresh = reply("Stay quiet on day 1 and vote with the majority.", keep=False)
+    outcome, _ = run(tmp_path, [fresh, reply()], [verdict(True)])
+    assert outcome.attempts == 2 and "does not build on the champion" in outcome.reasons[0][0]
+    assert outcome.card is not None and BASE in outcome.card.instructions
+    assert outcome.card.parent == "wolf.accuse_early@2"
+
+
+def test_the_changes_list_what_was_taken_out_and_what_was_put_in() -> None:
+    base = champion()
+    new = base.model_copy(
+        update={"instructions": "Take the lead. Bid 2. Never accuse your partner."}
+    )
+    assert changes(base, new) == [
+        "- Take the lead and accuse early.",
+        "+ Take the lead.",
+        "+ Bid 2.",
+        "+ Never accuse your partner.",
+    ]
+    assert changes(base, base) == []
