@@ -381,6 +381,10 @@ export function Room({
   const everyone = players.map((p) => p.name);
   const gone = departures(entries, count, everyone);
   const lastRound = entries.reduce((n, e) => Math.max(n, e.round), 0);
+  // each round with how much of the game to show to land on its first message
+  const rounds = [...new Set(entries.map((e) => e.round))]
+    .filter((n) => n > 0)
+    .map((n) => ({ n, to: entries.findIndex((e) => e.round === n) + 1 }));
   const nowRound = visible.reduce((n, e) => Math.max(n, e.round), 0);
   // "Round 2 of 4" tells a newcomer more than "57 of 97"; one-round excerpts fall back to a count
   const progress =
@@ -395,7 +399,7 @@ export function Room({
   return (
     <PlayersProvider
       value={{
-        teams: new Map(players.map((p) => [p.name, p.team])),
+        players: new Map(players.map((p) => [p.name, { role: p.role, team: p.team }])),
         show: showRoles,
       }}
     >
@@ -644,7 +648,7 @@ export function Room({
                         <div className={styles.inline}>
                           <Thoughts
                             entry={e}
-                            cast={cast}
+                            cast={cast} quotes={quotes}
                             showRoles={showRoles}
                             surface="inline"
                           />
@@ -720,6 +724,9 @@ export function Room({
                 onSpeed={chooseSpeed}
                 onSeek={seek}
                 progress={progress}
+              rounds={rounds}
+              round={nowRound || (rounds[0]?.n ?? 1)}
+              onRound={seek}
               />
             </footer>
           ) : null}
@@ -792,7 +799,7 @@ export function Room({
               ) : (
                 <Thoughts
                   entry={entry}
-                  cast={cast}
+                  cast={cast} quotes={quotes}
                   showRoles={showRoles}
                   surface="panel"
                 />

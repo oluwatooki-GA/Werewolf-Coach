@@ -1,7 +1,8 @@
 import type { ReplayLine } from "@/lib/api";
 import { markName, moveName, plural } from "@/lib/format";
-import { avatarColor } from "@/lib/people";
+import { usePlayer } from "./PlayersContext";
 import { Avatar } from "./Avatar";
+import { RefText } from "./RefText";
 import { RoleTag } from "./RoleTag";
 import styles from "./Message.module.css";
 
@@ -42,11 +43,12 @@ function Bubble() {
 
 /** The line a message replies to, quoted inside the bubble like a reply in a messenger. */
 function Quote({ line }: { line: ReplayLine }) {
+  const { color } = usePlayer(line.speaker);
   return (
     <a className={styles.quote} href={`#${line.ref}`} aria-label={`In reply to ${line.speaker}: ${line.text}`}>
-      <i style={{ background: avatarColor(line.speaker) }} aria-hidden="true" />
+      <i style={{ background: color }} aria-hidden="true" />
       <span>
-        <b style={{ color: avatarColor(line.speaker) }}>{line.speaker}</b>
+        <b style={{ color }}>{line.speaker}</b>
         <span>{line.text}</span>
       </span>
     </a>
@@ -69,6 +71,7 @@ export function Message({
   onPlayer,
 }: Props) {
   const name = entry.speaker;
+  const { color } = usePlayer(name);
   const marks = showRoles ? entry.marks : [];
   const lie = marks.some((mark) => mark.label === "lie");
   const quoted = entry.cites.map((c) => quotes.get(c.line)).find((l) => l);
@@ -125,7 +128,7 @@ export function Message({
             <button
               type="button"
               className={styles.name}
-              style={{ color: side === "in" ? avatarColor(name) : undefined }}
+              style={{ color: side === "in" ? color : undefined }}
               onClick={(e) => {
                 e.stopPropagation();
                 onPlayer(name);
@@ -138,7 +141,9 @@ export function Message({
         ) : null}
         {quoted ? <Quote line={quoted} /> : null}
 
-        <p className={styles.text}>{entry.text}</p>
+        <p className={styles.text}>
+          <RefText text={entry.text} quotes={quotes} />
+        </p>
 
         {chips.length > 0 || note ? (
           <footer className={styles.foot}>

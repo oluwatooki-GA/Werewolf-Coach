@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Card, Replay, ReplayEntry, ReplayVote } from "@/lib/api";
 import fixture from "../test/replay.fixture.json";
 import { Room } from "./Room";
@@ -472,5 +472,54 @@ describe("what happened, in the chat", () => {
     open();
     expect(screen.getByText(/^Morning:/).querySelector("svg")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Round 1" })).toBeInTheDocument();
+  });
+});
+
+describe("a line number inside a message", () => {
+  const pointing = (text: string) =>
+    replay.entries.map((e) => (e.kind === "line" && e.ref === "R1-3" ? { ...e, text } : e));
+
+  it("reads as the author's message, not as a code like R1-1", () => {
+    open({ entries: pointing("I disagree with R1-1, Hal was not honest.") });
+    const bubble = document.getElementById("R1-3") as HTMLElement;
+    expect(bubble.textContent).not.toMatch(/R1-1/);
+    expect(within(bubble).getByRole("button", { name: /Hal's message in round 1/ })).toHaveTextContent("Hal's message");
+  });
+
+  it("scrolls to that message when you tap it, without selecting the one you tapped in", () => {
+    open({ entries: pointing("I disagree with R1-1.") });
+    const scroll = vi.fn();
+    (document.getElementById("R1-1") as HTMLElement).scrollIntoView = scroll;
+    fireEvent.click(within(document.getElementById("R1-3") as HTMLElement).getByRole("button", { name: /Hal's message/ }));
+    expect(scroll).toHaveBeenCalled();
+    expect(document.getElementById("R1-3")).not.toHaveAttribute("aria-current");
+  });
+
+  it("says an earlier message when the number matches no line", () => {
+    open({ entries: pointing("Look at R9-9 again.") });
+    const bubble = document.getElementById("R1-3") as HTMLElement;
+    expect(bubble).toHaveTextContent("Look at an earlier message again.");
+    expect(bubble.textContent).not.toMatch(/R9-9/);
+  });
+
+  it("does the same inside a vote's stated reason", () => {
+    const entries = [
+      ...replay.entries,
+      {
+        kind: "vote",
+        private: false,
+        round: 1,
+        voter: "Cy",
+        role: "Villager",
+        team: "Village",
+        target: "Hal",
+        reason: "Quiet in R1-1.",
+        marks: [],
+        subtext: null,
+      } as unknown as ReplayEntry,
+    ];
+    open({ entries });
+    fireEvent.click(screen.getByRole("button", { name: /Cy voted for Hal/ }));
+    expect(panel().getByRole("button", { name: /Hal's message/ })).toBeInTheDocument();
   });
 });

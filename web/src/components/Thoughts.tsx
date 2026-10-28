@@ -1,6 +1,7 @@
 import type { ReplayLine, ReplayPlayer, ReplayVote } from "@/lib/api";
 import { markName, moveName, percent, plural, sentence } from "@/lib/format";
 import { Avatar } from "./Avatar";
+import { RefText } from "./RefText";
 import { RoleTag } from "./RoleTag";
 import { TeamMark } from "./TeamMark";
 import styles from "./Thoughts.module.css";
@@ -9,12 +10,14 @@ type Props = {
   entry: ReplayLine | ReplayVote | null;
   cast: Map<string, ReplayPlayer>;
   showRoles: boolean;
+  /** Every public line by its number, so a line number in a note can be named. */
+  quotes: ReadonlyMap<string, ReplayLine>;
   /** Where it is shown: the info column on a laptop, or inline under the bubble in the welcome chat. */
   surface: "panel" | "inline";
 };
 
 /** What the player privately wrote when it sent the selected message, and what the lab found. */
-export function Thoughts({ entry, cast, showRoles, surface }: Props) {
+export function Thoughts({ entry, cast, quotes, showRoles, surface }: Props) {
   if (!showRoles) {
     return (
       <section className={styles.box} data-surface={surface} aria-label="Private thoughts">
@@ -61,14 +64,16 @@ export function Thoughts({ entry, cast, showRoles, surface }: Props) {
         <>
           <h4>What {name} said</h4>
           <p className={styles.said}>
-            Voted for {entry.target ?? "nobody"}: {entry.reason}
+            Voted for {entry.target ?? "nobody"}: <RefText text={entry.reason} quotes={quotes} />
           </p>
         </>
       ) : null}
 
       <h4>{name}&apos;s private note</h4>
       {subtext?.note ? (
-        <blockquote className={styles.note}>{subtext.note}</blockquote>
+        <blockquote className={styles.note}>
+          <RefText text={subtext.note} quotes={quotes} />
+        </blockquote>
       ) : (
         <p className={styles.hint}>No private note was recorded for this message.</p>
       )}
@@ -79,8 +84,9 @@ export function Thoughts({ entry, cast, showRoles, surface }: Props) {
         <details className={styles.wolfTable}>
           <summary>{name} is a wolf, so this is not a real suspicion list</summary>
           <p className={styles.explain}>
-            Wolves already know who the wolves are. The game asks every player for the same table, so {name} filled it
-            in anyway. Treat the numbers as talk, not as what {name} believed.
+            Wolves already know who the wolves are. Older games asked every player for the same suspicion table, so{" "}
+            {name} filled it in anyway; treat those numbers as talk. Newer games ask wolves for the villagers who threaten
+            them most, and the bar is how much of a threat.
           </p>
           <ul className={styles.beliefs}>
             {beliefs.map((belief) => (

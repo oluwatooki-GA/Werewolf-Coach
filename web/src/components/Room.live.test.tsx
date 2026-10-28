@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Replay } from "@/lib/api";
 import { type BotNote, type Playable } from "@/lib/playback";
@@ -143,20 +143,31 @@ describe("a vote filling up", () => {
   });
 });
 
-describe("the round readout", () => {
+describe("the round picker", () => {
   // the same game told over two rounds: the first half in round 1, the rest in round 2
   const twoRounds = replay.entries.map((e, i) => ({ ...e, round: i < 7 ? 1 : 2 })) as Playable[];
+  const picker = () => screen.getByRole("combobox", { name: "Jump to a round" });
 
-  it("says which round it is up to, not how many entries it has shown", () => {
+  it("says which round the replay is in, and lists every round to jump to", () => {
     open({ entries: twoRounds });
-    expect(screen.getByText("Round 1 of 2")).toBeInTheDocument();
+    expect(picker()).toHaveValue("1");
+    expect(within(picker()).getAllByRole("option").map((o) => o.textContent)).toEqual(["Round 1 of 2", "Round 2 of 2"]);
     fireEvent.change(screen.getByRole("slider", { name: "Position in the game" }), { target: { value: "14" } });
-    expect(screen.getByText("Round 2 of 2")).toBeInTheDocument();
+    expect(picker()).toHaveValue("2");
   });
 
-  it("counts entries when the game is a single round", () => {
+  it("jumps to the start of a round, with that round's first message showing", () => {
+    open({ entries: twoRounds });
+    fireEvent.change(picker(), { target: { value: "2" } });
+    expect(document.getElementById("R1-2")).toBeInTheDocument(); // the first line of round 2
+    expect(document.getElementById("R1-3")).toBeNull();
+    expect(picker()).toHaveValue("2");
+  });
+
+  it("counts entries when the game is a single round, with nothing to pick", () => {
     open();
     expect(screen.getByText("0 of 14")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Jump to a round" })).toBeNull();
   });
 });
 

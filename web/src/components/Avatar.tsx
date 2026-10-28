@@ -1,7 +1,7 @@
 "use client";
 
-import { avatarColor, initial } from "@/lib/people";
-import { useTeam } from "./PlayersContext";
+import { initial } from "@/lib/people";
+import { usePlayer } from "./PlayersContext";
 import styles from "./Avatar.module.css";
 
 /** A wolf's head: two ears, a broad face, eyes and a nose cut out of the shape. */
@@ -32,13 +32,13 @@ function VillagerBust() {
  * shoulders; otherwise it wears the player's initial. The name is always written beside it.
  */
 export function Avatar({ name, size = 40, out = false }: { name: string; size?: number; out?: boolean }) {
-  const team = useTeam(name);
+  const { team, color } = usePlayer(name);
   return (
     <span
       className={styles.avatar}
       data-out={out || undefined}
       data-team={team ?? undefined}
-      style={{ background: avatarColor(name), width: size, height: size, fontSize: size * 0.45 }}
+      style={{ background: color, width: size, height: size, fontSize: size * 0.45 }}
       aria-hidden="true"
     >
       {team === "Wolves" ? <WolfHead /> : team === "Village" ? <VillagerBust /> : initial(name)}

@@ -21,6 +21,17 @@
   justify-content: flex-end;
 }
 
+.row[data-flash] {
+  animation: flash 1.4s var(--ease-out);
+}
+
+@keyframes flash {
+  0%,
+  45% {
+    background: var(--accent-bg);
+  }
+}
+
 .row[data-selected] {
   background: var(--accent-bg);
 }

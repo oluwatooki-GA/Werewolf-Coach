@@ -1,4 +1,4 @@
-import { avatarColor } from "@/lib/people";
+import { usePlayer } from "./PlayersContext";
 import { Avatar } from "./Avatar";
 import { Lock } from "./Icons";
 import type { Side } from "./Message";
@@ -16,6 +16,7 @@ type Props = {
 
 /** A message in the wolves' private chat: an outlined bubble that says only the wolves saw it. */
 export function WolfChat({ speaker, text, side, first, named, dim, onPlayer }: Props) {
+  const { color } = usePlayer(speaker);
   return (
     <article className={styles.row} data-side={side} data-first={first || undefined} data-dim={dim || undefined} data-static>
       {side === "in" ? (
@@ -34,7 +35,7 @@ export function WolfChat({ speaker, text, side, first, named, dim, onPlayer }: P
               <button
                 type="button"
                 className={styles.name}
-                style={{ color: side === "in" ? avatarColor(speaker) : undefined }}
+                style={{ color: side === "in" ? color : undefined }}
                 onClick={() => onPlayer(speaker)}
               >
                 {speaker}

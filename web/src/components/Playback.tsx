@@ -11,8 +11,13 @@ type Props = {
   onRestart: () => void;
   onSpeed: (speed: Speed) => void;
   onSeek: (to: number) => void;
-  /** How far in, in words a newcomer follows: "Round 2 of 4". */
+  /** How far in, in words a newcomer follows. Shown when the game has no rounds to pick from. */
   progress: string;
+  /** The game's rounds, each with the number to show up to when you jump to it. */
+  rounds: { n: number; to: number }[];
+  /** The round the replay is in now. */
+  round: number;
+  onRound: (to: number) => void;
 };
 
 function Icon({ kind }: { kind: "play" | "pause" | "restart" }) {
@@ -33,7 +38,7 @@ function Icon({ kind }: { kind: "play" | "pause" | "restart" }) {
  * The bar at the foot of a replay, where a messenger's message box would be: play or pause, a
  * slider through the game, how far in, and how fast.
  */
-export function Playback({ playing, finished, speed, shown, total, onToggle, onRestart, onSpeed, onSeek, progress }: Props) {
+export function Playback({ playing, finished, speed, shown, total, onToggle, onRestart, onSpeed, onSeek, progress, rounds, round, onRound }: Props) {
   const count = Math.min(shown, total);
   const label = finished ? "Watch again" : playing ? "Pause" : "Play";
   return (
@@ -59,7 +64,22 @@ export function Playback({ playing, finished, speed, shown, total, onToggle, onR
         aria-valuetext={progress}
         style={{ ["--filled" as string]: total ? `${(count / total) * 100}%` : "0%" }}
       />
-      <span className={styles.progress}>{progress}</span>
+      {rounds.length > 1 ? (
+        <select
+          className={styles.round}
+          aria-label="Jump to a round"
+          value={round}
+          onChange={(e) => onRound(rounds.find((r) => r.n === Number(e.target.value))?.to ?? 0)}
+        >
+          {rounds.map((r) => (
+            <option key={r.n} value={r.n}>
+              Round {r.n} of {rounds.length}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <span className={styles.progress}>{progress}</span>
+      )}
       <div className={styles.speeds} role="radiogroup" aria-label="Speed">
         {SPEEDS.map((s) => (
           <button key={s.id} type="button" role="radio" aria-checked={speed === s.id} onClick={() => onSpeed(s.id)}>

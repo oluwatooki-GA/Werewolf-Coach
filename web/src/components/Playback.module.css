@@ -79,6 +79,18 @@
   text-align: right;
 }
 
+.round {
+  flex: none;
+  padding: 0.2rem 0.6rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .speeds {
   display: inline-flex;
   padding: 2px;
