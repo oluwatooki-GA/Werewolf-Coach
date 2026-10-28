@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Replay, ReplayEntry, ReplayVote } from "@/lib/api";
+import type { Card, Replay, ReplayEntry, ReplayVote } from "@/lib/api";
 import fixture from "../test/replay.fixture.json";
 import { Room } from "./Room";
 
@@ -133,15 +133,14 @@ describe("Room", () => {
     expect(within(members).getByText("Seer")).toBeInTheDocument();
   });
 
-  it("follows one player: everyone else's messages dim, and clicking again clears it", () => {
+  it("follows one player from their card: everyone else's messages dim, and it can be undone", () => {
     open();
     players();
-    const hal = within(panel().getByLabelText("Players")).getByRole("button", { name: /Hal/ });
-    fireEvent.click(hal);
-    expect(hal).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(panel().getByLabelText("Players")).getByRole("button", { name: /Hal/ }));
+    fireEvent.click(panel().getByRole("button", { name: "Show only Hal's messages" }));
     expect(document.getElementById("R1-2")).toHaveAttribute("data-dim");
     expect(document.getElementById("R1-1")).not.toHaveAttribute("data-dim");
-    fireEvent.click(hal);
+    fireEvent.click(panel().getByRole("button", { name: "Show everyone again" }));
     expect(document.getElementById("R1-2")).not.toHaveAttribute("data-dim");
   });
 
@@ -202,13 +201,15 @@ describe("bubble sides", () => {
     expect(within(document.getElementById("R1-1") as HTMLElement).getByText("Hal")).toBeInTheDocument();
   });
 
-  it("does not give the wolves away on the right while roles are hidden", () => {
+  it("puts the wolves on the right even while roles are hidden, and the explanation says it shows them", () => {
     open();
-    sides();
-    fireEvent.click(screen.getByLabelText("Wolves on the right"));
     menu();
     fireEvent.click(screen.getByLabelText("Roles and private notes"));
-    expect(side("R1-1")).toBe("in");
+    sides();
+    fireEvent.click(screen.getByLabelText("Wolves on the right"));
+    expect(side("R1-1")).toBe("out");
+    expect(side("R1-3")).toBe("in");
+    expect(screen.getByText(/This shows who the wolves are, even with roles hidden/)).toBeInTheDocument();
   });
 
   it("remembers the choice for the next visit", () => {
@@ -378,5 +379,98 @@ describe("the vote", () => {
     expect(panel().getByRole("heading", { name: "What Cy said" })).toBeInTheDocument();
     expect(panel().getByText(/Cy thinks Hal is hiding something/)).toBeInTheDocument();
     expect(panel().getByText("Cy private note")).toBeInTheDocument();
+  });
+});
+
+const fakeSeer = {
+  id: "wolf.fake_seer",
+  version: "2",
+  role: "Werewolf",
+  source: "General Mafia advice",
+  summary: "Claim to be the Seer early.",
+  instructions: "Say you are the Seer and name a villager as a wolf.",
+  expected_moves: [],
+  parent: null,
+} as unknown as Card;
+
+describe("a player's card", () => {
+  const cards = { "wolf.fake_seer@2": fakeSeer };
+
+  it("opens when you tap a player in the list, with the card's name and instructions", () => {
+    open({ cards });
+    players();
+    fireEvent.click(within(panel().getByLabelText("Players")).getByRole("button", { name: /Hal/ }));
+    const card = within(screen.getByRole("region", { name: "Hal, strategy" }));
+    expect(card.getByText("fake seer")).toBeInTheDocument();
+    expect(card.getByText("Say you are the Seer and name a villager as a wolf.")).toBeInTheDocument();
+    expect(card.getByText(/General Mafia advice/)).toBeInTheDocument();
+  });
+
+  it("opens when you tap a name or an avatar in the chat", () => {
+    open({ cards });
+    fireEvent.click(within(document.getElementById("R1-1") as HTMLElement).getByRole("button", { name: "Hal: show their card" }));
+    expect(screen.getByRole("region", { name: "Hal, strategy" })).toBeInTheDocument();
+    expect(document.getElementById("R1-1")).not.toHaveAttribute("aria-current"); // tapping a person is not selecting the message
+  });
+
+  it("says so when a player had no card", () => {
+    open({ cards });
+    players();
+    fireEvent.click(within(panel().getByLabelText("Players")).getByRole("button", { name: /Di/ }));
+    expect(screen.getByText(/No strategy card\. Di played with the default instructions/)).toBeInTheDocument();
+  });
+
+  it("does not show a card, which would give the role away, while roles are hidden", () => {
+    open({ cards });
+    menu();
+    fireEvent.click(screen.getByLabelText("Roles and private notes"));
+    players();
+    fireEvent.click(within(panel().getByLabelText("Players")).getByRole("button", { name: /Hal/ }));
+    expect(screen.queryByText("fake seer")).toBeNull();
+    expect(screen.getByText(/Roles and strategy cards are hidden/)).toBeInTheDocument();
+  });
+
+  it("goes back to the player list", () => {
+    open({ cards });
+    players();
+    fireEvent.click(within(panel().getByLabelText("Players")).getByRole("button", { name: /Hal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Back to the players" }));
+    expect(panel().getByLabelText("Players")).toBeInTheDocument();
+  });
+});
+
+describe("avatars", () => {
+  const face = (ref: string) => within(document.getElementById(ref) as HTMLElement).getByRole("button", { name: /show their card/ });
+
+  it("wear a wolf's head or a villager's bust once roles are shown", () => {
+    open();
+    expect(face("R1-1").querySelector("svg")).toBeTruthy(); // Hal, a wolf
+    expect(face("R1-1")).not.toHaveTextContent("H");
+    expect(face("R1-3").querySelector("svg")).toBeTruthy(); // Ada
+    expect(face("R1-1").innerHTML).not.toBe(face("R1-3").innerHTML);
+  });
+
+  it("go back to the initial while roles are hidden, so they do not give the wolves away", () => {
+    open();
+    menu();
+    fireEvent.click(screen.getByLabelText("Roles and private notes"));
+    expect(face("R1-1").querySelector("svg")).toBeNull();
+    expect(face("R1-1")).toHaveTextContent("H");
+  });
+});
+
+describe("who is out", () => {
+  it("marks a player as out in the list, with how and when", () => {
+    open();
+    players();
+    expect(within(panel().getByLabelText("Players")).getByText("Killed in the night, round 1")).toBeInTheDocument();
+  });
+});
+
+describe("what happened, in the chat", () => {
+  it("gives the morning line a sun and the round a heading", () => {
+    open();
+    expect(screen.getByText(/^Morning:/).querySelector("svg")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Round 1" })).toBeInTheDocument();
   });
 });

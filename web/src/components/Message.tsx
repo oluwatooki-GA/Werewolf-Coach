@@ -25,6 +25,8 @@ type Props = {
   quotes: Map<string, ReplayLine>;
   onSelect: (id: string) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
+  /** Tapping the avatar or the name opens that player's card. */
+  onPlayer: (name: string) => void;
 };
 
 function Bubble() {
@@ -64,6 +66,7 @@ export function Message({
   quotes,
   onSelect,
   onKeyDown,
+  onPlayer,
 }: Props) {
   const name = entry.speaker;
   const marks = showRoles ? entry.marks : [];
@@ -107,13 +110,29 @@ export function Message({
       onClick={() => onSelect(id)}
       onKeyDown={choose}
     >
-      {side === "in" ? <span className={styles.gutter}>{first ? <Avatar name={name} size={32} /> : null}</span> : null}
+      {side === "in" ? (
+        <span className={styles.gutter}>
+          {first ? (
+            <button type="button" className={styles.person} aria-label={`${name}: show their card`} onClick={(e) => { e.stopPropagation(); onPlayer(name); }}>
+              <Avatar name={name} size={32} />
+            </button>
+          ) : null}
+        </span>
+      ) : null}
       <div className={styles.bubble}>
         {first && named ? (
           <header className={styles.head}>
-            <span className={styles.name} style={{ color: side === "in" ? avatarColor(name) : undefined }}>
+            <button
+              type="button"
+              className={styles.name}
+              style={{ color: side === "in" ? avatarColor(name) : undefined }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPlayer(name);
+              }}
+            >
               {name}
-            </span>
+            </button>
             {showRoles ? <RoleTag role={entry.role} team={entry.team} /> : null}
           </header>
         ) : null}

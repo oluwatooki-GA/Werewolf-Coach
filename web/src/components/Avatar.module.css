@@ -8,3 +8,14 @@
   line-height: 1;
   user-select: none;
 }
+
+.avatar svg {
+  width: 62%;
+  height: 62%;
+}
+
+/* a player who is out of the game */
+.avatar[data-out] {
+  filter: grayscale(1);
+  opacity: 0.55;
+}

@@ -32,3 +32,26 @@ export function welcomeNotes(entries: ReplayEntry[], focus: string): { before: s
     after: [lie, "The chat is public, the thoughts are not. Open any game in the list to watch it play, or see how the strategies and the coach did."],
   };
 }
+
+/**
+ * Who is out of the game, and how, from the morning and vote lines the game wrote, counting only
+ * what has been shown so far so a replay never gives away a death before it happens. The sentences
+ * are the ones the API writes ("Morning: Eve was killed in the night.", "Cy was removed by the vote.").
+ */
+export function departures(
+  entries: readonly { kind: string; round: number; text?: string }[],
+  upTo: number,
+  names: readonly string[],
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const e of entries.slice(0, upTo)) {
+    if (e.kind !== "direction" || !e.text) continue;
+    const killed = e.text.match(/^Morning: (.+) was killed in the night\.$/);
+    const voted = e.text.match(/^(.+) was removed by the vote\.$/);
+    const name = killed?.[1] ?? voted?.[1];
+    if (name && names.includes(name) && !out.has(name)) {
+      out.set(name, killed ? `Killed in the night, round ${e.round}` : `Voted out, round ${e.round}`);
+    }
+  }
+  return out;
+}

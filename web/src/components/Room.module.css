@@ -229,6 +229,10 @@
   font-size: 1.0625rem;
 }
 
+.push {
+  margin-left: auto;
+}
+
 .infobody {
   position: relative;
   flex: 1;

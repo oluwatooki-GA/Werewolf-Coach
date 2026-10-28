@@ -143,6 +143,23 @@ describe("a vote filling up", () => {
   });
 });
 
+describe("the round readout", () => {
+  // the same game told over two rounds: the first half in round 1, the rest in round 2
+  const twoRounds = replay.entries.map((e, i) => ({ ...e, round: i < 7 ? 1 : 2 })) as Playable[];
+
+  it("says which round it is up to, not how many entries it has shown", () => {
+    open({ entries: twoRounds });
+    expect(screen.getByText("Round 1 of 2")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("slider", { name: "Position in the game" }), { target: { value: "14" } });
+    expect(screen.getByText("Round 2 of 2")).toBeInTheDocument();
+  });
+
+  it("counts entries when the game is a single round", () => {
+    open();
+    expect(screen.getByText("0 of 14")).toBeInTheDocument();
+  });
+});
+
 describe("the scrubber", () => {
   it("jumps to the point you drag to, and keeps what came before", () => {
     open();

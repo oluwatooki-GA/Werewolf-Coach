@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ChatAvatar } from "@/components/ChatAvatar";
 import { Room } from "@/components/Room";
-import { apiOrNull } from "@/lib/api";
-import type { Replay } from "@/lib/api";
+import { api, apiOrNull } from "@/lib/api";
+import type { Card, Replay } from "@/lib/api";
 import { cardParts, plural } from "@/lib/format";
 
 type Props = { params: Promise<{ id: string }> };
@@ -35,10 +35,12 @@ export default async function ReplayPage({ params }: Props) {
   const { id } = await params;
   const replay = await apiOrNull<Replay>(`/games/${id}/replay`);
   if (!replay) notFound();
+  const cards = Object.fromEntries((await api<Card[]>("/strategies")).map((c) => [`${c.id}@${c.version}`, c]));
   return (
     <Room
       entries={replay.entries}
       players={replay.players}
+      cards={cards}
       title={`Game ${replay.id}`}
       avatar={<ChatAvatar kind={replay.winner} size={40} />}
       label={`Seed ${replay.seed}`}

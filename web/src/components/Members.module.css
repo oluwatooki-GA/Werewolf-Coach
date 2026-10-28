@@ -36,13 +36,13 @@
   background: var(--raise);
 }
 
-.members button[aria-pressed="true"] {
-  background: var(--raise-2);
-}
-
 .members b {
   color: var(--strong);
   font-weight: 700;
+}
+
+.members button[data-out] b {
+  color: var(--dim);
 }
 
 .role {

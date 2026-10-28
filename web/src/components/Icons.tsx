@@ -85,3 +85,26 @@ export const Seat = (p: Props) => (
     <path d="M6 20v-7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v7M6 20h12M9 11V5h6v6" />
   </Svg>
 );
+
+/** Morning: a sun. */
+export const Sun = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" />
+  </Svg>
+);
+
+/** The vote's result: a ballot box. */
+export const Ballot = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 14h16v6H4zM8 14V4h8v10" />
+    <path d="m10 9 1.5 1.5L14 7.5" />
+  </Svg>
+);
+
+/** The end of the game: a flag. */
+export const Flag = (p: Props) => (
+  <Svg {...p}>
+    <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+  </Svg>
+);

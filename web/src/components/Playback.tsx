@@ -11,6 +11,8 @@ type Props = {
   onRestart: () => void;
   onSpeed: (speed: Speed) => void;
   onSeek: (to: number) => void;
+  /** How far in, in words a newcomer follows: "Round 2 of 4". */
+  progress: string;
 };
 
 function Icon({ kind }: { kind: "play" | "pause" | "restart" }) {
@@ -31,7 +33,7 @@ function Icon({ kind }: { kind: "play" | "pause" | "restart" }) {
  * The bar at the foot of a replay, where a messenger's message box would be: play or pause, a
  * slider through the game, how far in, and how fast.
  */
-export function Playback({ playing, finished, speed, shown, total, onToggle, onRestart, onSpeed, onSeek }: Props) {
+export function Playback({ playing, finished, speed, shown, total, onToggle, onRestart, onSpeed, onSeek, progress }: Props) {
   const count = Math.min(shown, total);
   const label = finished ? "Watch again" : playing ? "Pause" : "Play";
   return (
@@ -54,12 +56,10 @@ export function Playback({ playing, finished, speed, shown, total, onToggle, onR
         value={count}
         onChange={(e) => onSeek(Number(e.target.value))}
         aria-label="Position in the game"
-        aria-valuetext={`${count} of ${total}`}
+        aria-valuetext={progress}
         style={{ ["--filled" as string]: total ? `${(count / total) * 100}%` : "0%" }}
       />
-      <span className={styles.progress}>
-        {count} of {total}
-      </span>
+      <span className={styles.progress}>{progress}</span>
       <div className={styles.speeds} role="radiogroup" aria-label="Speed">
         {SPEEDS.map((s) => (
           <button key={s.id} type="button" role="radio" aria-checked={speed === s.id} onClick={() => onSpeed(s.id)}>

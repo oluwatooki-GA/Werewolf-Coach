@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Replay } from "./api";
 import fixture from "../test/replay.fixture.json";
-import { excerpt, welcomeNotes } from "./replay";
+import { departures, excerpt, welcomeNotes } from "./replay";
 
 const replay = fixture as unknown as Replay;
 
@@ -33,5 +33,27 @@ describe("welcomeNotes", () => {
 
   it("falls back to a plain tap hint when the line is missing", () => {
     expect(welcomeNotes(replay.entries, "R9-9").after[0]).toMatch(/^Tap any message/);
+  });
+});
+
+describe("departures", () => {
+  const names = replay.players.map((p) => p.name);
+
+  it("says who is out and how, from the game's own morning lines", () => {
+    expect(departures(replay.entries, replay.entries.length, names).get("Eve")).toBe("Killed in the night, round 1");
+  });
+
+  it("gives nothing away before the line has been shown", () => {
+    const at = replay.entries.findIndex((e) => e.kind === "direction" && /Eve was killed/.test(e.text));
+    expect(departures(replay.entries, at, names).size).toBe(0);
+    expect(departures(replay.entries, at + 1, names).has("Eve")).toBe(true);
+  });
+
+  it("reads a vote's removal too, and ignores names that are not players", () => {
+    const votes = [
+      { kind: "direction", round: 2, text: "Cy was removed by the vote." },
+      { kind: "direction", round: 3, text: "Zed was removed by the vote." },
+    ];
+    expect([...departures(votes, 2, names)]).toEqual([["Cy", "Voted out, round 2"]]);
   });
 });

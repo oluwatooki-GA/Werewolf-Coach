@@ -105,8 +105,26 @@
 }
 
 .name {
+  padding: 0;
+  border: 0;
+  background: none;
   font-size: 0.875rem;
   font-weight: 700;
+  cursor: pointer;
+}
+
+.name:hover {
+  text-decoration: underline;
+}
+
+/* the avatar is a button: tap it for the player's card */
+.person {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
 }
 
 .text {

@@ -1,7 +1,6 @@
 import type { ReplayVote } from "@/lib/api";
 import { plural } from "@/lib/format";
 import { Avatar } from "./Avatar";
-import { TeamMark } from "./TeamMark";
 import messages from "./Message.module.css";
 import styles from "./Poll.module.css";
 
@@ -15,7 +14,6 @@ type Props = {
   expected: number;
   selected: string | null;
   isolated: string | null;
-  showRoles: boolean;
   /** The newest ballot, which slides in while the game plays. */
   fresh: string | null;
   onSelect: (id: string) => void;
@@ -26,7 +24,7 @@ type Props = {
  * A day's vote as a poll, like WhatsApp's: one option per player voted for, a bar, a count, and
  * under it who voted that way. Tapping a voter opens why they voted, and what they thought.
  */
-export function Poll({ round, ballots, expected, selected, isolated, showRoles, fresh, onSelect, onKeyDown }: Props) {
+export function Poll({ round, ballots, expected, selected, isolated, fresh, onSelect, onKeyDown }: Props) {
   const options = new Map<string, Ballot[]>();
   for (const ballot of ballots) {
     const key = ballot.vote.target ?? "";
@@ -89,7 +87,6 @@ export function Poll({ round, ballots, expected, selected, isolated, showRoles, 
                       >
                         <Avatar name={vote.voter} size={20} />
                         {vote.voter}
-                        {showRoles && vote.team === "Wolves" ? <TeamMark team="Wolves" /> : null}
                       </button>
                     </li>
                   ))}

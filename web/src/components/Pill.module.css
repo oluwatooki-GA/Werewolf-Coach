@@ -1,37 +1,72 @@
 .pill {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: var(--s2);
   width: fit-content;
-  max-width: min(36rem, 88%);
-  margin: var(--s2) auto;
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.5rem;
-  background: var(--pill);
-  color: var(--dim);
-  font-size: 0.8125rem;
+  max-width: min(38rem, 92%);
+  margin: var(--s3) auto;
+  padding: 0.4rem 0.95rem;
+  border-radius: 0.6rem;
+  background: var(--raise);
+  color: var(--text);
+  font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.35;
   text-align: center;
   scroll-margin-top: var(--s5);
 }
 
-.pill[data-tone="date"] {
-  margin-top: var(--s4);
-  color: var(--text);
+.pill svg {
+  flex: none;
 }
 
-/* the night and the Seer's check: private, so violet */
+/* a round: a heading with a rule on either side, not a pill */
+.pill[data-tone="date"] {
+  display: flex;
+  width: min(36rem, 92%);
+  margin: var(--s6) auto var(--s3);
+  padding: 0;
+  background: none;
+  color: var(--strong);
+  font-size: 1rem;
+  font-weight: 800;
+  gap: var(--s3);
+}
+
+.pill[data-tone="date"]::before,
+.pill[data-tone="date"]::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--raise-2);
+}
+
+/* the morning: a warm sun */
+.pill[data-tone="morning"] svg {
+  color: var(--accent);
+}
+
+/* the vote's outcome sits close to the poll it settles */
+.pill[data-tone="removal"] {
+  margin-top: var(--s2);
+}
+
+.pill[data-tone="removal"] svg {
+  color: var(--dim);
+}
+
+/* the night's secret lines: private, so violet */
 .pill[data-tone="private"] {
   background: var(--think-bg);
   color: var(--think);
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
 .pill[data-tone="private"] svg {
-  flex: none;
   margin-top: 0.15em;
+  align-self: flex-start;
 }
 
 /* the notice at the top, like a messenger's encryption notice */
@@ -42,11 +77,16 @@
   margin-block: var(--s4);
   padding: var(--s3) var(--s4);
   background: var(--accent-bg);
-  color: var(--text);
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
+/* the end of the game: a banner */
 .pill[data-tone="end"] {
-  color: var(--strong);
-  font-weight: 700;
+  margin-block: var(--s5) var(--s4);
+  padding: 0.55rem 1.2rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 1rem;
+  font-weight: 800;
 }

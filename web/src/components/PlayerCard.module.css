@@ -1,0 +1,84 @@
+.box {
+  display: grid;
+  gap: var(--s3);
+  align-content: start;
+  padding: var(--s4);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.head h3 {
+  margin-bottom: 0.2rem;
+  font-size: 1.25rem;
+}
+
+.out {
+  margin-top: 0.25rem;
+  color: var(--dim);
+  font-size: 0.875rem;
+}
+
+.box h4 {
+  margin-top: var(--s2);
+  color: var(--dim);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.name {
+  color: var(--text);
+}
+
+.name b {
+  color: var(--strong);
+  font-size: 1.0625rem;
+}
+
+.summary {
+  color: var(--dim);
+  font-size: 0.875rem;
+}
+
+.script {
+  padding: var(--s3);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.22);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.source {
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.hint {
+  color: var(--dim);
+  font-size: 0.9375rem;
+}
+
+.follow {
+  width: fit-content;
+  margin-top: var(--s2);
+  padding: 0.4rem var(--s4);
+  border: 0;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out);
+}
+
+.follow:hover {
+  color: var(--strong);
+}
+
+.follow[aria-pressed="true"] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
