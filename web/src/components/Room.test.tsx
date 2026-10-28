@@ -23,6 +23,7 @@ function open(props: Partial<React.ComponentProps<typeof Room>> = {}) {
 const panel = () => within(screen.getByLabelText("Details"));
 const menu = () => fireEvent.click(screen.getByRole("button", { name: "Chat options" }));
 const players = () => fireEvent.click(screen.getByRole("button", { name: "Players" }));
+const sides = () => fireEvent.click(screen.getByRole("button", { name: /^(You:|Sides:)/ }));
 
 beforeEach(() => {
   try {
@@ -177,7 +178,7 @@ describe("bubble sides", () => {
 
   it("puts the player you choose to watch as on the right, without repeating their name", () => {
     open();
-    menu();
+    sides();
     fireEvent.change(screen.getByLabelText("Watching as"), { target: { value: "Hal" } });
     expect(side("R1-1")).toBe("out");
     expect(side("R1-2")).toBe("in");
@@ -186,7 +187,7 @@ describe("bubble sides", () => {
 
   it("can put everyone on the left", () => {
     open();
-    menu();
+    sides();
     fireEvent.change(screen.getByLabelText("Watching as"), { target: { value: "Hal" } });
     fireEvent.click(screen.getByLabelText("Everyone on the left"));
     expect(side("R1-1")).toBe("in");
@@ -194,7 +195,7 @@ describe("bubble sides", () => {
 
   it("can put the wolves on the right, and then names the speaker on both sides", () => {
     open();
-    menu();
+    sides();
     fireEvent.click(screen.getByLabelText("Wolves on the right"));
     expect(side("R1-1")).toBe("out"); // Hal, a wolf
     expect(side("R1-3")).toBe("in"); // Ada, the Doctor
@@ -203,15 +204,16 @@ describe("bubble sides", () => {
 
   it("does not give the wolves away on the right while roles are hidden", () => {
     open();
-    menu();
+    sides();
     fireEvent.click(screen.getByLabelText("Wolves on the right"));
+    menu();
     fireEvent.click(screen.getByLabelText("Roles and private notes"));
     expect(side("R1-1")).toBe("in");
   });
 
   it("remembers the choice for the next visit", () => {
     open();
-    menu();
+    sides();
     fireEvent.click(screen.getByLabelText("Everyone on the left"));
     expect(localStorage.getItem("werewolf-coach.bubbles")).toBe("left");
   });
@@ -223,6 +225,35 @@ describe("bubble sides", () => {
     expect(within(fayOne).getAllByText("Fay").length).toBeGreaterThan(0);
     // R1-5 is Cy straight after Fay: a new speaker, so it is the first of its own run
     expect(document.getElementById("R1-5")).toHaveAttribute("data-first");
+  });
+});
+
+describe("choosing your side", () => {
+  it("shows who you are in the header without opening a menu", () => {
+    open();
+    expect(screen.getByRole("button", { name: "You: Di" })).toBeVisible();
+  });
+
+  it("says plainly that nobody is playing, and who you are", () => {
+    open();
+    sides();
+    expect(screen.getByText(/No human is playing in a saved game\. You are Di/)).toBeInTheDocument();
+  });
+
+  it("updates the button when you pick another side", () => {
+    open();
+    sides();
+    fireEvent.click(screen.getByLabelText("Wolves on the right"));
+    expect(screen.getByRole("button", { name: "Sides: wolves right" })).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Everyone on the left"));
+    expect(screen.getByRole("button", { name: "Sides: all left" })).toBeInTheDocument();
+  });
+
+  it("keeps the options menu for what to show, not for sides", () => {
+    open();
+    menu();
+    expect(screen.getByLabelText("Roles and private notes")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Wolves on the right")).toBeNull();
   });
 });
 
@@ -239,19 +270,34 @@ describe("Message info in plain words", () => {
     expect(view.getByRole("heading", { name: "Hal's private note" })).toBeInTheDocument();
   });
 
-  it("explains the suspicion bars and shows each as a percentage, not a bare decimal", () => {
-    const entries = replay.entries.map((e) =>
-      e.kind === "line" && e.ref === "R1-1" && e.subtext
-        ? { ...e, subtext: { ...e.subtext, beliefs: [{ player: "Ada", suspicion: 0.6, reason: "Vague in responses" }] } }
+  const withBeliefs = (ref: string) =>
+    replay.entries.map((e) =>
+      e.kind === "line" && e.ref === ref && e.subtext
+        ? {
+            ...e,
+            subtext: { ...e.subtext, beliefs: [{ player: "Eve", suspicion: 0.6, reason: "Vague in responses" }] },
+          }
         : e,
     );
-    open({ entries });
-    fireEvent.click(document.getElementById("R1-1") as HTMLElement);
+
+  it("explains a villager's suspicion bars and shows each as a percentage, not a bare decimal", () => {
+    open({ entries: withBeliefs("R1-3") });
+    fireEvent.click(document.getElementById("R1-3") as HTMLElement);
     const view = panel();
-    expect(view.getByRole("heading", { name: "Who Hal thought was a wolf" })).toBeInTheDocument();
-    expect(view.getByText(/The longer the bar, the more sure Hal was/)).toBeInTheDocument();
+    expect(view.getByRole("heading", { name: "Who Ada thought was a wolf" })).toBeInTheDocument();
+    expect(view.getByText(/The longer the bar, the more sure Ada was/)).toBeInTheDocument();
     expect(view.getByText("60%")).toBeInTheDocument();
     expect(view.queryByText("0.6")).toBeNull();
+  });
+
+  it("does not present a wolf's table as real suspicion, because a wolf knows who the wolves are", () => {
+    open({ entries: withBeliefs("R1-1") });
+    fireEvent.click(document.getElementById("R1-1") as HTMLElement);
+    const view = panel();
+    expect(view.queryByRole("heading", { name: "Who Hal thought was a wolf" })).toBeNull();
+    expect(view.getByText("Hal is a wolf, so this is not a real suspicion list")).toBeInTheDocument();
+    expect(view.getByText(/Wolves already know who the wolves are/)).toBeInTheDocument();
+    expect(view.getByText("60%")).toBeInTheDocument(); // still there, for anyone who opens it
   });
 
   it("says what a bid and a move are, and names the lab's findings in words", () => {

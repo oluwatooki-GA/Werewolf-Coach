@@ -110,8 +110,43 @@
   color: var(--strong);
 }
 
+.menus {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
 .menu {
   position: relative;
+}
+
+/* the visible "who are you" control, so choosing a side is not buried in a menu */
+.sides {
+  max-width: 10rem;
+  padding: 0.3rem 0.8rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out);
+}
+
+.sides:hover,
+.sides[aria-expanded="true"] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.explain {
+  max-width: 17rem;
+  color: var(--dim);
+  font-size: 0.8125rem;
 }
 
 .sheet {
@@ -121,7 +156,7 @@
   z-index: 12;
   display: grid;
   gap: var(--s3);
-  min-width: 16rem;
+  min-width: 17rem;
   padding: var(--s3) var(--s4);
   border: 1px solid var(--line);
   border-radius: 12px;

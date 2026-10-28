@@ -88,7 +88,7 @@ export function Room({
       players[0]?.name ??
       "",
   );
-  const [menu, setMenu] = useState(false);
+  const [pop, setPop] = useState<"sides" | "options" | null>(null);
   const [panel, setPanel] = useState<"message" | "players" | null>(story || !startAt ? null : "message");
   const [selected, setSelected] = useState<string | null>(story ? null : (startAt ?? null));
   const [isolated, setIsolated] = useState<string | null>(null);
@@ -232,13 +232,13 @@ export function Room({
 
   // the options menu closes when you tap anywhere else
   useEffect(() => {
-    if (!menu) return;
+    if (!pop) return;
     const away = (event: PointerEvent) => {
-      if (!menuBox.current?.contains(event.target as Node)) setMenu(false);
+      if (!menuBox.current?.contains(event.target as Node)) setPop(null);
     };
     document.addEventListener("pointerdown", away);
     return () => document.removeEventListener("pointerdown", away);
-  }, [menu]);
+  }, [pop]);
 
   function restart() {
     setShown(0);
@@ -364,57 +364,82 @@ export function Room({
                 >
                   <People />
                 </button>
-                <div className={styles.menu} ref={menuBox}>
-                  <button
-                    type="button"
-                    className={styles.icon}
-                    aria-label="Chat options"
-                    aria-expanded={menu}
-                    onClick={() => setMenu((m) => !m)}
-                  >
-                    <More />
-                  </button>
-                  {menu ? (
-                    <div className={styles.sheet} role="group" aria-label="Chat options">
-                      <fieldset>
-                        <legend>Bubbles</legend>
-                        {BUBBLES.map((b) => (
-                          <label key={b.id}>
-                            <input
-                              type="radio"
-                              name="bubbles"
-                              checked={bubbles === b.id}
-                              onChange={() => chooseBubbles(b.id)}
-                            />
-                            <span>{b.label}</span>
+                <div className={styles.menus} ref={menuBox}>
+                  <div className={styles.menu}>
+                    <button
+                      type="button"
+                      className={styles.sides}
+                      aria-expanded={pop === "sides"}
+                      onClick={() => setPop((v) => (v === "sides" ? null : "sides"))}
+                    >
+                      {bubbles === "player" ? `You: ${watchAs}` : bubbles === "left" ? "Sides: all left" : "Sides: wolves right"}
+                    </button>
+                    {pop === "sides" ? (
+                      <div className={styles.sheet} role="group" aria-label="Bubble sides">
+                        <fieldset>
+                          <legend>Whose side are you on?</legend>
+                          {BUBBLES.map((b) => (
+                            <label key={b.id}>
+                              <input
+                                type="radio"
+                                name="bubbles"
+                                checked={bubbles === b.id}
+                                onChange={() => chooseBubbles(b.id)}
+                              />
+                              <span>{b.label}</span>
+                            </label>
+                          ))}
+                          {bubbles === "player" ? (
+                            <label className={styles.pick}>
+                              <span>Watching as</span>
+                              <select value={watchAs} onChange={(e) => setWatchAs(e.target.value)}>
+                                {players.map((p) => (
+                                  <option key={p.name} value={p.name}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ) : null}
+                        </fieldset>
+                        <p className={styles.explain}>
+                          {bubbles === "player"
+                            ? `No human is playing in a saved game. You are ${watchAs}: their messages sit on the right in amber, everyone else's on the left.`
+                            : bubbles === "left"
+                              ? "Nobody is you. Every message sits on the left."
+                              : roles
+                                ? "Wolves sit on the right and the village on the left."
+                                : "Wolves on the right gives the wolves away, so it waits until roles are shown."}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className={styles.menu}>
+                    <button
+                      type="button"
+                      className={styles.icon}
+                      aria-label="Chat options"
+                      aria-expanded={pop === "options"}
+                      onClick={() => setPop((v) => (v === "options" ? null : "options"))}
+                    >
+                      <More />
+                    </button>
+                    {pop === "options" ? (
+                      <div className={styles.sheet} role="group" aria-label="Chat options">
+                        <fieldset>
+                          <legend>Show</legend>
+                          <label>
+                            <input type="checkbox" checked={roles} onChange={(e) => setRoles(e.target.checked)} />
+                            <span>Roles and private notes</span>
                           </label>
-                        ))}
-                        {bubbles === "player" ? (
-                          <label className={styles.pick}>
-                            <span>Watching as</span>
-                            <select value={watchAs} onChange={(e) => setWatchAs(e.target.value)}>
-                              {players.map((p) => (
-                                <option key={p.name} value={p.name}>
-                                  {p.name}
-                                </option>
-                              ))}
-                            </select>
+                          <label>
+                            <input type="checkbox" checked={moves} onChange={(e) => setMoves(e.target.checked)} />
+                            <span>Show tactics</span>
                           </label>
-                        ) : null}
-                      </fieldset>
-                      <fieldset>
-                        <legend>Show</legend>
-                        <label>
-                          <input type="checkbox" checked={roles} onChange={(e) => setRoles(e.target.checked)} />
-                          <span>Roles and private notes</span>
-                        </label>
-                        <label>
-                          <input type="checkbox" checked={moves} onChange={(e) => setMoves(e.target.checked)} />
-                          <span>Show tactics</span>
-                        </label>
-                      </fieldset>
-                    </div>
-                  ) : null}
+                        </fieldset>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </>
             )

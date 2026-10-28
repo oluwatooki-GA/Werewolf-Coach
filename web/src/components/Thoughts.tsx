@@ -75,7 +75,30 @@ export function Thoughts({ entry, cast, showRoles, surface }: Props) {
 
       {plan.length > 0 ? <p className={styles.cue}>{plan.join(" ")}</p> : null}
 
-      {beliefs.length > 0 ? (
+      {beliefs.length > 0 && entry.role === "Werewolf" ? (
+        <details className={styles.wolfTable}>
+          <summary>{name} is a wolf, so this is not a real suspicion list</summary>
+          <p className={styles.explain}>
+            Wolves already know who the wolves are. The game asks every player for the same table, so {name} filled it
+            in anyway. Treat the numbers as talk, not as what {name} believed.
+          </p>
+          <ul className={styles.beliefs}>
+            {beliefs.map((belief) => (
+              <li key={belief.player}>
+                <span className={styles.who}>{belief.player}</span>
+                <svg viewBox="0 0 80 8" width="80" height="8" aria-hidden="true">
+                  <rect width="80" height="8" rx="4" className={styles.track} />
+                  <rect width={80 * belief.suspicion} height="8" rx="4" className={styles.fill} />
+                </svg>
+                <span className={styles.pct}>{percent(belief.suspicion)}</span>
+                {belief.reason ? <small>{belief.reason}</small> : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+
+      {beliefs.length > 0 && entry.role !== "Werewolf" ? (
         <>
           <h4>Who {name} thought was a wolf</h4>
           <p className={styles.explain}>The longer the bar, the more sure {name} was.</p>
