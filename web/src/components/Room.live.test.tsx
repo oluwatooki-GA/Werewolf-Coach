@@ -110,6 +110,39 @@ describe("live replay", () => {
   });
 });
 
+describe("a vote filling up", () => {
+  const vote = (voter: string, target: string) =>
+    ({
+      kind: "vote",
+      private: false,
+      round: 1,
+      voter,
+      role: "Villager",
+      team: "Village",
+      target,
+      reason: "A reason.",
+      marks: [],
+      subtext: null,
+    }) as unknown as Playable;
+  const entries: Playable[] = [vote("Cy", "Hal"), vote("Eve", "Hal"), vote("Gus", "Cy")];
+
+  it("adds each voter to the poll as their vote comes in", () => {
+    open({ entries });
+    wait(900);
+    expect(screen.getByText(/1 of 3 votes in/)).toBeInTheDocument();
+    wait(5000);
+    expect(screen.getByText(/3 votes\./)).toBeInTheDocument();
+    expect(document.querySelectorAll("button[id^='vote-']")).toHaveLength(3);
+  });
+
+  it("says in the header that someone is voting, and shows no typing bubble for it", () => {
+    open({ entries });
+    wait(300);
+    expect(screen.getByText(/voting…/)).toBeInTheDocument();
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
 describe("the scrubber", () => {
   it("jumps to the point you drag to, and keeps what came before", () => {
     open();

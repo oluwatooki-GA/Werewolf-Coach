@@ -35,6 +35,22 @@
   font-size: 0.9375rem;
 }
 
+.said {
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+.explain {
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.pct {
+  min-width: 2.5rem;
+  text-align: right;
+  font-weight: 600;
+}
+
 .cue {
   color: var(--dim);
   font-size: 0.875rem;

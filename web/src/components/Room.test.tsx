@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Replay } from "@/lib/api";
+import type { Replay, ReplayEntry, ReplayVote } from "@/lib/api";
 import fixture from "../test/replay.fixture.json";
 import { Room } from "./Room";
 
@@ -84,7 +84,7 @@ describe("Room", () => {
     open();
     const hal = document.getElementById("R1-1") as HTMLElement;
     expect(hal).toHaveAttribute("data-lie");
-    expect(within(hal).getByText("lie")).toBeInTheDocument();
+    expect(within(hal).getByText("Lie")).toBeInTheDocument();
   });
 
   it("quotes a cited line inside the reply, with who said it", () => {
@@ -107,18 +107,18 @@ describe("Room", () => {
     fireEvent.click(screen.getByLabelText("Roles and private notes"));
     const hal = document.getElementById("R1-1") as HTMLElement;
     expect(within(hal).queryByText("Werewolf")).toBeNull();
-    expect(within(hal).queryByText("lie")).toBeNull();
+    expect(within(hal).queryByText("Lie")).toBeNull();
     expect(hal).not.toHaveAttribute("data-lie");
     expect(screen.queryByText(/Only the wolves saw this/)).toBeNull();
     expect(panel().getByText(/Roles and private notes are hidden/)).toBeInTheDocument();
   });
 
-  it("keeps tokens and moves behind 'Show moves'", () => {
+  it("keeps tokens and tactics behind 'Show tactics'", () => {
     open();
     const hal = document.getElementById("R1-1") as HTMLElement;
     expect(within(hal).queryByText(/token/)).toBeNull();
     menu();
-    fireEvent.click(screen.getByLabelText("Show moves"));
+    fireEvent.click(screen.getByLabelText("Show tactics"));
     expect(within(hal).getByText(/token/)).toBeInTheDocument();
   });
 
@@ -223,5 +223,114 @@ describe("bubble sides", () => {
     expect(within(fayOne).getAllByText("Fay").length).toBeGreaterThan(0);
     // R1-5 is Cy straight after Fay: a new speaker, so it is the first of its own run
     expect(document.getElementById("R1-5")).toHaveAttribute("data-first");
+  });
+});
+
+describe("Message info in plain words", () => {
+  const info = () => {
+    open();
+    fireEvent.click(document.getElementById("R1-1") as HTMLElement);
+    return panel();
+  };
+
+  it("says when the thinking happened, and whose note it is", () => {
+    const view = info();
+    expect(view.getByText("Before sending this message")).toBeInTheDocument();
+    expect(view.getByRole("heading", { name: "Hal's private note" })).toBeInTheDocument();
+  });
+
+  it("explains the suspicion bars and shows each as a percentage, not a bare decimal", () => {
+    const entries = replay.entries.map((e) =>
+      e.kind === "line" && e.ref === "R1-1" && e.subtext
+        ? { ...e, subtext: { ...e.subtext, beliefs: [{ player: "Ada", suspicion: 0.6, reason: "Vague in responses" }] } }
+        : e,
+    );
+    open({ entries });
+    fireEvent.click(document.getElementById("R1-1") as HTMLElement);
+    const view = panel();
+    expect(view.getByRole("heading", { name: "Who Hal thought was a wolf" })).toBeInTheDocument();
+    expect(view.getByText(/The longer the bar, the more sure Hal was/)).toBeInTheDocument();
+    expect(view.getByText("60%")).toBeInTheDocument();
+    expect(view.queryByText("0.6")).toBeNull();
+  });
+
+  it("says what a bid and a move are, and names the lab's findings in words", () => {
+    const view = info();
+    expect(view.getByText(/Bid 3 tokens to speak next\. Plan: share info\./)).toBeInTheDocument();
+    expect(view.getByRole("heading", { name: "Checked against the real roles" })).toBeInTheDocument();
+    expect(view.getByText("Fake role claim")).toBeInTheDocument();
+  });
+
+  it("does not print a bare line number such as R1-2 on the bubble", () => {
+    open();
+    expect(document.getElementById("R1-2")?.textContent).not.toMatch(/R1-\d/);
+  });
+
+  it("says the role once, not once as a team and again as a role", () => {
+    const view = info();
+    expect(view.queryByText("Wolves")).toBeNull();
+    expect(view.getAllByText("Werewolf")).toHaveLength(1);
+  });
+});
+
+describe("the vote", () => {
+  const vote = (voter: string, role: string, team: "Village" | "Wolves", target: string): ReplayVote =>
+    ({
+      kind: "vote",
+      private: false,
+      round: 1,
+      voter,
+      role,
+      team,
+      target,
+      reason: `${voter} thinks ${target} is hiding something.`,
+      marks: [],
+      subtext: { note: `${voter} private note`, bid: null, intent: null, target, beliefs: [] },
+    }) as ReplayVote;
+  const withVotes = (): ReplayEntry[] => [
+    ...replay.entries,
+    vote("Cy", "Villager", "Village", "Hal"),
+    vote("Eve", "Villager", "Village", "Hal"),
+    vote("Hal", "Werewolf", "Wolves", "Cy"),
+  ];
+
+  it("shows the day's votes as one poll, not one message each", () => {
+    open({ entries: withVotes() });
+    const polls = screen.getAllByRole("region", { name: "Vote, round 1" });
+    expect(polls).toHaveLength(1);
+    expect(within(polls[0] as HTMLElement).getByText("Who should be voted out?")).toBeInTheDocument();
+    expect(document.querySelectorAll("button[id^='vote-']")).toHaveLength(3);
+    expect(document.querySelectorAll("article[id^='vote-']")).toHaveLength(0);
+  });
+
+  it("counts each option and says who voted that way", () => {
+    open({ entries: withVotes() });
+    const poll = within(screen.getByRole("region", { name: "Vote, round 1" }));
+    const hal = poll.getByText("Hal", { selector: "span" }).closest("li") as HTMLElement;
+    expect(within(hal).getByText("2")).toBeInTheDocument();
+    expect(within(hal).getByRole("button", { name: /Cy voted for Hal/ })).toBeInTheDocument();
+    expect(within(hal).getByRole("button", { name: /Eve voted for Hal/ })).toBeInTheDocument();
+    expect(within(hal).getByText("Most votes")).toBeInTheDocument();
+  });
+
+  it("says tied, not most votes, when two players have the same number", () => {
+    open({
+      entries: [
+        ...replay.entries,
+        vote("Cy", "Villager", "Village", "Hal"),
+        vote("Eve", "Villager", "Village", "Cy"),
+      ],
+    });
+    expect(screen.getAllByText("Tied")).toHaveLength(2);
+    expect(screen.queryByText("Most votes")).toBeNull();
+  });
+
+  it("opens why a player voted that way when you tap their name", () => {
+    open({ entries: withVotes() });
+    fireEvent.click(screen.getByRole("button", { name: /Cy voted for Hal/ }));
+    expect(panel().getByText("Before voting")).toBeInTheDocument();
+    expect(panel().getByRole("heading", { name: "What Cy said" })).toBeInTheDocument();
+    expect(panel().getByText(/Cy thinks Hal is hiding something/)).toBeInTheDocument();
+    expect(panel().getByText("Cy private note")).toBeInTheDocument();
   });
 });

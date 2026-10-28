@@ -100,23 +100,43 @@
 }
 
 .filters {
-  display: flex;
+  display: grid;
   gap: var(--s2);
   padding: var(--s3) var(--s4);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
 
+.filters > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+}
+
+.filters span {
+  width: 3.5rem;
+  color: var(--dim);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .filters button {
-  padding: 0.25rem 0.8rem;
+  padding: 0.2rem 0.7rem;
   border: 0;
   border-radius: 999px;
   background: var(--pill);
   color: var(--dim);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out);
+}
+
+.filters button small {
+  margin-left: 0.15rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
 }
 
 .filters button:hover {

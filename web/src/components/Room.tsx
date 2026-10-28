@@ -16,6 +16,7 @@ import { ChatHeader } from "./ChatHeader";
 import { Members } from "./Members";
 import { Message, type Side } from "./Message";
 import { Pill } from "./Pill";
+import { Poll } from "./Poll";
 import { Playback } from "./Playback";
 import { Post } from "./Post";
 import { Thoughts } from "./Thoughts";
@@ -298,6 +299,21 @@ export function Room({
     return "in";
   };
 
+  // a day's votes are one poll: the first vote of a run draws it, the rest only add to it
+  const polls = new Map<number, number[]>();
+  let group: number[] | null = null;
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i] as Playable;
+    if (e.kind !== "vote") {
+      group = null;
+    } else if (group && entries[i - 1]?.round === e.round) {
+      group.push(i);
+    } else {
+      group = [i];
+      polls.set(i, group);
+    }
+  }
+
   // what each entry puts on screen, so a run of messages by one player shares a name and a tail
   const visible = entries.slice(0, count);
   const rendered = (e: Playable) =>
@@ -310,8 +326,9 @@ export function Room({
   for (let i = 0; i < visible.length; i++) {
     const e = visible[i] as Playable;
     if (!story && e.round > 0 && visible[i - 1]?.round !== e.round) before = null;
-    if (!rendered(e)) {
+    if (!rendered(e) || e.kind === "vote") {
       firsts.push(false);
+      if (e.kind === "vote") before = null;
     } else if (talks(e)) {
       const key = e.kind === "wolf_chat" ? `wolves:${nameOf(e)}` : nameOf(e);
       firsts.push(key !== before);
@@ -324,6 +341,7 @@ export function Room({
 
   const names = subtitle ?? players.map((p) => p.name).join(", ");
   const typist = typing ? speakerOf(typing) : null;
+  const voting = typing?.kind === "vote";
 
   return (
     <div className={styles.room} data-panel={open ? "open" : "closed"}>
@@ -331,7 +349,7 @@ export function Room({
         <ChatHeader
           avatar={avatar}
           title={title}
-          subtitle={typist ? <em>{typist} typing…</em> : names}
+          subtitle={typist ? <em>{typist} {voting ? "voting" : "typing"}…</em> : names}
           onInfo={story ? undefined : () => setPanel((p) => (p === "players" ? null : "players"))}
           infoLabel="Players in this chat"
           actions={
@@ -392,7 +410,7 @@ export function Room({
                         </label>
                         <label>
                           <input type="checkbox" checked={moves} onChange={(e) => setMoves(e.target.checked)} />
-                          <span>Show moves</span>
+                          <span>Show tactics</span>
                         </label>
                       </fieldset>
                     </div>
@@ -449,7 +467,26 @@ export function Room({
                 if (!rendered(e)) return divider ? wrap(null) : null;
                 return wrap(<Pill tone={e.tone === "end" ? "end" : "system"}>{e.text}</Pill>);
               }
-              if (e.kind === "line" || e.kind === "vote") {
+              if (e.kind === "vote") {
+                const members = polls.get(i);
+                if (!members) return divider ? wrap(null) : null;
+                const votes = members.filter((j) => j < count);
+                const newest = live && entries[count - 1]?.kind === "vote" ? (ids[count - 1] ?? null) : null;
+                return wrap(
+                  <Poll
+                    round={e.round}
+                    ballots={votes.map((j) => ({ id: ids[j] ?? "", vote: entries[j] as ReplayVote }))}
+                    expected={members.length}
+                    selected={chosen}
+                    isolated={isolated}
+                    showRoles={showRoles}
+                    fresh={newest}
+                    onSelect={select}
+                    onKeyDown={onKeyDown}
+                  />,
+                );
+              }
+              if (e.kind === "line") {
                 const side = sideOf(e);
                 const speaker = nameOf(e);
                 return wrap(
@@ -508,7 +545,7 @@ export function Room({
                 </Pill>,
               );
             })}
-            {typist ? <Typing name={typist} /> : null}
+            {typist && !voting ? <Typing name={typist} /> : null}
           </div>
 
           {!atBottom && playing && !finished ? (

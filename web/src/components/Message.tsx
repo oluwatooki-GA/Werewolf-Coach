@@ -1,5 +1,5 @@
-import type { ReplayLine, ReplayVote } from "@/lib/api";
-import { moveName, plural } from "@/lib/format";
+import type { ReplayLine } from "@/lib/api";
+import { markName, moveName, plural } from "@/lib/format";
 import { avatarColor } from "@/lib/people";
 import { Avatar } from "./Avatar";
 import { RoleTag } from "./RoleTag";
@@ -9,7 +9,7 @@ export type Side = "in" | "out";
 
 type Props = {
   id: string;
-  entry: ReplayLine | ReplayVote;
+  entry: ReplayLine;
   /** Outgoing bubbles sit on the right in amber: the player being watched, or the wolves. */
   side: Side;
   /** First bubble of a run by the same player: it gets the name, the avatar and the tail. */
@@ -41,7 +41,7 @@ function Bubble() {
 /** The line a message replies to, quoted inside the bubble like a reply in a messenger. */
 function Quote({ line }: { line: ReplayLine }) {
   return (
-    <a className={styles.quote} href={`#${line.ref}`} aria-label={`In reply to ${line.speaker}, line ${line.ref}`}>
+    <a className={styles.quote} href={`#${line.ref}`} aria-label={`In reply to ${line.speaker}: ${line.text}`}>
       <i style={{ background: avatarColor(line.speaker) }} aria-hidden="true" />
       <span>
         <b style={{ color: avatarColor(line.speaker) }}>{line.speaker}</b>
@@ -65,20 +65,19 @@ export function Message({
   onSelect,
   onKeyDown,
 }: Props) {
-  const isLine = entry.kind === "line";
-  const name = isLine ? entry.speaker : entry.voter;
+  const name = entry.speaker;
   const marks = showRoles ? entry.marks : [];
   const lie = marks.some((mark) => mark.label === "lie");
-  const quoted = isLine ? entry.cites.map((c) => quotes.get(c.line)).find((l) => l) : undefined;
+  const quoted = entry.cites.map((c) => quotes.get(c.line)).find((l) => l);
   const note = showRoles && entry.subtext;
   const chips = [
-    ...(isLine && showMoves && (entry.reply || entry.paid > 0)
+    ...(showMoves && (entry.reply || entry.paid > 0)
       ? [{ key: "paid", text: entry.reply ? "free reply" : plural(entry.paid, "token"), flag: false }]
       : []),
-    ...(isLine && showMoves ? entry.moves.map((move) => ({ key: move, text: moveName(move), flag: false })) : []),
+    ...(showMoves ? entry.moves.map((move) => ({ key: move, text: moveName(move), flag: false })) : []),
     ...marks
       .filter((mark) => showMoves || mark.label === "lie")
-      .map((mark) => ({ key: mark.label, text: moveName(mark.label), flag: mark.label === "lie" })),
+      .map((mark) => ({ key: mark.label, text: markName(mark.label), flag: mark.label === "lie" })),
   ];
 
   function choose(event: React.KeyboardEvent<HTMLElement>) {
@@ -104,7 +103,7 @@ export function Message({
       data-lie={lie || undefined}
       tabIndex={0}
       aria-current={selected ? "true" : undefined}
-      aria-label={`${name}, ${isLine ? `line ${entry.ref}` : "vote"}`}
+      aria-label={`${name}, round ${entry.round}, message ${entry.ref.split("-")[1] ?? ""}`}
       onClick={() => onSelect(id)}
       onKeyDown={choose}
     >
@@ -120,37 +119,25 @@ export function Message({
         ) : null}
         {quoted ? <Quote line={quoted} /> : null}
 
-        {isLine ? (
-          <p className={styles.text}>{entry.text}</p>
-        ) : (
-          <div className={styles.vote}>
-            <b>{entry.target ? `Voted for ${entry.target}` : "Abstained"}</b>
-            {entry.reason ? <p>{entry.reason}</p> : null}
-          </div>
-        )}
+        <p className={styles.text}>{entry.text}</p>
 
-        <footer className={styles.foot}>
-          <ul className={styles.chips} aria-label="About this message">
-            {chips.map((chip) => (
-              <li key={chip.key} data-flag={chip.flag ? "lie" : undefined}>
-                {chip.text}
-              </li>
-            ))}
-          </ul>
-          <span className={styles.meta}>
+        {chips.length > 0 || note ? (
+          <footer className={styles.foot}>
+            <ul className={styles.chips} aria-label="About this message">
+              {chips.map((chip) => (
+                <li key={chip.key} data-flag={chip.flag ? "lie" : undefined}>
+                  {chip.text}
+                </li>
+              ))}
+            </ul>
             {note ? (
-              <span className={styles.has} title="Has a private note">
+              <span className={styles.has} title="Has a private note. Tap to read it.">
                 <Bubble />
                 <span className="visually-hidden">Has a private note</span>
               </span>
             ) : null}
-            {isLine ? (
-              <a href={`#${entry.ref}`} aria-label={`Line ${entry.ref}`}>
-                {entry.ref}
-              </a>
-            ) : null}
-          </span>
-        </footer>
+          </footer>
+        ) : null}
       </div>
     </article>
   );

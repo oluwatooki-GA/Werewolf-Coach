@@ -1,0 +1,139 @@
+.poll {
+  width: min(26rem, 92%);
+  padding: var(--s3) var(--s3) var(--s3);
+}
+
+.head {
+  display: grid;
+  gap: 0.15rem;
+  margin-bottom: var(--s3);
+}
+
+.head b {
+  color: var(--strong);
+  font-size: 1rem;
+}
+
+.head small {
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.options {
+  display: grid;
+  gap: var(--s3);
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 1.5px solid var(--dim);
+  border-radius: 50%;
+  color: var(--on-accent);
+}
+
+.check[data-on] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.name {
+  color: var(--strong);
+  font-weight: 600;
+}
+
+.line em {
+  padding: 0.05rem 0.45rem;
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.count {
+  margin-left: auto;
+  color: var(--dim);
+  font-weight: 700;
+}
+
+.bar {
+  height: 4px;
+  margin: 0.3rem 0 0.4rem 1.625rem;
+  border-radius: 2px;
+  background: rgb(0 0 0 / 0.28);
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--dim);
+  transition: width 300ms var(--ease-out);
+}
+
+li[data-leads] .bar i {
+  background: var(--accent);
+}
+
+.voters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-left: 1.625rem;
+}
+
+.voter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.6rem 0.1rem 0.15rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.25);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 100ms var(--ease-out), opacity 160ms var(--ease-out);
+}
+
+.voter:hover {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.voter[aria-current="true"] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.voter[data-dim] {
+  opacity: 0.3;
+}
+
+.voter[data-fresh] {
+  animation: arrive 260ms var(--ease-out) both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voter[data-fresh] {
+    animation: none;
+  }
+}

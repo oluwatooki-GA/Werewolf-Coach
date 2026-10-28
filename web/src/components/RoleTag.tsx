@@ -6,7 +6,7 @@ import styles from "./RoleTag.module.css";
 export function RoleTag({ role, team }: { role: string; team: "Village" | "Wolves" }) {
   return (
     <span className={styles.tag} style={{ ["--role" as string]: roleColor(role) }}>
-      <TeamMark team={team} />
+      <TeamMark team={team} decorative />
       {role}
     </span>
   );

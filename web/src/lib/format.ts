@@ -29,6 +29,19 @@ export function moveName(move: string): string {
   return move.replaceAll("_", " ");
 }
 
+/** What the lab calls a finding, in words a newcomer can read. */
+export function markName(label: string): string {
+  const names: Record<string, string> = {
+    lie: "Lie",
+    fake_claim: "Fake role claim",
+    counter_claim: "Counter-claim",
+    bus: "Betrayed a partner",
+    shield: "Protected a partner",
+    hit: "Named a real wolf",
+  };
+  return names[label] ?? sentence(moveName(label));
+}
+
 /** "R2-4" -> [2, 4], so lines sort and compare as the game numbers them. */
 export function lineNumber(ref: string): [number, number] {
   const [round = "0", n = "0"] = ref.replace("R", "").split("-");

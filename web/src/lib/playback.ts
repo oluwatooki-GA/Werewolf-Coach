@@ -52,6 +52,7 @@ export function delayFor(entry: Playable, speed: Speed, hidden: boolean): number
     const length = Math.min(Math.max(0.8 + entry.text.length / 300, 0.8), 1.5);
     return Math.round(base * length);
   }
-  if (entry.kind === "vote" || entry.kind === "wolf_chat") return Math.round(base * 0.9);
+  if (entry.kind === "vote") return Math.round(base * 0.5); // a poll fills up quickly
+  if (entry.kind === "wolf_chat") return Math.round(base * 0.9);
   return Math.round(base * 0.4);
 }

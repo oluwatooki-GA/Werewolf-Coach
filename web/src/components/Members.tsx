@@ -33,7 +33,7 @@ export function Members({ players, showRoles, isolated, onIsolate }: Props) {
                   {p.role}
                 </span>
               ) : null}
-              {showRoles && p.card ? <small>{cardParts(p.card).name}</small> : null}
+              {showRoles && p.card ? <small>Strategy: {cardParts(p.card).name}</small> : null}
             </button>
           </li>
         ))}

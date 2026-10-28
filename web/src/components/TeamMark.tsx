@@ -6,7 +6,16 @@ type Team = "Village" | "Wolves";
  * A team is never shown by colour alone: wolves are a filled triangle, the village an open
  * circle, and the word can follow. The mark itself is decorative, so the word is the label.
  */
-export function TeamMark({ team, word = false }: { team: Team; word?: boolean }) {
+export function TeamMark({
+  team,
+  word = false,
+  decorative = false,
+}: {
+  team: Team;
+  word?: boolean;
+  /** The role's own word sits beside the mark, so nothing more needs saying. */
+  decorative?: boolean;
+}) {
   return (
     <span className={styles.mark} data-team={team}>
       <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false">
@@ -16,7 +25,7 @@ export function TeamMark({ team, word = false }: { team: Team; word?: boolean })
           <circle cx="6" cy="6" r="4.4" fill="none" stroke="currentColor" strokeWidth="1.6" />
         )}
       </svg>
-      {word ? <span>{team === "Wolves" ? "Wolves" : "Village"}</span> : <span className="visually-hidden">{team}</span>}
+      {word ? <span>{team === "Wolves" ? "Wolves" : "Village"}</span> : decorative ? null : <span className="visually-hidden">{team}</span>}
     </span>
   );
 }

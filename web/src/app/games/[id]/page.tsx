@@ -39,7 +39,7 @@ export default async function ReplayPage({ params }: Props) {
     <Room
       entries={replay.entries}
       players={replay.players}
-      title={`seed-${replay.id}`}
+      title={`Game ${replay.id}`}
       avatar={<ChatAvatar kind={replay.winner} size={40} />}
       label={`Seed ${replay.seed}`}
       welcome={
