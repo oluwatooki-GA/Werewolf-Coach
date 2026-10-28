@@ -50,7 +50,7 @@ def test_the_files_ship_with_the_package() -> None:
 
 def test_players_are_told_not_to_repeat_a_question_already_asked() -> None:
     assert "Do not ask a question someone has already asked" in text(
-        "player", "reminders", reason_max=40, note_max=100
+        "player", "reminders", reason_max=40, note_max=100, belief_rule=""
     )
 
 
@@ -60,7 +60,7 @@ def test_version_two_rules_are_in_the_text_and_the_defaults() -> None:
     rules = text("player", "speaking_floor_tokens", turns=10, tokens="4 floor tokens", max_bid=4)
     assert "accuses or questions someone" in rules and "bid 0" in rules
     assert (Settings().speaking_turns, Settings().tokens_per_day) == (10, 4)
-    reminders = text("player", "reminders", reason_max=40, note_max=100)
+    reminders = text("player", "reminders", reason_max=40, note_max=100, belief_rule="")
     assert "no dashes" in reminders and "not X but Y" in reminders
 
 
@@ -71,5 +71,7 @@ def test_wolves_are_told_not_to_accuse_their_partner_and_players_not_to_use_stoc
     assert "do not accuse your partner or vote for them" in " ".join(
         ROLE_TEXT[Role.WEREWOLF].split()
     )
-    reminders = " ".join(text("player", "reminders", reason_max=40, note_max=100).split())
+    reminders = " ".join(
+        text("player", "reminders", reason_max=40, note_max=100, belief_rule="").split()
+    )
     assert "stock lines" in reminders and "say what the player actually did or said" in reminders

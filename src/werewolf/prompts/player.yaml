@@ -1,4 +1,4 @@
-version: 1
+version: 2
 
 # Everything a player is told. ${name} marks a value the code fills in. Folded blocks (>-) join
 # their lines with single spaces. Edit the wording here; the code only picks and fills pieces.
@@ -151,9 +151,8 @@ examples:
         Next: ask <name> why they stayed quiet.
 
 reminders: >-
-  RULE REMINDERS: you can only target or vote for players who are alive, never for yourself. Give
-  a belief for every other living player: a suspicion from 0 (trust) to 1 (sure they are a wolf)
-  and a reason of at most ${reason_max} characters. Keep notes to ${note_max} characters. Use
+  RULE REMINDERS: you can only target or vote for players who are alive, never for yourself.
+  ${belief_rule} Keep notes to ${note_max} characters. Use
   only what the log shows: do not invent events, earlier days, or things people did not say. At
   the start of day 1 nobody has spoken yet, so a claim about someone staying quiet or acting a
   certain way must match a numbered line. Do not ask a question someone has already asked in the
@@ -169,6 +168,7 @@ reminders: >-
 nothing_yet: Nothing yet.
 memory_summary: "Summary of earlier rounds: ${summary}"
 memory_beliefs: "Your suspicions (0 = trust, 1 = sure they are a wolf):"
+memory_beliefs_wolf: "Your threat list (0 = harmless, 1 = remove first):"
 memory_notes: "Your recent private notes (oldest first):"
 record_header: "## Game record (written by the game; always accurate)"
 
@@ -192,6 +192,23 @@ day_some: "So far today: ${messages} posted (${span})."
 beliefs_ask: >-
   Write a private note (at most ${note_max} characters) and a belief about each other living
   player: a suspicion from 0 to 1 and a reason of at most ${reason_max} characters.
+
+# A wolf already knows who the wolves are, so asking it who it suspects is wasted words. It is
+# asked who threatens the wolves instead, and only for the few that matter.
+belief_rule: >-
+  Give a belief for every other living player: a suspicion from 0 (trust) to 1 (sure they are a
+  wolf) and a reason of at most ${reason_max} characters.
+belief_rule_wolf: >-
+  You know who the wolves are, so do not rate suspicion. In the beliefs list, name at most two
+  living villagers who threaten the wolves most (the Seer or Doctor if you can spot them, or anyone
+  steering the village toward you or your partner): a threat from 0 (harmless) to 1 (remove first)
+  in the suspicion field, and a reason of at most ${reason_max} characters. Never list your
+  partner. An empty list is fine.
+beliefs_ask_wolf: >-
+  Write a private note (at most ${note_max} characters). In the beliefs list, name at most two
+  living villagers who threaten the wolves most: a threat from 0 (harmless) to 1 (remove first) in
+  the suspicion field and a reason of at most ${reason_max} characters. Never list your partner.
+  An empty list is fine.
 
 bid_intents: >-
   Choose an intent (private): accuse, defend, share_info, ask, or none, and a target from:

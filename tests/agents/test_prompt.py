@@ -546,3 +546,38 @@ def test_the_bid_question_lists_the_latest_lines_an_accusation_can_cite() -> Non
     assert "must cite one of the latest lines: R1-3 (Bo), R1-4 (Bo), R1-5 (Bo), R1-6 (Bo)" in text
     assert "R1-2 (Bo)" not in text.split("must cite one of")[1]
     assert "must cite one of the latest" not in user(state_with())
+
+
+def _all_text(messages: list[dict[str, str]]) -> str:
+    return " ".join(" ".join(m["content"].split()) for m in messages)
+
+
+def test_a_villager_is_still_asked_who_it_suspects() -> None:
+    said = _all_text(build(state_with(), who="Cy"))
+    assert "a belief about each other living player" in said
+    assert "Give a belief for every other living player" in said
+
+
+def test_a_wolf_is_not_asked_who_it_suspects_but_who_threatens_the_wolves() -> None:
+    said = _all_text(build(state_with(), who="Fay"))
+    assert "Give a belief for every other living player" not in said
+    assert "a belief about each other living player" not in said
+    assert "name at most two living villagers who threaten the wolves most" in said
+    assert "Never list your partner" in said
+
+
+def test_a_wolfs_vote_asks_for_threats_too() -> None:
+    task = VoteTask(options=["Cy", "Eve"])
+    wolf = _all_text(build(state_with(), who="Fay", task=task))
+    villager = _all_text(build(state_with(), who="Cy", task=task))
+    assert "who threaten the wolves most" in wolf
+    assert "a belief about each other living player" in villager
+
+
+def test_a_wolfs_memory_is_headed_threat_list_and_a_villagers_suspicions() -> None:
+    held = {"Cy": Belief(suspicion=0.9, reason="might be the Seer")}
+    assert "Your threat list" in _all_text(build(state_with(), who="Fay", beliefs=held))
+    assert "Your suspicions" in _all_text(
+        build(state_with(), who="Eve", beliefs={"Cy": held["Cy"]})
+    )
+    assert "Your suspicions" not in _all_text(build(state_with(), who="Fay", beliefs=held))

@@ -130,7 +130,14 @@ def _system(view: PlayerView, card: str, persona: str = "") -> str:
                 )
             ),
             "",
-            _t("reminders", reason_max=REASON_MAX, note_max=NOTE_MAX),
+            _t(
+                "reminders",
+                reason_max=REASON_MAX,
+                note_max=NOTE_MAX,
+                belief_rule=_t(
+                    "belief_rule_wolf" if view.partner else "belief_rule", reason_max=REASON_MAX
+                ),
+            ),
         ]
     )
 
@@ -208,7 +215,7 @@ def _memory(
         parts.append(_t("memory_summary", summary=summary))
     known = [n for n in view.seats if n in beliefs and n != view.name and n in view.alive]
     if known:
-        parts.append(_t("memory_beliefs"))
+        parts.append(_t("memory_beliefs_wolf" if view.partner else "memory_beliefs"))
         parts += [f"- {n}: {beliefs[n].suspicion:g} ({beliefs[n].reason})" for n in known]
     if notes:
         parts.append(_t("memory_notes"))
@@ -216,8 +223,9 @@ def _memory(
     return "\n".join(parts) if parts else _t("nothing_yet")
 
 
-def _beliefs_ask() -> str:
-    return _t("beliefs_ask", note_max=NOTE_MAX, reason_max=REASON_MAX)
+def _beliefs_ask(view: PlayerView) -> str:
+    key = "beliefs_ask_wolf" if view.partner else "beliefs_ask"
+    return _t(key, note_max=NOTE_MAX, reason_max=REASON_MAX)
 
 
 def _day_status(view: PlayerView) -> str:
@@ -255,7 +263,7 @@ def _bid_ask(view: PlayerView, task: BidTask) -> str:
         )
     else:
         head = _t("bid_free_bid", max_bid=task.max_bid, max_chars=task.max_chars)
-    return f"{_day_status(view)} {head} {intents} {_beliefs_ask()} {fields}"
+    return f"{_day_status(view)} {head} {intents} {_beliefs_ask(view)} {fields}"
 
 
 def _task(view: PlayerView, task: Task) -> str:
@@ -280,7 +288,7 @@ def _task(view: PlayerView, task: Task) -> str:
     if isinstance(task, MemoryTask):
         return _t("memory_task", max_chars=task.max_chars)
     assert isinstance(task, VoteTask)
-    return _t("vote_task", options=", ".join(task.options), beliefs=_beliefs_ask())
+    return _t("vote_task", options=", ".join(task.options), beliefs=_beliefs_ask(view))
 
 
 def build_messages(
