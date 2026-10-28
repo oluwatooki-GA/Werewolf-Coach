@@ -1,0 +1,26 @@
+.avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--raise);
+  color: var(--text);
+}
+
+.avatar[data-kind="welcome"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.avatar[data-kind="Wolves"] {
+  background: var(--wolf-bg);
+}
+
+.avatar[data-kind="Village"] {
+  background: rgb(98 214 187 / 0.14);
+}
+
+.avatar svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}

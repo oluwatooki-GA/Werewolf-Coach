@@ -1,132 +1,39 @@
-.page {
-  max-width: 62rem;
-  padding: var(--s4) var(--s5) var(--s7);
+.role {
+  display: grid;
+  gap: var(--s1);
 }
 
-.versions {
-  display: flex;
-  flex-wrap: wrap;
+.team {
+  display: inline-flex;
   align-items: center;
-  gap: var(--s2);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.versions > span {
+  gap: 0.35em;
   margin-left: var(--s2);
   color: var(--dim);
   font-weight: 500;
 }
 
-.pill {
-  padding: 0.15rem 0.7rem;
-  border-radius: 999px;
-  background: var(--side);
-  color: var(--text);
-  text-decoration: none;
-}
-
-.pill:hover {
-  background: var(--raise);
-}
-
-.pill[aria-current="true"] {
-  background: var(--raise-2);
+.name {
   color: var(--strong);
+  font-size: 1.0625rem;
 }
 
-.role {
-  margin-top: var(--s6);
-}
-
-.role h2 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s1) var(--s3);
-  padding-bottom: var(--s2);
-  border-bottom: 1px solid var(--raise-2);
-  font-size: 1.1875rem;
-}
-
-.role h2 > span {
-  color: var(--dim);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.cards li {
-  padding: var(--s3) var(--s3);
-  border-radius: 8px;
-}
-
-.cards li:hover {
-  background: var(--feed-hover);
-}
-
-.line {
-  display: grid;
-  grid-template-columns: minmax(9rem, 14rem) minmax(5rem, 7rem) 1fr;
-  align-items: center;
-  gap: var(--s3) var(--s5);
-}
-
-.line h3 {
-  font-size: 1.125rem;
-}
-
-.line h3 small {
-  display: block;
-  margin-top: 0.1rem;
-  color: var(--dim);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.games {
-  color: var(--dim);
-  font-size: 0.875rem;
-}
-
-.cards details {
-  margin-top: var(--s2);
-}
-
-.cards summary {
-  cursor: pointer;
+.read summary {
   width: fit-content;
-  color: var(--link);
-  font-weight: 600;
+  color: var(--accent);
   font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .script {
-  max-width: 70ch;
-  margin-top: var(--s3);
-  padding: var(--s3) var(--s4);
+  margin-top: var(--s2);
+  padding: var(--s3);
   border-radius: 8px;
-  background: var(--side);
+  background: rgb(0 0 0 / 0.22);
 }
 
 .source {
-  max-width: 70ch;
   margin-top: var(--s2);
   color: var(--dim);
   font-size: 0.8125rem;
-}
-
-.empty {
-  color: var(--dim);
-}
-
-@media (max-width: 52rem) {
-  .page {
-    padding-inline: var(--s3);
-  }
-  .line {
-    grid-template-columns: 1fr auto;
-  }
-  .line > :last-child {
-    grid-column: 1 / -1;
-  }
 }

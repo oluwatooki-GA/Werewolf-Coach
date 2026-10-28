@@ -70,3 +70,16 @@ export function sentence(text: string): string {
 export function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
+
+/** "lie low wolves, track votes villagers" from the cards a game's seats played. */
+export function matchupOf(cards: Record<string, string>): string {
+  const refs = [...new Set(Object.values(cards))];
+  const name = (prefix: string) => {
+    const ref = refs.find((r) => r.startsWith(prefix));
+    return ref ? cardParts(ref).name : null;
+  };
+  const wolves = name("wolf.");
+  const village = name("villager.");
+  if (!wolves && !village) return "Default strategies";
+  return `${wolves ?? "default"} wolves, ${village ?? "default"} villagers`;
+}

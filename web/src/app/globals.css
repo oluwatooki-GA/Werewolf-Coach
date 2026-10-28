@@ -1,31 +1,37 @@
 /*
-  A chat app. Layered dark surfaces (rail, sidebar, feed, raised), one friendly sans.
-  Violet means a player's private thoughts. Coral means a lie or the wolf team.
-  Role tags carry a word and a drawn mark, so nothing depends on colour alone.
+  A dark messenger. Teal-charcoal ground with a faint wallpaper, slate bubbles for everyone else,
+  amber for "you" and for actions. Coral means a lie or the wolf team, violet means a player's
+  private thoughts. Nothing else is coloured. Role tags carry a word and a drawn mark, so nothing
+  depends on colour alone.
 */
 
 :root {
-  --rail: #1e1f22;
-  --side: #2b2d31;
-  --feed: #313338;
-  --feed-hover: #2e3035;
-  --raise: #383a40;
-  --raise-2: #404249;
-  --line: #26282c;
+  --list: #111e21;
+  --list-hover: #17272b;
+  --list-active: #213339;
+  --bar: #182a2f;
+  --chat: #0d181b;
+  --bubble: #1f2f34;
+  --bubble-out: #5a431a;
+  --pill: #1a2a2f;
+  --raise: #263a40;
+  --raise-2: #2f464d;
+  --line: #22353b;
 
-  --text: #dbdee1;
-  --dim: #a0a7b2;
-  --strong: #f2f3f5;
+  --text: #e4edef;
+  --dim: #92a7ad;
+  --strong: #ffffff;
+  --out-text: #fbf1dc;
+  --out-dim: #d9c093;
 
-  --link: #6bb4ff;
+  --accent: #d9a441;
+  --on-accent: #231805;
+  --accent-bg: rgb(217 164 65 / 0.14);
   --think: #bda8ff;
-  --think-bg: rgb(189 168 255 / 0.13);
+  --think-bg: rgb(189 168 255 / 0.14);
   --wolf: #ff8076;
   --wolf-bg: rgb(255 128 118 / 0.15);
   --village: #62d6bb;
-  --gold: #f5c451;
-  --green: #7bd88f;
-  --slate: #9db0d3;
 
   --font: var(--font-figtree), "Segoe UI", system-ui, sans-serif;
 
@@ -38,10 +44,13 @@
   --s7: 3rem;
   --s8: 4rem;
 
-  --side-width: 15rem;
-  --panel-width: 19rem;
-  --header-height: 3.25rem;
+  --list-width: 24rem;
+  --info-width: 23rem;
+  --bar-height: 3.75rem;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* the chat wallpaper: small drawn shapes, tiled, barely there */
+  --wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%2392a7ad' stroke-opacity='.09' stroke-width='2'%3E%3Cpath d='M30 22a12 12 0 1 0 14 14 9 9 0 0 1-14-14Z'/%3E%3Cpath d='M112 16l12 20h-24Z'/%3E%3Ccircle cx='128' cy='104' r='9'/%3E%3Cpath d='M40 112l10 10-10 10-10-10Z'/%3E%3Cpath d='M82 70l8 14h-16Z'/%3E%3Ccircle cx='76' cy='140' r='4'/%3E%3Ccircle cx='14' cy='78' r='4'/%3E%3C/g%3E%3C/svg%3E");
 
   color-scheme: dark;
 }
@@ -53,16 +62,15 @@
 }
 
 html {
-  background: var(--feed);
-  scrollbar-color: #1a1b1e var(--feed);
-  scroll-padding-top: calc(var(--header-height) + 1rem);
+  background: var(--chat);
+  scrollbar-color: var(--raise-2) transparent;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--feed);
+  background: var(--chat);
   color: var(--text);
   font-family: var(--font);
   font-size: 1rem;
@@ -72,31 +80,32 @@ body {
 }
 
 ::selection {
-  background: rgb(107 180 255 / 0.4);
+  background: rgb(217 164 65 / 0.4);
   color: var(--strong);
 }
 
 :focus-visible {
-  outline: 2px solid var(--link);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--feed);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1a1b1e;
-  border: 3px solid var(--feed);
+  background: var(--raise-2);
+  border: 2px solid transparent;
+  background-clip: content-box;
   border-radius: 8px;
 }
 
 a {
-  color: var(--link);
+  color: var(--accent);
   text-underline-offset: 0.2em;
 }
 
@@ -112,10 +121,10 @@ h4 {
 }
 
 h1 {
-  font-size: clamp(1.75rem, 3.2vw, 2.25rem);
+  font-size: 1.0625rem;
 }
 h2 {
-  font-size: 1.375rem;
+  font-size: 1.25rem;
 }
 h3 {
   font-size: 1.0625rem;
@@ -140,6 +149,10 @@ select {
   color: inherit;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
@@ -162,8 +175,8 @@ table {
   left: var(--s4);
   top: -4rem;
   z-index: 30;
-  background: var(--link);
-  color: #0b1626;
+  background: var(--accent);
+  color: var(--on-accent);
   padding: var(--s2) var(--s4);
   font-weight: 700;
   border-radius: 4px;

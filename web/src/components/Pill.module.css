@@ -1,0 +1,52 @@
+.pill {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--s2);
+  width: fit-content;
+  max-width: min(36rem, 88%);
+  margin: var(--s2) auto;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--pill);
+  color: var(--dim);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  scroll-margin-top: var(--s5);
+}
+
+.pill[data-tone="date"] {
+  margin-top: var(--s4);
+  color: var(--text);
+}
+
+/* the night and the Seer's check: private, so violet */
+.pill[data-tone="private"] {
+  background: var(--think-bg);
+  color: var(--think);
+  font-weight: 500;
+}
+
+.pill[data-tone="private"] svg {
+  flex: none;
+  margin-top: 0.15em;
+}
+
+/* the notice at the top, like a messenger's encryption notice */
+.pill[data-tone="notice"] {
+  display: grid;
+  gap: var(--s2);
+  max-width: min(34rem, 92%);
+  margin-block: var(--s4);
+  padding: var(--s3) var(--s4);
+  background: var(--accent-bg);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.pill[data-tone="end"] {
+  color: var(--strong);
+  font-weight: 700;
+}

@@ -3,20 +3,20 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s2) var(--s3);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
 .main {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s2);
-  padding: 0.3rem var(--s3);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
   border: 0;
-  border-radius: 6px;
-  background: var(--link);
-  color: #0b1626;
-  font-weight: 800;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
   cursor: pointer;
   transition: filter 120ms var(--ease-out);
 }
@@ -25,17 +25,71 @@
   filter: brightness(1.1);
 }
 
+.scrub {
+  flex: 1 1 8rem;
+  min-width: 0;
+  height: 1.25rem;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrub::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--filled), var(--raise-2) var(--filled));
+}
+
+.scrub::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--raise-2);
+}
+
+.scrub::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.scrub::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--strong);
+}
+
+.scrub::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--strong);
+}
+
+.progress {
+  flex: none;
+  min-width: 5rem;
+  color: var(--dim);
+  font-weight: 500;
+  text-align: right;
+}
+
 .speeds {
   display: inline-flex;
   padding: 2px;
-  border-radius: 6px;
-  background: var(--side);
+  border-radius: 999px;
+  background: var(--pill);
 }
 
 .speeds button {
-  padding: 0.2rem 0.6rem;
+  padding: 0.2rem 0.65rem;
   border: 0;
-  border-radius: 4px;
+  border-radius: 999px;
   background: transparent;
   color: var(--dim);
   font-weight: 600;
@@ -48,11 +102,17 @@
 }
 
 .speeds button[aria-checked="true"] {
-  background: var(--raise-2);
-  color: var(--strong);
+  background: var(--accent-bg);
+  color: var(--accent);
 }
 
-.progress {
-  color: var(--dim);
-  font-weight: 500;
+@media (max-width: 52rem) {
+  .progress {
+    min-width: 0;
+  }
+  .speeds {
+    order: 4;
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
 }

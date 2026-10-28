@@ -1,0 +1,135 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--list);
+  border-right: 1px solid var(--line);
+}
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  gap: 0.1rem;
+  min-height: var(--bar-height);
+  padding: var(--s2) var(--s4);
+  background: var(--bar);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  width: fit-content;
+  color: var(--strong);
+  font-size: 1.125rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.marks {
+  display: inline-flex;
+  gap: var(--s1);
+}
+
+.top p {
+  color: var(--dim);
+  font-size: 0.75rem;
+}
+
+.rows {
+  display: grid;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 100ms var(--ease-out);
+}
+
+.row:hover {
+  background: var(--list-hover);
+}
+
+.row[aria-current="page"] {
+  background: var(--list-active);
+}
+
+.row:focus-visible {
+  outline-offset: -2px;
+  border-radius: 0;
+}
+
+.text {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.text b {
+  overflow: hidden;
+  color: var(--strong);
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text > span {
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note {
+  flex: none;
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  color: var(--dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.filters {
+  display: flex;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.filters button {
+  padding: 0.25rem 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--dim);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out);
+}
+
+.filters button:hover {
+  color: var(--text);
+}
+
+.filters button[aria-pressed="true"] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.empty {
+  padding: var(--s4);
+  color: var(--dim);
+  font-size: 0.875rem;
+}

@@ -1,63 +1,57 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
-import type {
-  ReplayEntry,
-  ReplayLine,
-  ReplayPlayer,
-  ReplayVote,
-} from "@/lib/api";
+import { useEffect, useRef, useState } from "react";
+import type { ReplayLine, ReplayPlayer, ReplayVote } from "@/lib/api";
 import {
+  BOT_NAME,
   delayFor,
   isHidden,
   speakerOf,
   talks,
+  type Playable,
   type Speed,
 } from "@/lib/playback";
-import { storyCaption } from "@/lib/replay";
-import { Avatar } from "./Avatar";
+import { Close, Lock, More, People } from "./Icons";
+import { ChatHeader } from "./ChatHeader";
 import { Members } from "./Members";
-import { Message } from "./Message";
+import { Message, type Side } from "./Message";
+import { Pill } from "./Pill";
 import { Playback } from "./Playback";
-import { TeamMark } from "./TeamMark";
+import { Post } from "./Post";
 import { Thoughts } from "./Thoughts";
 import { Typing } from "./Typing";
+import { WolfChat } from "./WolfChat";
 import styles from "./Room.module.css";
 
+/** Which side a bubble sits on: the player you watch as, nobody, or the wolves. */
+export type Bubbles = "player" | "left" | "teams";
+
+const BUBBLES: { id: Bubbles; label: string }[] = [
+  { id: "player", label: "Watch as a player" },
+  { id: "left", label: "Everyone on the left" },
+  { id: "teams", label: "Wolves on the right" },
+];
+
+const STORE = "werewolf-coach.bubbles";
+
 type Props = {
-  entries: ReplayEntry[];
+  entries: Playable[];
   players: ReplayPlayer[];
-  /** The channel's name. With none, the room has no header (an excerpt). */
-  title?: string;
+  /** The chat's name, in the header. */
+  title: string;
+  /** The line under the name when nobody is typing. Defaults to the players' names. */
+  subtitle?: string;
+  avatar: React.ReactNode;
   /** A message to select when the page opens, so its private note is already showing. */
   startAt?: string;
-  /** An excerpt: no member list and no round dividers. */
-  compact?: boolean;
   /** Play the game as a live chat, one message at a time. Off shows it all at once. */
   autoplay?: boolean;
-  /** The home page's guided demo: roles stay hidden until the start message arrives. */
+  /** The welcome chat: roles stay hidden until the start message arrives, and thoughts open inline. */
   story?: boolean;
-  /** An introduction shown above the feed, like a channel's welcome message. */
+  /** A notice at the top of the chat, like a messenger's encryption notice. */
   welcome?: React.ReactNode;
   label: string;
 };
-
-function Lock() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width="14"
-      height="14"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="M8 1.5a3.5 3.5 0 0 0-3.5 3.5v2H3.8A1.3 1.3 0 0 0 2.5 8.3v5.4a1.3 1.3 0 0 0 1.3 1.3h8.4a1.3 1.3 0 0 0 1.3-1.3V8.3A1.3 1.3 0 0 0 12.2 7H11.5V5A3.5 3.5 0 0 0 8 1.5Zm-2 3.5a2 2 0 1 1 4 0v2H6V5Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
 
 type Selectable = ReplayLine | ReplayVote;
 
@@ -65,15 +59,16 @@ export function Room({
   entries,
   players,
   title,
+  subtitle,
+  avatar,
   startAt,
-  compact = false,
   autoplay = true,
   story = false,
   welcome,
   label,
 }: Props) {
   const feed = useRef<HTMLDivElement>(null);
-  const end = useRef<HTMLDivElement>(null);
+  const menuBox = useRef<HTMLDivElement>(null);
   const stick = useRef(true); // keep the newest message in view, unless the reader scrolled away
   const total = entries.length;
 
@@ -84,79 +79,104 @@ export function Room({
   const [atBottom, setAtBottom] = useState(true);
   const [roles, setRoles] = useState(true);
   const [moves, setMoves] = useState(false);
-  const [selected, setSelected] = useState<string | null>(
-    story ? null : (startAt ?? null),
+  const [bubbles, setBubbles] = useState<Bubbles>("player");
+  const [watchAs, setWatchAs] = useState(
+    () =>
+      players.find((p) => p.role === "Seer")?.name ??
+      players.find((p) => p.team === "Village")?.name ??
+      players[0]?.name ??
+      "",
   );
+  const [menu, setMenu] = useState(false);
+  const [panel, setPanel] = useState<"message" | "players" | null>(story || !startAt ? null : "message");
+  const [selected, setSelected] = useState<string | null>(story ? null : (startAt ?? null));
   const [isolated, setIsolated] = useState<string | null>(null);
 
   const count = Math.min(shown, total);
   const finished = shown >= total;
-  const ids = entries.map((e, i) =>
-    e.kind === "line" ? e.ref : e.kind === "vote" ? `vote-${i}` : "",
-  );
+  const ids = entries.map((e, i) => (e.kind === "line" ? e.ref : e.kind === "vote" ? `vote-${i}` : ""));
   const startIndex = startAt ? ids.indexOf(startAt) : -1;
-  // in the guided demo the roles appear when the start message arrives, never before
+  // in the welcome chat the roles appear when the start message arrives, never before
   const revealed = !story || (startIndex >= 0 && count > startIndex);
   const showRoles = story ? revealed : roles;
   const chosen = selected ?? (story && revealed ? (startAt ?? null) : null);
   const index = ids.indexOf(chosen ?? "\0");
   const entry = index >= 0 ? (entries[index] as Selectable) : null;
-  const typing =
-    playing && !finished && typingAt === shown ? entries[shown] : undefined;
+  const typing = playing && !finished && typingAt === shown ? entries[shown] : undefined;
   const cast = new Map(players.map((p) => [p.name, p]));
   const quotes = new Map(
-    entries.flatMap((e) =>
-      e.kind === "line" ? [[e.ref, e] as [string, ReplayLine]] : [],
-    ),
+    entries.flatMap((e) => (e.kind === "line" ? [[e.ref, e] as [string, ReplayLine]] : [])),
   );
   const live = autoplay && speed !== "instant";
+  const mode: Bubbles = story ? "left" : bubbles;
+  const open = !story && panel !== null;
 
-  const nearBottom = () =>
-    (end.current?.getBoundingClientRect().top ?? 0) < window.innerHeight + 400;
+  const farFromEnd = () => {
+    const box = feed.current;
+    return box ? box.scrollHeight - box.scrollTop - box.clientHeight : 0;
+  };
+
+  // the bubble side the reader chose before comes back after hydration
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORE);
+      /* eslint-disable react-hooks/set-state-in-effect -- reads the browser once, after hydration */
+      if (saved === "player" || saved === "left" || saved === "teams") setBubbles(saved);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    } catch {
+      // private windows can refuse storage; the default is fine
+    }
+  }, []);
+
+  function chooseBubbles(next: Bubbles) {
+    setBubbles(next);
+    try {
+      localStorage.setItem(STORE, next);
+    } catch {
+      // not remembered, still applied
+    }
+  }
 
   // a deep link or a reader who asks for less motion gets the whole game at once
   useEffect(() => {
-    if (!autoplay) return;
-    const reduce = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    if (!autoplay || story) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const hash = window.location.hash.slice(1);
-    if (!reduce && (compact || !hash)) return;
+    if (!reduce && !hash) return;
     /* eslint-disable react-hooks/set-state-in-effect -- reads the browser once, after hydration */
     setSpeed("instant");
     setShown(total);
     setPlaying(false);
-    if (hash && ids.includes(hash)) setSelected(hash);
+    if (hash && ids.includes(hash)) {
+      setSelected(hash);
+      setPanel("message");
+    }
     /* eslint-enable react-hooks/set-state-in-effect */
-    if (hash)
-      requestAnimationFrame(() =>
-        document.getElementById(hash)?.scrollIntoView?.(),
-      );
+    if (hash) requestAnimationFrame(() => document.getElementById(hash)?.scrollIntoView?.());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoplay, compact, total]);
+  }, [autoplay, story, total]);
 
-  // the live chat: wait, show "is typing", then post the next message
+  // the live chat: wait, show "typing", then post the next message
   useEffect(() => {
     if (!playing || speed === "instant" || shown >= total) return;
     const next = entries[shown];
     if (!next) return;
     // private entries and the "who is listening" lines are not shown, so they take no time
     const hidden =
-      isHidden(next, showRoles) ||
-      (next.kind === "direction" && next.tone === "listening" && !moves);
+      isHidden(next, showRoles) || (next.kind === "direction" && next.tone === "listening" && !moves);
     const wait = delayFor(next, speed, hidden);
     const timers: number[] = [];
     if (talks(next) && !hidden && wait > 0) {
       timers.push(
         window.setTimeout(() => {
-          stick.current = nearBottom();
+          stick.current = farFromEnd() < 400;
           setTypingAt(shown);
         }, wait * 0.4),
       );
     }
     timers.push(
       window.setTimeout(() => {
-        stick.current = nearBottom();
+        stick.current = farFromEnd() < 400;
         setShown(shown + 1);
       }, wait),
     );
@@ -165,58 +185,65 @@ export function Room({
 
   // follow the newest message while the reader is at the bottom, gliding rather than jumping
   const glide = useRef(0);
+  const gliding = useRef(false);
   function follow() {
-    const page = document.scrollingElement;
-    const target = feed.current; // its bottom padding is the room left under the newest message
-    if (!page || !target) return;
+    const box = feed.current; // its bottom padding is the room left under the newest message
+    if (!box) return;
     cancelAnimationFrame(glide.current);
-    const from = page.scrollTop;
-    const to =
-      from + target.getBoundingClientRect().bottom - window.innerHeight;
+    const from = box.scrollTop;
+    const to = box.scrollHeight - box.clientHeight;
     if (to - from < 2) return;
     const start = performance.now();
+    gliding.current = true;
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / 450);
-      page.scrollTop = from + (to - from) * (1 - (1 - t) ** 3);
-      if (t < 1) glide.current = requestAnimationFrame(step);
+      box.scrollTop = from + (to - from) * (1 - (1 - t) ** 3);
+      if (t < 1) {
+        glide.current = requestAnimationFrame(step);
+      } else {
+        gliding.current = false;
+        setAtBottom(farFromEnd() < 400);
+      }
     };
     glide.current = requestAnimationFrame(step);
   }
 
   useEffect(() => {
-    if (compact || shown === 0 || !stick.current) return;
+    if (shown === 0 || !stick.current) return;
     follow();
-  }, [shown, typingAt, compact]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, typingAt]);
 
   // a reader who scrolls takes over from the glide
   useEffect(() => {
-    const stop = () => cancelAnimationFrame(glide.current);
-    window.addEventListener("wheel", stop, { passive: true });
-    window.addEventListener("touchstart", stop, { passive: true });
+    const box = feed.current;
+    const stop = () => {
+      cancelAnimationFrame(glide.current);
+      gliding.current = false;
+    };
+    box?.addEventListener("wheel", stop, { passive: true });
+    box?.addEventListener("touchstart", stop, { passive: true });
     return () => {
-      window.removeEventListener("wheel", stop);
-      window.removeEventListener("touchstart", stop);
+      box?.removeEventListener("wheel", stop);
+      box?.removeEventListener("touchstart", stop);
     };
   }, []);
 
+  // the options menu closes when you tap anywhere else
   useEffect(() => {
-    const target = end.current;
-    if (compact || !target || typeof IntersectionObserver === "undefined")
-      return;
-    const watcher = new IntersectionObserver(
-      ([seen]) => setAtBottom(seen?.isIntersecting ?? true),
-      {
-        rootMargin: "0px 0px 400px 0px",
-      },
-    );
-    watcher.observe(target);
-    return () => watcher.disconnect();
-  }, [compact]);
+    if (!menu) return;
+    const away = (event: PointerEvent) => {
+      if (!menuBox.current?.contains(event.target as Node)) setMenu(false);
+    };
+    document.addEventListener("pointerdown", away);
+    return () => document.removeEventListener("pointerdown", away);
+  }, [menu]);
 
   function restart() {
     setShown(0);
     setTypingAt(null);
     setSelected(story ? null : (startAt ?? null));
+    setPanel(null);
     if (speed === "instant") setSpeed("normal");
     stick.current = true;
     setPlaying(true);
@@ -232,266 +259,306 @@ export function Room({
     }
   }
 
+  function seek(to: number) {
+    setShown(to);
+    setTypingAt(null);
+    stick.current = true;
+    setSelected(null);
+    setPanel(null);
+  }
+
+  function select(id: string) {
+    setSelected(id);
+    if (!story) setPanel("message");
+  }
+
+  function dismiss() {
+    setSelected(null);
+    setPanel(null);
+  }
+
   function onKeyDown(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key === "Escape") return setSelected(null);
+    if (event.key === "Escape") return dismiss();
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-    const all = [
-      ...(feed.current?.querySelectorAll<HTMLElement>("[data-msg]") ?? []),
-    ];
-    const next =
-      all[
-        all.indexOf(event.currentTarget) + (event.key === "ArrowDown" ? 1 : -1)
-      ];
+    const all = [...(feed.current?.querySelectorAll<HTMLElement>("[data-msg]") ?? [])];
+    const next = all[all.indexOf(event.currentTarget) + (event.key === "ArrowDown" ? 1 : -1)];
     if (next) {
       event.preventDefault();
       next.focus();
-      setSelected(next.dataset.id ?? null);
+      select(next.dataset.id ?? "");
     }
   }
 
-  const speaker = (e: ReplayEntry) =>
-    e.kind === "line" ? e.speaker : e.kind === "vote" ? e.voter : "";
-  const rounds = [...new Set(entries.map((e) => e.round))].filter((r) => r > 0);
+  const nameOf = (e: Playable) => speakerOf(e) ?? "";
+  const teamOf = (e: Playable) =>
+    e.kind === "line" || e.kind === "vote" ? e.team : e.kind === "wolf_chat" ? "Wolves" : "Village";
+  const sideOf = (e: Playable): Side => {
+    if (mode === "player") return nameOf(e) === watchAs ? "out" : "in";
+    if (mode === "teams" && showRoles) return teamOf(e) === "Wolves" ? "out" : "in";
+    return "in";
+  };
+
+  // what each entry puts on screen, so a run of messages by one player shares a name and a tail
+  const visible = entries.slice(0, count);
+  const rendered = (e: Playable) =>
+    e.kind === "line" ||
+    e.kind === "vote" ||
+    e.kind === "bot" ||
+    (e.kind === "direction" ? !(e.tone === "listening" && !moves) : showRoles);
+  const firsts: boolean[] = [];
+  let before: string | null = null;
+  for (let i = 0; i < visible.length; i++) {
+    const e = visible[i] as Playable;
+    if (!story && e.round > 0 && visible[i - 1]?.round !== e.round) before = null;
+    if (!rendered(e)) {
+      firsts.push(false);
+    } else if (talks(e)) {
+      const key = e.kind === "wolf_chat" ? `wolves:${nameOf(e)}` : nameOf(e);
+      firsts.push(key !== before);
+      before = key;
+    } else {
+      firsts.push(false);
+      before = null;
+    }
+  }
+
+  const names = subtitle ?? players.map((p) => p.name).join(", ");
+  const typist = typing ? speakerOf(typing) : null;
 
   return (
-    <div className={styles.room}>
+    <div className={styles.room} data-panel={open ? "open" : "closed"}>
       <section className={styles.channel} aria-label={label}>
-        {title ? (
-          <header className={styles.bar}>
-            <h1>
-              <span aria-hidden="true">#</span> {title}
-            </h1>
-            {autoplay ? (
-              <div className={styles.controls}>
-                <Playback
-                  playing={playing}
-                  finished={finished}
-                  speed={speed}
-                  shown={count}
-                  total={total}
-                  onToggle={() => setPlaying((p) => !p)}
-                  onRestart={restart}
-                  onSpeed={chooseSpeed}
-                />
-              </div>
-            ) : null}
-          </header>
-        ) : null}
-
-        {title ? (
-          <div
-            className={styles.switches}
-            role="group"
-            aria-label="What to show"
-          >
-            <label>
-              <input
-                type="checkbox"
-                checked={roles}
-                onChange={(e) => setRoles(e.target.checked)}
-              />
-              <span>Roles and private notes</span>
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={moves}
-                onChange={(e) => setMoves(e.target.checked)}
-              />
-              <span>Show moves</span>
-            </label>
-          </div>
-        ) : null}
-
-        {title && !compact ? (
-          <details className={styles.mobileMembers}>
-            <summary>Players ({players.length})</summary>
-            <Members
-              players={players}
-              showRoles={roles}
-              isolated={isolated}
-              onIsolate={setIsolated}
-            />
-          </details>
-        ) : null}
-
-        {welcome ? <div className={styles.welcome}>{welcome}</div> : null}
-
-        {story ? (
-          <div className={styles.caption} aria-live="polite">
-            <p>{storyCaption(entries, startAt ?? "", count, total)}</p>
-            {finished ? (
-              <button type="button" onClick={restart}>
-                Watch again
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
-        <div
-          ref={feed}
-          role="feed"
-          aria-label={`${label}, messages`}
-          className={styles.feed}
-          data-live={(!compact && autoplay && !finished) || undefined}
-        >
-          {entries.slice(0, count).map((e, i) => {
-            const first = i === 0 || entries[i - 1]?.round !== e.round;
-            const divider =
-              !compact && first && e.round > 0 ? (
-                <h2 className={styles.divider} id={`round-${e.round}`}>
-                  <span>Round {e.round}</span>
-                </h2>
-              ) : null;
-            const id = ids[i] ?? "";
-            const isSelected = id !== "" && id === chosen;
-            const fresh = live && i === count - 1;
-
-            if (e.kind === "direction") {
-              if (e.tone === "listening" && !moves)
-                return <Fragment key={i}>{divider}</Fragment>;
-              return (
-                <div
-                  key={i}
-                  className={styles.item}
-                  data-fresh={fresh || undefined}
+        <ChatHeader
+          avatar={avatar}
+          title={title}
+          subtitle={typist ? <em>{typist} typing…</em> : names}
+          onInfo={story ? undefined : () => setPanel((p) => (p === "players" ? null : "players"))}
+          infoLabel="Players in this chat"
+          actions={
+            story ? null : (
+              <>
+                <button
+                  type="button"
+                  className={styles.icon}
+                  aria-label="Players"
+                  aria-pressed={panel === "players"}
+                  onClick={() => setPanel((p) => (p === "players" ? null : "players"))}
                 >
-                  {divider}
-                  <p className={styles.system} data-tone={e.tone}>
-                    {e.text}
-                  </p>
-                </div>
-              );
-            }
-            if (e.kind === "line" || e.kind === "vote") {
-              return (
-                <div
-                  key={i}
-                  className={styles.item}
-                  data-fresh={fresh || undefined}
-                >
-                  {divider}
-                  <Message
-                    id={id}
-                    entry={e}
-                    showRoles={showRoles}
-                    showMoves={moves}
-                    selected={isSelected}
-                    dim={isolated !== null && speaker(e) !== isolated}
-                    quotes={quotes}
-                    onSelect={setSelected}
-                    onKeyDown={onKeyDown}
-                  />
-                  {isSelected ? (
-                    <div className={styles.inline}>
-                      <Thoughts
-                        entry={e}
-                        cast={cast}
-                        showRoles={showRoles}
-                        surface="inline"
-                      />
+                  <People />
+                </button>
+                <div className={styles.menu} ref={menuBox}>
+                  <button
+                    type="button"
+                    className={styles.icon}
+                    aria-label="Chat options"
+                    aria-expanded={menu}
+                    onClick={() => setMenu((m) => !m)}
+                  >
+                    <More />
+                  </button>
+                  {menu ? (
+                    <div className={styles.sheet} role="group" aria-label="Chat options">
+                      <fieldset>
+                        <legend>Bubbles</legend>
+                        {BUBBLES.map((b) => (
+                          <label key={b.id}>
+                            <input
+                              type="radio"
+                              name="bubbles"
+                              checked={bubbles === b.id}
+                              onChange={() => chooseBubbles(b.id)}
+                            />
+                            <span>{b.label}</span>
+                          </label>
+                        ))}
+                        {bubbles === "player" ? (
+                          <label className={styles.pick}>
+                            <span>Watching as</span>
+                            <select value={watchAs} onChange={(e) => setWatchAs(e.target.value)}>
+                              {players.map((p) => (
+                                <option key={p.name} value={p.name}>
+                                  {p.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : null}
+                      </fieldset>
+                      <fieldset>
+                        <legend>Show</legend>
+                        <label>
+                          <input type="checkbox" checked={roles} onChange={(e) => setRoles(e.target.checked)} />
+                          <span>Roles and private notes</span>
+                        </label>
+                        <label>
+                          <input type="checkbox" checked={moves} onChange={(e) => setMoves(e.target.checked)} />
+                          <span>Show moves</span>
+                        </label>
+                      </fieldset>
                     </div>
                   ) : null}
                 </div>
-              );
-            }
-            // wolf chat, the night and the Seer's check: only shown with roles, and marked private
-            if (!showRoles) return <Fragment key={i}>{divider}</Fragment>;
-            return (
-              <div
-                key={i}
-                className={styles.item}
-                data-fresh={fresh || undefined}
-              >
-                {divider}
-                {e.kind === "wolf_chat" ? (
-                  <div
-                    className={styles.wolves}
-                    data-dim={
-                      isolated !== null && isolated !== e.speaker
-                        ? ""
-                        : undefined
-                    }
-                  >
-                    <Avatar name={e.speaker} size={32} />
-                    <div>
-                      <p className={styles.private}>
-                        <Lock /> <b>{e.speaker}</b>{" "}
-                        <TeamMark team="Wolves" word /> only the wolves saw this
-                      </p>
-                      <p>{e.text}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className={styles.secret}>
-                    <Lock />
-                    <span>
-                      {e.kind === "night"
-                        ? [
-                            e.kill
-                              ? `The wolves chose ${e.kill}.`
-                              : "The wolves chose nobody.",
-                            e.protect
-                              ? `The Doctor protected ${e.protect}.`
-                              : null,
-                            e.check ? `The Seer checked ${e.check}.` : null,
-                            e.saved ? "The kill was saved." : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" ")
-                        : `${e.seer} learns that ${e.target} is a ${e.role}.`}
-                    </span>
-                  </p>
-                )}
-              </div>
-            );
-          })}
-          {typing && speakerOf(typing) ? (
-            <Typing name={speakerOf(typing) ?? ""} />
-          ) : null}
-          <div ref={end} className={styles.end} />
-        </div>
+              </>
+            )
+          }
+        />
 
-        {!compact && !atBottom && playing && !finished ? (
-          <button
-            type="button"
-            className={styles.latest}
-            onClick={() => {
-              stick.current = true;
-              follow();
+        <div className={styles.stage}>
+          <div
+            ref={feed}
+            role="feed"
+            aria-label={`${label}, messages`}
+            className={styles.feed}
+            data-live={(autoplay && !finished) || undefined}
+            onScroll={() => {
+              // the glide moves the feed too, and that is not the reader leaving the bottom
+              if (!gliding.current) setAtBottom(farFromEnd() < 400);
             }}
           >
-            Jump to the latest message
-          </button>
-        ) : null}
+            {welcome ? (
+              <Pill as="div" tone="notice">
+                {welcome}
+              </Pill>
+            ) : null}
 
-        {!compact && finished && rounds.length > 0 ? (
-          <nav className={styles.jump} aria-label="Jump to a round">
-            {rounds.map((r) => (
-              <a key={r} href={`#round-${r}`}>
-                Round {r}
-              </a>
-            ))}
-          </nav>
+            {visible.map((e, i) => {
+              const divider =
+                !story && (i === 0 || visible[i - 1]?.round !== e.round) && e.round > 0 ? (
+                  <Pill as="h2" tone="date" id={`round-${e.round}`}>
+                    Round {e.round}
+                  </Pill>
+                ) : null;
+              const first = firsts[i] ?? false;
+              const id = ids[i] ?? "";
+              const fresh = live && i === count - 1;
+              const wrap = (node: React.ReactNode) => (
+                <div key={i} className={styles.item} data-fresh={fresh || undefined}>
+                  {divider}
+                  {node}
+                </div>
+              );
+
+              if (e.kind === "bot") {
+                return wrap(
+                  <Post name={BOT_NAME} bot first={first}>
+                    <p>{e.text}</p>
+                  </Post>,
+                );
+              }
+              if (e.kind === "direction") {
+                if (!rendered(e)) return divider ? wrap(null) : null;
+                return wrap(<Pill tone={e.tone === "end" ? "end" : "system"}>{e.text}</Pill>);
+              }
+              if (e.kind === "line" || e.kind === "vote") {
+                const side = sideOf(e);
+                const speaker = nameOf(e);
+                return wrap(
+                  <>
+                    <Message
+                      id={id}
+                      entry={e}
+                      side={side}
+                      first={first}
+                      named={!(side === "out" && mode === "player")}
+                      showRoles={showRoles}
+                      showMoves={moves}
+                      selected={id !== "" && id === chosen}
+                      dim={isolated !== null && speaker !== isolated}
+                      quotes={quotes}
+                      onSelect={select}
+                      onKeyDown={onKeyDown}
+                    />
+                    {story && id !== "" && id === chosen ? (
+                      <div className={styles.inline}>
+                        <Thoughts entry={e} cast={cast} showRoles={showRoles} surface="inline" />
+                      </div>
+                    ) : null}
+                  </>,
+                );
+              }
+              // wolf chat, the night and the Seer's check: only shown with roles, and marked private
+              if (!showRoles) return divider ? wrap(null) : null;
+              if (e.kind === "wolf_chat") {
+                return wrap(
+                  <WolfChat
+                    speaker={e.speaker}
+                    text={e.text}
+                    side={sideOf(e)}
+                    first={first}
+                    named={!(sideOf(e) === "out" && mode === "player")}
+                    dim={isolated !== null && isolated !== e.speaker}
+                  />,
+                );
+              }
+              return wrap(
+                <Pill tone="private">
+                  <Lock size={14} />
+                  <span>
+                    {e.kind === "night"
+                      ? [
+                          e.kill ? `The wolves chose ${e.kill}.` : "The wolves chose nobody.",
+                          e.protect ? `The Doctor protected ${e.protect}.` : null,
+                          e.check ? `The Seer checked ${e.check}.` : null,
+                          e.saved ? "The kill was saved." : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                      : `${e.seer} learns that ${e.target} is a ${e.role}.`}
+                  </span>
+                </Pill>,
+              );
+            })}
+            {typist ? <Typing name={typist} /> : null}
+          </div>
+
+          {!atBottom && playing && !finished ? (
+            <button
+              type="button"
+              className={styles.latest}
+              onClick={() => {
+                stick.current = true;
+                follow();
+              }}
+            >
+              Jump to the latest message
+            </button>
+          ) : null}
+        </div>
+
+        {autoplay ? (
+          <footer className={styles.footer}>
+            <Playback
+              playing={playing}
+              finished={finished}
+              speed={speed}
+              shown={count}
+              total={total}
+              onToggle={() => setPlaying((p) => !p)}
+              onRestart={restart}
+              onSpeed={chooseSpeed}
+              onSeek={seek}
+            />
+          </footer>
         ) : null}
       </section>
 
-      <aside className={styles.panel} aria-label="Details">
-        <Thoughts
-          entry={entry}
-          cast={cast}
-          showRoles={showRoles}
-          surface="panel"
-        />
-        {compact ? null : (
-          <Members
-            players={players}
-            showRoles={showRoles}
-            isolated={isolated}
-            onIsolate={setIsolated}
-          />
-        )}
-      </aside>
+      {story ? null : (
+        <aside className={styles.info} aria-label="Details" hidden={!open}>
+          <header className={styles.infohead}>
+            <button type="button" className={styles.icon} aria-label="Close" onClick={dismiss}>
+              <Close />
+            </button>
+            <h2>{panel === "players" ? "Players" : "Message info"}</h2>
+          </header>
+          <div className={styles.infobody}>
+            {panel === "players" ? (
+              <Members players={players} showRoles={showRoles} isolated={isolated} onIsolate={setIsolated} />
+            ) : (
+              <Thoughts entry={entry} cast={cast} showRoles={showRoles} surface="panel" />
+            )}
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

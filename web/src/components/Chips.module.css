@@ -1,0 +1,24 @@
+.chips {
+  display: flex;
+  gap: var(--s2);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.chips a {
+  padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--dim);
+  text-decoration: none;
+  transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out);
+}
+
+.chips a:hover {
+  color: var(--text);
+}
+
+.chips a[aria-current="true"] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}

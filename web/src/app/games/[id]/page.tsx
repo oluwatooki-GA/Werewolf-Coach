@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ChatAvatar } from "@/components/ChatAvatar";
 import { Room } from "@/components/Room";
 import { apiOrNull } from "@/lib/api";
 import type { Replay } from "@/lib/api";
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `Replay ${id}` };
 }
 
-/** "fake seer wolves against track votes villagers", from the cards the seats played. */
+/** "Fake seer wolves against track votes villagers", from the cards the seats played. */
 function matchup(replay: Replay): string {
   const pick = (role: string) => {
     const seat = replay.players.find((p) => p.role === role && p.card);
@@ -23,11 +24,12 @@ function matchup(replay: Replay): string {
   };
   const wolves = pick("Werewolf");
   const village = pick("Villager");
-  if (!wolves && !village) return "Default strategies on both sides";
-  return `${wolves ?? "default"} wolves against ${village ?? "default"} villagers`;
+  const text =
+    !wolves && !village
+      ? "Default strategies on both sides"
+      : `${wolves ?? "default"} wolves against ${village ?? "default"} villagers`;
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
-
-const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 export default async function ReplayPage({ params }: Props) {
   const { id } = await params;
@@ -38,16 +40,17 @@ export default async function ReplayPage({ params }: Props) {
       entries={replay.entries}
       players={replay.players}
       title={`seed-${replay.id}`}
+      avatar={<ChatAvatar kind={replay.winner} size={40} />}
       label={`Seed ${replay.seed}`}
       welcome={
         <>
           <p>
-            {sentence(matchup(replay))}, played by {replay.model || "scripted agents"} on the {replay.rule_version}{" "}
-            rules. It lasts {plural(replay.rounds, "round")}.
+            This game is over, so the roles and every private thought are shown. Tap a message to read what its
+            player was thinking.
           </p>
           <p>
-            This is a recording that plays back like a live chat. Click any message to read what its
-            player was privately thinking. Pause, change the speed or skip to the end above.
+            {matchup(replay)}, played by {replay.model || "scripted agents"} on the {replay.rule_version} rules,{" "}
+            {plural(replay.rounds, "round")}.
           </p>
         </>
       }

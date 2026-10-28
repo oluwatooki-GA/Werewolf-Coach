@@ -1,58 +1,35 @@
-.post {
-  display: flex;
-  gap: var(--s4);
-  padding: var(--s2) var(--s5);
-}
-
-.post:hover {
-  background: var(--feed-hover);
+.bubble {
+  max-width: min(44rem, 92%);
 }
 
 .body {
-  min-width: 0;
-  flex: 1;
   display: grid;
   gap: var(--s2);
+  font-size: 0.9375rem;
 }
 
-.body header {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-}
-
-.body header b {
-  color: var(--strong);
+.body p {
+  max-width: 62ch;
 }
 
 .bot {
   padding: 0.05rem 0.4rem;
   border-radius: 4px;
-  background: var(--link);
-  color: #0b1626;
+  background: var(--accent-bg);
+  color: var(--accent);
   font-size: 0.6875rem;
   font-weight: 800;
 }
 
-.body p {
-  max-width: 70ch;
-}
-
+/* the unfurled preview inside a bubble: a card, a diff or a result */
 .embed {
   display: grid;
   gap: var(--s3);
-  max-width: 62ch;
-  padding: var(--s3) var(--s4);
+  padding: var(--s3);
   border-radius: 8px;
-  background: var(--side);
+  background: rgb(0 0 0 / 0.22);
 }
 
 .embed h3 {
   font-size: 1rem;
-}
-
-@media (max-width: 52rem) {
-  .post {
-    padding-inline: var(--s3);
-  }
 }

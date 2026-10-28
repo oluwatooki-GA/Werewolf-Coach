@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Replay, ReplayEntry } from "./api";
 import fixture from "../test/replay.fixture.json";
-import { delayFor, isHidden, speakerOf, talks } from "./playback";
+import { BOT_NAME, delayFor, isHidden, speakerOf, talks, type BotNote } from "./playback";
 
 const entries = (fixture as unknown as Replay).entries;
 const line = entries.find((e) => e.kind === "line") as ReplayEntry;
 const direction = entries.find((e) => e.kind === "direction") as ReplayEntry;
 const wolfChat = entries.find((e) => e.kind === "wolf_chat") as ReplayEntry;
+
+const bot: BotNote = { kind: "bot", text: "Hello.", round: 0 };
 
 describe("delayFor", () => {
   it("waits about a second between messages at normal speed", () => {
@@ -54,5 +56,14 @@ describe("who is talking", () => {
     expect(isHidden(wolfChat, true)).toBe(false);
     expect(isHidden(line, false)).toBe(false);
     expect(isHidden(direction, false)).toBe(false);
+  });
+});
+
+describe("the welcome bot", () => {
+  it("is a message with a speaker, paced like a line", () => {
+    expect(talks(bot)).toBe(true);
+    expect(speakerOf(bot)).toBe(BOT_NAME);
+    expect(isHidden(bot, false)).toBe(false);
+    expect(delayFor(bot, "normal", false)).toBeGreaterThanOrEqual(800);
   });
 });

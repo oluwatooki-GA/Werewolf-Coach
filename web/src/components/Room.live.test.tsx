@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Replay } from "@/lib/api";
-import { excerpt } from "@/lib/replay";
+import { type BotNote, type Playable } from "@/lib/playback";
+import { excerpt, welcomeNotes } from "@/lib/replay";
 import fixture from "../test/replay.fixture.json";
 import { Room } from "./Room";
 
@@ -13,6 +14,7 @@ function open(props: Partial<React.ComponentProps<typeof Room>> = {}) {
       entries={replay.entries}
       players={replay.players}
       title="seed-1-845496ae"
+      avatar={<span />}
       label="A recorded game"
       {...props}
     />,
@@ -93,6 +95,7 @@ describe("live replay", () => {
 
   it("skips private entries without waiting when roles are hidden", () => {
     open();
+    fireEvent.click(screen.getByRole("button", { name: "Chat options" }));
     fireEvent.click(screen.getByLabelText("Roles and private notes"));
     wait(50); // wolf chat, the night and the Seer's check are hidden: no pause for them
     expect(screen.queryByText(/only the wolves saw this/)).toBeNull();
@@ -107,25 +110,56 @@ describe("live replay", () => {
   });
 });
 
-describe("guided demo", () => {
-  const part = excerpt(replay.entries, "R1-1");
-  const demo = () =>
-    open({ entries: part, title: undefined, compact: true, story: true, startAt: "R1-1" });
+describe("the scrubber", () => {
+  it("jumps to the point you drag to, and keeps what came before", () => {
+    open();
+    fireEvent.change(screen.getByRole("slider", { name: "Position in the game" }), { target: { value: "10" } });
+    expect(screen.getByText("10 of 14")).toBeInTheDocument();
+    expect(document.getElementById("R1-1")).toBeInTheDocument();
+    expect(document.getElementById("R1-5")).toBeNull();
+  });
+});
+
+describe("the welcome chat", () => {
+  const note = (text: string): BotNote => ({ kind: "bot", text, round: 0 });
+  const notes = welcomeNotes(replay.entries, "R1-1");
+  const entries: Playable[] = [
+    ...notes.before.map(note),
+    ...excerpt(replay.entries, "R1-1"),
+    ...notes.after.map(note),
+  ];
+  const welcome = () =>
+    open({ entries, title: "Werewolf Coach", story: true, startAt: "R1-1", label: "Welcome chat" });
+
+  it("starts with the bot typing a greeting before anyone else speaks", () => {
+    welcome();
+    wait(700);
+    expect(screen.getByRole("status")).toHaveTextContent("Werewolf Coach is typing");
+    wait(1000);
+    expect(screen.getByText(/I'm the Werewolf Coach/)).toBeInTheDocument();
+  });
 
   it("keeps the roles hidden until the featured message arrives, then reveals them", () => {
-    demo();
-    expect(screen.getByText(/Eight AI players are chatting/)).toBeInTheDocument();
+    welcome();
+    wait(2500);
     expect(screen.queryByText("Werewolf")).toBeNull();
     wait(60_000);
     expect(screen.getAllByText("Werewolf").length).toBeGreaterThan(0);
     expect(document.getElementById("R1-1")).toHaveAttribute("aria-current", "true");
   });
 
-  it("ends by pointing at what to do next and offers to watch again", () => {
-    demo();
+  it("opens the featured message's thoughts inline, under the bubble, with no side panel", () => {
+    welcome();
     wait(60_000);
-    expect(screen.getByText(/That was one moment from a real game/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Private thoughts of Hal")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Details")).toBeNull();
+  });
+
+  it("ends by pointing at what to do next and offers to watch again", () => {
+    welcome();
+    wait(60_000);
+    expect(screen.getByText(/The chat is public, the thoughts are not/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Watch again" }));
-    expect(screen.getByText(/Eight AI players are chatting/)).toBeInTheDocument();
+    expect(screen.queryByText(/The chat is public/)).toBeNull();
   });
 });

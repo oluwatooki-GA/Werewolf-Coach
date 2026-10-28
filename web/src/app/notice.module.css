@@ -1,13 +1,22 @@
-/* A plain channel page for one short message: play mode, a missing game, an error. */
-.page {
+/* the chat window with nothing open, and the small bot messages for a missing game or an error */
+.idle {
+  flex: 1;
   display: grid;
-  gap: var(--s4);
-  justify-items: start;
-  padding: var(--s6) var(--s5) var(--s8);
+  align-content: center;
+  justify-items: center;
+  gap: var(--s3);
+  padding: var(--s6);
+  background: var(--chat) var(--wallpaper);
+  text-align: center;
 }
 
-.page p {
-  max-width: 56ch;
+.idle h1 {
+  font-size: 1.5rem;
+}
+
+.idle p {
+  max-width: 36ch;
+  color: var(--dim);
 }
 
 .dim {
@@ -16,14 +25,16 @@
 }
 
 .action {
-  padding: 0.5rem var(--s4);
+  width: fit-content;
+  padding: 0.45rem var(--s4);
   border: 0;
-  border-radius: 6px;
-  background: var(--link);
-  color: #0b1626;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 800;
   cursor: pointer;
   text-decoration: none;
+  transition: filter 120ms var(--ease-out);
 }
 
 .action:hover {

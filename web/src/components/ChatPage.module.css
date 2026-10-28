@@ -1,0 +1,27 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--chat) var(--wallpaper);
+}
+
+.thread {
+  display: grid;
+  gap: var(--s2);
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: var(--s4) var(--s4) var(--s7);
+}
+
+@media (max-width: 52rem) {
+  .thread {
+    padding-inline: var(--s2);
+  }
+}

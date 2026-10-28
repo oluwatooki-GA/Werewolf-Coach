@@ -1,18 +1,18 @@
 import Link from "next/link";
-import { ChannelHeader } from "@/components/ChannelHeader";
+import { ChatAvatar } from "@/components/ChatAvatar";
+import { ChatPage } from "@/components/ChatPage";
+import { Post } from "@/components/Post";
 import styles from "./notice.module.css";
 
 export default function NotFound() {
   return (
-    <>
-      <ChannelHeader name="not-found" />
-      <div className={styles.page}>
-        <h2>There is nothing at this address</h2>
-        <p>The game may have been removed, or the link may be mistyped.</p>
+    <ChatPage avatar={<ChatAvatar kind="welcome" size={40} />} title="Not found">
+      <Post name="Lab" bot>
+        <p>There is nothing at this address. The game may have been removed, or the link may be mistyped.</p>
         <Link href="/games" className={styles.action}>
-          Back to the replays
+          Back to the games
         </Link>
-      </div>
-    </>
+      </Post>
+    </ChatPage>
   );
 }

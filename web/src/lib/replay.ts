@@ -11,25 +11,24 @@ export function excerpt(entries: ReplayEntry[], focus: string, before = 1, after
 }
 
 /**
- * What the home page's guided demo says as it plays: first the chat looks ordinary, then the
- * roles are revealed at the featured message, then it points at the next step. Built from the
- * featured line itself, never hard-coded.
+ * What the Werewolf Coach bot says around the featured moment in the welcome chat: first what
+ * this is, then, after the moment has played, who lied and where to tap. The second note is built
+ * from the featured line itself, never hard-coded.
  */
-export function storyCaption(
-  entries: ReplayEntry[],
-  focus: string,
-  shown: number,
-  total: number,
-): string {
-  const at = entries.findIndex((e) => e.kind === "line" && e.ref === focus);
-  const line = at >= 0 ? entries[at] : undefined;
-  if (shown >= total && total > 0) {
-    return "That was one moment from a real game. Click any message to read what its player was thinking, or watch the whole game.";
-  }
-  if (at < 0 || shown <= at || !line || line.kind !== "line") {
-    return "Eight AI players are chatting in a game of Werewolf. Two of them are secretly wolves who lie to the rest. Can you tell which?";
-  }
-  const who = line.role === "Werewolf" ? "a wolf" : `the ${line.role}`;
-  const did = line.claim ? `claimed to be the ${line.claim.role}, which was a lie` : "lied";
-  return `${line.speaker} is ${who}. It just ${did}. On the right is what it was thinking when it sent that message.`;
+export function welcomeNotes(entries: ReplayEntry[], focus: string): { before: string[]; after: string[] } {
+  const line = entries.find((e) => e.kind === "line" && e.ref === focus);
+  const before = [
+    "Hi, I'm the Werewolf Coach. In this lab, eight AI agents play Werewolf in a group chat. Two of them are secretly wolves and lie to the rest.",
+    "Here is a moment from a real game. Can you tell who is lying?",
+  ];
+  const lie =
+    line && line.kind === "line"
+      ? `${line.speaker} is ${line.role === "Werewolf" ? "a wolf" : `the ${line.role}`}. ${
+          line.claim ? `It claimed to be the ${line.claim.role}, which was a lie.` : "That message was a lie."
+        } Tap the bubble to read what ${line.speaker} was thinking when it sent it.`
+      : "Tap any message to read what its player was thinking when it sent it.";
+  return {
+    before,
+    after: [lie, "The chat is public, the thoughts are not. Open any game in the list to watch it play, or see how the strategies and the coach did."],
+  };
 }

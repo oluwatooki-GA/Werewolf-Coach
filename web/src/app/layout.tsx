@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
-import { Sidebar } from "@/components/Sidebar";
+import { Shell } from "@/components/Shell";
+import { api } from "@/lib/api";
+import type { GameList } from "@/lib/api";
 import "./globals.css";
-import styles from "./layout.module.css";
 
 const figtree = Figtree({
   weight: ["400", "500", "600", "700", "800"],
@@ -15,24 +16,25 @@ const figtree = Figtree({
 export const metadata: Metadata = {
   title: { default: "Werewolf Coach", template: "%s | Werewolf Coach" },
   description:
-    "AI agents play Werewolf from swappable strategy cards. Read their games as a chatroom, see what each player privately thought, which strategies win, and what the coach changed.",
+    "AI agents play Werewolf from swappable strategy cards. Watch their games play like a live chat, tap a message to see what its player privately thought, and see which strategies win and what the coach changed.",
 };
 
-export const viewport: Viewport = { themeColor: "#2b2d31", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#182a2f", colorScheme: "dark" };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/** The list of chats is fetched here so every page has it. The site never calls the API from the browser. */
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const list = await api<GameList>("/games?limit=200&players=ai").catch(() => null);
   return (
     <html lang="en" className={figtree.variable}>
       <body>
         <a href="#main" className="skip">
-          Skip to the page
+          Skip to the chat
         </a>
-        <div className={styles.shell}>
-          <Sidebar />
-          <main id="main" className={styles.main}>
-            {children}
-          </main>
-        </div>
+        <Shell games={list?.games ?? []} total={list?.total ?? 0} down={!list}>
+          {children}
+        </Shell>
       </body>
     </html>
   );

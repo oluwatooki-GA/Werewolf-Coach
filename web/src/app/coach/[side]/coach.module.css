@@ -1,75 +1,10 @@
-.thread {
-  padding: var(--s3) 0 var(--s7);
-  max-width: 62rem;
-}
-
-.sides {
-  display: flex;
-  gap: var(--s2);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.pill {
-  padding: 0.15rem 0.7rem;
-  border-radius: 999px;
-  background: var(--side);
-  color: var(--text);
-  text-decoration: none;
-}
-
-.pill:hover {
-  background: var(--raise);
-}
-
-.pill[aria-current="true"] {
-  background: var(--raise-2);
-  color: var(--strong);
-}
-
-/* the headline result, pinned like a pinned message */
-.pinned {
-  margin: var(--s3) var(--s5) var(--s4);
-  padding: var(--s3) var(--s4);
-  max-width: 62ch;
-  border-radius: 8px;
-  background: var(--side);
-  color: var(--dim);
-}
-
-.pinned b {
-  display: block;
-  margin-bottom: 0.15rem;
-  color: var(--strong);
-  font-size: 1.125rem;
-}
-
-.empty {
-  padding: var(--s5);
-  color: var(--dim);
-}
-
-.divider {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  margin: var(--s5) var(--s5) var(--s2);
-  color: var(--dim);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.divider::before,
-.divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--raise-2);
+.generation {
+  display: grid;
+  gap: var(--s1);
 }
 
 .concluded {
   color: var(--text);
-  font-size: 0.9375rem;
   line-height: 1.55;
 }
 
@@ -99,25 +34,9 @@
   color: var(--strong);
 }
 
-.verdict {
-  margin: var(--s2) var(--s5) 0 calc(var(--s5) + 40px + var(--s4));
-  color: var(--strong);
-  font-weight: 700;
-}
-
 @media (max-width: 64rem) {
   .arms li {
     grid-template-columns: 1fr;
     gap: var(--s1);
-  }
-}
-
-@media (max-width: 52rem) {
-  .pinned,
-  .divider {
-    margin-inline: var(--s3);
-  }
-  .verdict {
-    margin-inline: var(--s3);
   }
 }

@@ -94,7 +94,7 @@
 .findings li {
   padding: var(--s2) var(--s3);
   border-radius: 6px;
-  background: var(--side);
+  background: rgb(0 0 0 / 0.22);
   color: var(--dim);
   font-size: 0.875rem;
 }
@@ -114,7 +114,6 @@
 
 /* inline under a message on a phone, the panel's content sits in the feed */
 .box[data-surface="inline"] {
-  margin: var(--s2) var(--s3) var(--s3) 3.5rem;
-  border-radius: 8px;
-  background: var(--side);
+  border-radius: 12px;
+  background: var(--bubble);
 }

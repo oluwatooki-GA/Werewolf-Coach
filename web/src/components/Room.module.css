@@ -1,97 +1,36 @@
 .room {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--panel-width);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.room[data-panel="open"] {
+  grid-template-columns: minmax(0, 1fr) var(--info-width);
 }
 
 .channel {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  padding-bottom: var(--s6);
+  min-height: 0;
 }
 
-/* the channel header, pinned like a chat app's: the name and the controls, then what to show */
-.bar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s2) var(--s4);
-  padding: var(--s3) var(--s4);
-  background: var(--feed);
-  border-bottom: 1px solid var(--line);
-}
-
-.bar h1 {
-  font-size: 1.0625rem;
-  font-weight: 800;
-}
-
-.bar h1 span {
-  color: var(--dim);
-  font-weight: 600;
-}
-
-.controls {
-  margin-left: auto;
-}
-
-.switches {
-  display: flex;
-  gap: var(--s5);
-  padding: var(--s3) var(--s4) 0;
-  color: var(--dim);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.switches label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s2);
-  cursor: pointer;
-}
-
-.switches label:has(input:checked) {
-  color: var(--text);
-}
-
-.switches input {
-  appearance: none;
+/* the chat itself scrolls inside its frame, so the header and the footer bar stay put */
+.stage {
   position: relative;
-  width: 1.875rem;
-  height: 1.0625rem;
-  margin: 0;
-  border-radius: 1rem;
-  background: var(--raise-2);
-  cursor: inherit;
-  transition: background-color 140ms var(--ease-out);
-}
-
-.switches input::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 0.8125rem;
-  height: 0.8125rem;
-  border-radius: 50%;
-  background: var(--strong);
-  transition: translate 140ms var(--ease-out);
-}
-
-.switches input:checked {
-  background: var(--think);
-}
-
-.switches input:checked::after {
-  translate: 0.8125rem 0;
-  background: #1c1530;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .feed {
-  padding: var(--s2) 0 var(--s5);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s2) 0 var(--s4);
+  background: var(--chat) var(--wallpaper);
 }
 
 /* while a game plays, leave room under the newest message so the next one arrives into open space */
@@ -117,191 +56,173 @@
   }
 }
 
-.end {
-  height: 1px;
-  scroll-margin-bottom: var(--s4);
-}
-
-.welcome {
-  display: grid;
-  gap: var(--s2);
-  max-width: 62ch;
-  margin: var(--s5) var(--s4) var(--s2);
-  color: var(--dim);
-}
-
-.welcome p:first-child {
-  color: var(--text);
-  font-weight: 600;
-}
-
-/* the guided demo's narrator: one plain sentence about what is on screen */
-.caption {
-  position: sticky;
-  top: 0;
-  z-index: 4;
+/* in the welcome chat a tapped bubble opens its thoughts right under it */
+.inline {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s2) var(--s4);
-  padding: var(--s3) var(--s4);
-  background: var(--raise);
-  border-bottom: 1px solid var(--line);
-  font-weight: 600;
+  padding: var(--s1) var(--s4) var(--s2) 3rem;
 }
 
-.caption p {
-  flex: 1 1 18rem;
-  min-width: 0;
+.inline > section {
+  max-width: min(34rem, 92%);
 }
 
-.caption button,
 .latest {
-  padding: 0.3rem var(--s3);
+  position: absolute;
+  right: var(--s4);
+  bottom: var(--s4);
+  padding: 0.4rem var(--s4);
   border: 0;
-  border-radius: 6px;
-  background: var(--link);
-  color: #0b1626;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.875rem;
   font-weight: 800;
   cursor: pointer;
 }
 
-.latest {
-  position: sticky;
-  bottom: var(--s4);
-  display: block;
-  margin: 0 auto;
+/* where a message box would be: playback */
+.footer {
+  flex: none;
+  padding: var(--s2) var(--s4);
+  background: var(--bar);
+  border-top: 1px solid var(--line);
 }
 
-/* a round is a day divider */
-.divider {
-  display: flex;
-  align-items: center;
+.icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out);
+}
+
+.icon:hover,
+.icon[aria-pressed="true"],
+.icon[aria-expanded="true"] {
+  background: var(--raise);
+  color: var(--strong);
+}
+
+.menu {
+  position: relative;
+}
+
+.sheet {
+  position: absolute;
+  top: calc(100% + var(--s1));
+  right: 0;
+  z-index: 12;
+  display: grid;
   gap: var(--s3);
-  margin: var(--s5) var(--s4) var(--s2);
+  min-width: 16rem;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--raise);
+}
+
+.sheet fieldset {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sheet legend {
+  margin-bottom: var(--s1);
+  padding: 0;
   color: var(--dim);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
-.divider::before,
-.divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--raise-2);
-}
-
-.divider:first-child {
-  margin-top: var(--s2);
-}
-
-.system {
-  margin: var(--s2) var(--s4);
-  padding-left: 3.5rem;
-  color: var(--dim);
-  font-size: 0.875rem;
-  font-style: italic;
-}
-
-.system[data-tone="listening"] {
-  font-size: 0.8125rem;
-}
-
-.system[data-tone="end"] {
-  color: var(--strong);
-  font-style: normal;
-  font-weight: 700;
-}
-
-/* the night and the Seer's check: plain dim lines with a violet lock, not boxes */
-.secret {
+.sheet label {
   display: flex;
-  align-items: flex-start;
-  gap: var(--s2);
-  margin: var(--s2) var(--s4) var(--s2) 3.25rem;
-  color: var(--dim);
-  font-size: 0.875rem;
-}
-
-.secret svg {
-  flex: none;
-  margin-top: 0.2em;
-  color: var(--think);
-}
-
-/* wolf chat is the one private conversation, so it gets a quiet raised block */
-.wolves {
-  display: flex;
-  gap: var(--s3);
-  margin: var(--s2) var(--s4);
-  padding: var(--s3);
-  border-radius: 8px;
-  background: var(--side);
-}
-
-.wolves[data-dim] {
-  opacity: 0.32;
-}
-
-.private {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--s2);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.sheet input[type="radio"],
+.sheet input[type="checkbox"] {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.sheet .pick {
+  justify-content: space-between;
+  padding-left: 1.5rem;
   color: var(--dim);
-  font-size: 0.8125rem;
 }
 
-.private b {
-  color: var(--strong);
+.sheet select {
+  padding: 0.2rem var(--s2);
+  border: 1px solid var(--raise-2);
+  border-radius: 6px;
+  background: var(--bar);
 }
 
-.jump {
+/* the info column on the right: Message info, or the players */
+.info {
   display: flex;
-  gap: var(--s4);
-  margin: var(--s5) var(--s4) 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-/* the side panel: the selected message's private thoughts, then the player list */
-.panel {
-  position: sticky;
-  top: 0;
-  height: 100dvh;
-  overflow-y: auto;
-  background: var(--side);
+  flex-direction: column;
+  min-height: 0;
+  background: var(--list);
   border-left: 1px solid var(--line);
 }
 
-.inline,
-.mobileMembers {
-  display: none;
+.infohead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--bar-height);
+  padding: var(--s2) var(--s3);
+  background: var(--bar);
 }
 
-@media (max-width: 72rem) {
-  .room {
+.infohead h2 {
+  font-size: 1.0625rem;
+}
+
+.infobody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* on a narrower laptop the info column slides over the chat instead of squeezing it */
+@media (max-width: 80rem) {
+  .room[data-panel="open"] {
     grid-template-columns: minmax(0, 1fr);
   }
-  .panel {
-    display: none;
+  .info {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    width: min(var(--info-width), 100%);
   }
-  .inline {
-    display: block;
+}
+
+@media (max-width: 52rem) {
+  .footer {
+    padding-inline: var(--s3);
   }
-  .mobileMembers {
-    display: block;
-    border-bottom: 1px solid var(--line);
+  .sheet {
+    min-width: 15rem;
   }
-  .mobileMembers summary {
-    padding: var(--s3) var(--s4);
-    color: var(--dim);
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .switches {
-    margin-left: 0;
+  .info {
     width: 100%;
+    border-left: 0;
   }
 }

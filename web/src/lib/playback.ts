@@ -1,5 +1,13 @@
 import type { ReplayEntry } from "./api";
 
+/** A message from the Werewolf Coach bot. Only the welcome chat has them, between real entries. */
+export type BotNote = { kind: "bot"; text: string; round: number };
+
+/** Everything a room can play: the game's own entries and the bot's notes. */
+export type Playable = ReplayEntry | BotNote;
+
+export const BOT_NAME = "Werewolf Coach";
+
 /** How fast a replay plays. "Instant" shows the whole game at once. */
 export type Speed = "slow" | "normal" | "fast" | "instant";
 
@@ -16,18 +24,19 @@ const BASE_MS = { slow: 2000, normal: 1000, fast: 500 } as const;
 const PRIVATE = new Set(["wolf_chat", "night", "seer_result"]);
 
 /** A line, a vote or wolf chat has a speaker; the morning news and the night do not. */
-export function talks(entry: ReplayEntry): boolean {
-  return entry.kind === "line" || entry.kind === "vote" || entry.kind === "wolf_chat";
+export function talks(entry: Playable): boolean {
+  return entry.kind === "line" || entry.kind === "vote" || entry.kind === "wolf_chat" || entry.kind === "bot";
 }
 
-export function speakerOf(entry: ReplayEntry): string | null {
+export function speakerOf(entry: Playable): string | null {
+  if (entry.kind === "bot") return BOT_NAME;
   if (entry.kind === "line" || entry.kind === "wolf_chat") return entry.speaker;
   if (entry.kind === "vote") return entry.voter;
   return null;
 }
 
 /** With roles off the public view has no wolf chat, no night and no Seer check. */
-export function isHidden(entry: ReplayEntry, showRoles: boolean): boolean {
+export function isHidden(entry: Playable, showRoles: boolean): boolean {
   return !showRoles && PRIVATE.has(entry.kind);
 }
 
@@ -36,10 +45,10 @@ export function isHidden(entry: ReplayEntry, showRoles: boolean): boolean {
  * second and a half at normal speed, so the chat has a rhythm. Hidden entries and instant
  * playback do not wait at all.
  */
-export function delayFor(entry: ReplayEntry, speed: Speed, hidden: boolean): number {
+export function delayFor(entry: Playable, speed: Speed, hidden: boolean): number {
   if (speed === "instant" || hidden) return 0;
   const base = BASE_MS[speed];
-  if (entry.kind === "line") {
+  if (entry.kind === "line" || entry.kind === "bot") {
     const length = Math.min(Math.max(0.8 + entry.text.length / 300, 0.8), 1.5);
     return Math.round(base * length);
   }
