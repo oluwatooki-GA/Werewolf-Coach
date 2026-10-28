@@ -3,15 +3,6 @@
   gap: var(--s1);
 }
 
-.team {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-  margin-left: var(--s2);
-  color: var(--dim);
-  font-weight: 500;
-}
-
 .name {
   color: var(--strong);
   font-size: 1.0625rem;

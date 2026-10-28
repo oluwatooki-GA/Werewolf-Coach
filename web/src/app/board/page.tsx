@@ -5,7 +5,6 @@ import { Chips } from "@/components/Chips";
 import { IntervalBar } from "@/components/IntervalBar";
 import { Pill } from "@/components/Pill";
 import { Embed, Post } from "@/components/Post";
-import { TeamMark } from "@/components/TeamMark";
 import { api } from "@/lib/api";
 import type { Card, CardResult } from "@/lib/api";
 import { ENOUGH_GAMES, cardParts, plural, ruleLabel } from "@/lib/format";
@@ -48,8 +47,9 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
     >
       <Pill as="div" tone="notice">
         <p>
-          How each strategy card did in the saved games. The bar is the 95% interval for the win rate and the dot is
-          what was observed. With fewer than {ENOUGH_GAMES} games, a gap between two cards is not clear yet.
+          How each strategy card did in the saved games. A card&apos;s score is how often its side won: the wolves for wolf
+          cards, the village for Villager, Seer and Doctor cards. The bar is the 95% interval for that win rate and the
+          dot is what was observed. With fewer than {ENOUGH_GAMES} games, a gap between two cards is not clear yet.
         </p>
       </Pill>
 
@@ -63,9 +63,6 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
           <section key={role} aria-labelledby={`role-${role}`} className={styles.role}>
             <Pill as="h2" tone="date" id={`role-${role}`}>
               {role === "Werewolf" ? "Werewolves" : `${role}s`}, {plural(rows.length, "card")}
-              <span className={styles.team}>
-                <TeamMark team={team} word /> win
-              </span>
             </Pill>
             {rows.map((row, i) => {
               const parts = cardParts(row.card);
