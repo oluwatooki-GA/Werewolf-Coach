@@ -13,6 +13,6 @@
 }
 
 /* the team mark inside a tag takes the tag's colour */
-.tag > span {
+.tag > span[data-team] {
   color: inherit;
 }

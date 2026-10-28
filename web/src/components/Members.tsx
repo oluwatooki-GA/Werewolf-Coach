@@ -1,5 +1,6 @@
 import type { ReplayPlayer } from "@/lib/api";
 import { plural } from "@/lib/format";
+import { roleColor } from "@/lib/people";
 import { Avatar } from "./Avatar";
 import { TeamMark } from "./TeamMark";
 import styles from "./Members.module.css";
@@ -26,7 +27,7 @@ export function Members({ players, showRoles, out, onOpen }: Props) {
               <Avatar name={p.name} size={32} out={out.has(p.name)} />
               <b>{p.name}</b>
               {showRoles ? (
-                <span className={styles.role} data-team={p.team}>
+                <span className={styles.role} style={{ color: roleColor(p.role) }}>
                   <TeamMark team={p.team} decorative />
                   {p.role}
                 </span>

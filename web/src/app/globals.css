@@ -33,6 +33,12 @@
   --wolf-bg: rgb(255 128 118 / 0.15);
   --village: #62d6bb;
 
+  /* a role is always this colour, wherever its name appears */
+  --role-wolf: #ff8076;
+  --role-seer: #6bb4ff;
+  --role-doctor: #a5d96b;
+  --role-villager: #62d6bb;
+
   --font: var(--font-figtree), "Segoe UI", system-ui, sans-serif;
 
   --s1: 0.25rem;

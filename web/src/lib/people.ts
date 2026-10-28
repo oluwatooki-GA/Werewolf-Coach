@@ -16,7 +16,16 @@ export function initial(name: string): string {
   return name.trim().charAt(0).toUpperCase();
 }
 
-/** Only wolves get a colour. Every village role is neutral and told apart by its word. */
+/** Every role has its own colour: coral wolves, sky Seer, lime Doctor, teal Villager. */
 export function roleColor(role: string): string {
-  return role === "Werewolf" ? "var(--wolf)" : "var(--dim)";
+  switch (role) {
+    case "Werewolf":
+      return "var(--role-wolf)";
+    case "Seer":
+      return "var(--role-seer)";
+    case "Doctor":
+      return "var(--role-doctor)";
+    default:
+      return "var(--role-villager)";
+  }
 }
