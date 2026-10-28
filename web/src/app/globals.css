@@ -1,6 +1,6 @@
 /*
   A dark messenger. Teal-charcoal ground with a faint wallpaper, slate bubbles for everyone else,
-  amber for "you" and for actions. Coral means a lie or the wolf team, violet means a player's
+  amber for "you" and for actions. Red means a lie or the wolf team, violet means a player's
   private thoughts. Nothing else is coloured. Role tags carry a word and a drawn mark, so nothing
   depends on colour alone.
 */
@@ -29,12 +29,12 @@
   --accent-bg: rgb(217 164 65 / 0.14);
   --think: #bda8ff;
   --think-bg: rgb(189 168 255 / 0.14);
-  --wolf: #ff8076;
-  --wolf-bg: rgb(255 128 118 / 0.15);
+  --wolf: #ff5a5f;
+  --wolf-bg: rgb(255 90 95 / 0.16);
   --village: #62d6bb;
 
   /* a role is always this colour, wherever its name appears */
-  --role-wolf: #ff8076;
+  --role-wolf: var(--wolf);
   --role-seer: #6bb4ff;
   --role-doctor: #a5d96b;
   --role-villager: #62d6bb;

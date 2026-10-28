@@ -83,7 +83,7 @@
 }
 
 .bubble[data-private] {
-  outline: 1px solid rgb(255 128 118 / 0.4);
+  outline: 1px solid rgb(255 90 95 / 0.45);
   outline-offset: -1px;
 }
 
