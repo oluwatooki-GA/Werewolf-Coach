@@ -427,7 +427,7 @@ export function Room({
             role="feed"
             aria-label={`${label}, messages`}
             className={styles.feed}
-            data-live={(autoplay && !finished) || undefined}
+            data-live={(autoplay && playing && !finished) || undefined}
             onScroll={() => {
               // the glide moves the feed too, and that is not the reader leaving the bottom
               if (!gliding.current) setAtBottom(farFromEnd() < 400);

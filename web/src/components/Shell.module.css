@@ -1,6 +1,7 @@
 .shell {
   display: grid;
   grid-template-columns: var(--list-width) minmax(0, 1fr);
+  position: relative;
   height: 100dvh;
   overflow: hidden;
 }
