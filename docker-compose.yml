@@ -28,6 +28,8 @@ services:
       WEB_ORIGIN: http://localhost:${WEB_PORT:-3100}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # play mode: empty is off, `fake` plays free scripted games, or a model name such as gpt-4.1-mini
+      PLAY_MODEL: ${PLAY_MODEL:-}
     volumes:
       - ./data/games:/app/data/games:ro
       - ./data/coach:/app/data/coach:ro

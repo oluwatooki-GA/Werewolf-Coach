@@ -9,7 +9,7 @@ from werewolf.api.deps import DB
 from werewolf.api.replay import Replay, best_moment, build_replay
 from werewolf.api.schemas import Featured, GameDetail, GameList, GameSummary
 from werewolf.engine.log import GameLog
-from werewolf.store.tables import games, tags
+from werewolf.store.tables import finished, games, tags
 from werewolf.tagger.derive import derive
 from werewolf.tagger.tags import TagFile
 
@@ -28,7 +28,7 @@ def list_games(
     rule_version: str | None = None,
     players: Literal["ai", "scripted"] | None = None,
 ) -> GameList:
-    filters = []
+    filters = [finished]
     if card is not None:
         filters.append(games.c.card_ids.contains(f"|{card}|", autoescape=True))
     if players is not None:  # scripted test games have no model name
@@ -56,7 +56,7 @@ def list_games(
 @router.get("/games/{game_id}")
 def one_game(game_id: str, db: DB) -> GameDetail:
     with db.connect() as conn:
-        row = conn.execute(select(games.c.log).where(games.c.id == game_id)).first()
+        row = conn.execute(select(games.c.log).where(games.c.id == game_id, finished)).first()
         if row is None:
             raise HTTPException(404, f"no game {game_id}")
         tag_row = conn.execute(select(tags.c.tagfile).where(tags.c.game_id == game_id)).first()
@@ -70,7 +70,7 @@ def one_game(game_id: str, db: DB) -> GameDetail:
 def replay(game_id: str, db: DB) -> Replay:
     """The game as the replay page reads it: numbered lines beside private subtext."""
     with db.connect() as conn:
-        row = conn.execute(select(games.c.log).where(games.c.id == game_id)).first()
+        row = conn.execute(select(games.c.log).where(games.c.id == game_id, finished)).first()
         if row is None:
             raise HTTPException(404, f"no game {game_id}")
         tag_row = conn.execute(select(tags.c.tagfile).where(tags.c.game_id == game_id)).first()
@@ -85,6 +85,7 @@ def featured(db: DB, request: Request) -> Featured:
         rows = conn.execute(
             select(games.c.id, games.c.log, tags.c.tagfile)
             .join(tags, tags.c.game_id == games.c.id)
+            .where(finished)
             .order_by(games.c.id)
         ).all()
     cache = request.app.state.__dict__.setdefault("featured", {})

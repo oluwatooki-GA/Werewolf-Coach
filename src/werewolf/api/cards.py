@@ -6,7 +6,7 @@ from sqlalchemy import select
 from werewolf.api.deps import DB, Settings
 from werewolf.api.results import card_results
 from werewolf.api.schemas import CardResult
-from werewolf.store.tables import games
+from werewolf.store.tables import finished, games
 from werewolf.strategies.cards import Card, load_everywhere
 
 router = APIRouter(tags=["cards"])
@@ -21,7 +21,9 @@ def strategies(settings: Settings) -> list[Card]:
 @router.get("/results")
 def results(db: DB) -> list[CardResult]:
     with db.connect() as conn:
-        rows = conn.execute(select(games.c.winner, games.c.cards, games.c.rule_version))
+        rows = conn.execute(
+            select(games.c.winner, games.c.cards, games.c.rule_version).where(finished)
+        )
         return [
             CardResult(**r) for r in card_results((r.winner, r.cards, r.rule_version) for r in rows)
         ]

@@ -51,3 +51,18 @@ coach_generations = Table(
     Column("number", Integer, primary_key=True),
     Column("record", Text, nullable=False),
 )
+
+# A game is real only when it finished: stopped games stay in `games` but out of every list.
+finished = games.c.status == "finished"
+
+play_sessions = Table(
+    "play_sessions",
+    metadata,
+    Column("id", String(32), primary_key=True),
+    Column("status", String(16), nullable=False),  # running, finished or stopped
+    Column("game_id", String(32), nullable=True),  # the stored game, once it finished
+    Column("reason", Text, nullable=False, default=""),  # why it stopped
+    Column("cards", JSON, nullable=False),  # what the visitor picked
+    Column("cost", Float, nullable=False, default=0.0),
+    Column("created_at", Float, nullable=False),
+)

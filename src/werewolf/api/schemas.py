@@ -76,7 +76,14 @@ class PlayStatus(BaseModel):
 
 
 class PlayStarted(BaseModel):
-    game_id: str
+    id: str
+
+
+class PlayState(BaseModel):
+    id: str
+    status: Literal["running", "finished", "stopped"]
+    game_id: str | None  # the stored game, once it has finished
+    reason: str | None  # why it stopped
 
 
 class CoachRunRequest(BaseModel):

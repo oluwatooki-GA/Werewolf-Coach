@@ -6,7 +6,6 @@ import pytest
 from api_support import VILLAGER_CARD, WOLF_CARD, build, played
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from starlette.websockets import WebSocketDisconnect
 
 from werewolf.api.app import create_app
 from werewolf.api.deps import ApiSettings, get_engine
@@ -160,18 +159,9 @@ def test_the_database_can_be_swapped_with_a_dependency_override(
     assert client.get("/games").json() == {"total": 0, "games": []}
 
 
-def test_play_mode_and_coach_runs_are_skeletons_that_say_so(client: TestClient) -> None:
-    assert client.get("/play/status").json() == {
-        "available": False,
-        "reason": "play mode is not built yet",
-    }
-    assert client.post("/play").status_code == 501
+def test_coach_runs_are_a_skeleton_that_says_so(client: TestClient) -> None:
     assert client.post("/coach/wolf/runs", json={}).status_code == 501
     assert client.get("/coach/runs/abc").status_code == 501
-    with pytest.raises(WebSocketDisconnect) as closed:
-        with client.websocket_connect("/play/abc"):
-            pass
-    assert closed.value.code == 1011 and "not built" in closed.value.reason
 
 
 def test_games_can_be_filtered_to_ai_players_or_scripted_test_games(client: TestClient) -> None:
