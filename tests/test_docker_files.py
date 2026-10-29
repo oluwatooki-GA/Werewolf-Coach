@@ -72,3 +72,13 @@ def test_the_site_image_holds_no_secret_and_runs_as_a_normal_user() -> None:
     assert not any(
         "KEY" in name or "NEXT_PUBLIC" in name for name in web_env
     )  # no key reaches the browser
+
+
+def test_play_mode_is_off_by_default_and_the_api_trusts_the_site_to_name_the_visitor() -> None:
+    env = COMPOSE["services"]["api"]["environment"]
+    assert (
+        env["PLAY_MODEL"] == "${PLAY_MODEL:-}"
+    )  # empty unless someone turns it on: spends nothing
+    # the site passes each visitor's address on; without this the rate limit would count the
+    # site as one visitor and every real one would share a single allowance
+    assert env["FORWARDED_ALLOW_IPS"] == "*"

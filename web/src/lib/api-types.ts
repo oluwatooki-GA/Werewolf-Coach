@@ -214,6 +214,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/play/{play_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** State */
+        get: operations["state_play__play_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -765,10 +782,38 @@ export interface components {
              */
             kind: "no_removal";
         };
+        /**
+         * PlayRequest
+         * @description The four cards, and nothing else: an extra field is refused.
+         */
+        PlayRequest: {
+            /** Wolf */
+            wolf: string;
+            /** Villager */
+            villager: string;
+            /** Seer */
+            seer: string;
+            /** Doctor */
+            doctor: string;
+        };
         /** PlayStarted */
         PlayStarted: {
+            /** Id */
+            id: string;
+        };
+        /** PlayState */
+        PlayState: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "finished" | "stopped";
             /** Game Id */
-            game_id: string;
+            game_id: string | null;
+            /** Reason */
+            reason: string | null;
         };
         /** PlayStatus */
         PlayStatus: {
@@ -776,6 +821,8 @@ export interface components {
             available: boolean;
             /** Reason */
             reason: string;
+            /** Games Left */
+            games_left?: number | null;
         };
         /** PlayerRecord */
         PlayerRecord: {
@@ -1170,6 +1217,7 @@ export interface operations {
                 winner?: ("Village" | "Wolves") | null;
                 source?: string | null;
                 rule_version?: string | null;
+                players?: ("ai" | "scripted") | null;
             };
             header?: never;
             path?: never;
@@ -1443,6 +1491,41 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayStarted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    state_play__play_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                play_id: string;
+            };
+            cookie?: never;
+        };
         requestBody?: never;
         responses: {
             /** @description Successful Response */
@@ -1451,7 +1534,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlayStarted"];
+                    "application/json": components["schemas"]["PlayState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

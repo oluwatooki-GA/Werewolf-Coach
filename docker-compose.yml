@@ -30,6 +30,8 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # play mode: empty is off, `fake` plays free scripted games, or a model name such as gpt-4.1-mini
       PLAY_MODEL: ${PLAY_MODEL:-}
+      # the site passes each visitor's address on, so the rate limit counts visitors, not the site
+      FORWARDED_ALLOW_IPS: "*"
     volumes:
       - ./data/games:/app/data/games:ro
       - ./data/coach:/app/data/coach:ro

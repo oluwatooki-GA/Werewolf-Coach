@@ -16,6 +16,7 @@ export type Generation = Schemas["Generation"];
 export type CoachHistory = Schemas["CoachHistory"];
 export type Featured = Schemas["Featured"];
 export type PlayStatus = Schemas["PlayStatus"];
+export type PlayState = Schemas["PlayState"];
 
 /** The API answered, but not with what we asked for. */
 export class ApiError extends Error {
@@ -27,7 +28,8 @@ export class ApiError extends Error {
   }
 }
 
-const base = () => process.env.API_URL ?? "http://localhost:8000";
+export const apiBase = () => process.env.API_URL ?? "http://localhost:8000";
+const base = apiBase;
 
 /** Fetch from the API on the server. The site never calls it from the browser. */
 export async function api<T>(path: string): Promise<T> {

@@ -21,7 +21,7 @@ const PINNED = [
   { href: "/welcome", match: "/welcome", kind: "welcome", title: "Werewolf Coach", line: "Start here: what this is" },
   { href: "/board", match: "/board", kind: "strategies", title: "Strategies", line: "The strategy cards and how each did" },
   { href: "/coach/wolf", match: "/coach", kind: "coach", title: "Coach", line: "The AI that rewrites the strategies" },
-  { href: "/play", match: "/play", kind: "play", title: "Play", line: "Take a seat at the table", note: "soon" },
+  { href: "/play", match: "/play", kind: "play", title: "Play", line: "Pick the cards, watch the agents play" },
 ] as const;
 
 type Filter = "all" | "Wolves" | "Village";
@@ -70,7 +70,6 @@ export function ChatList({ games, total, down = false }: Props) {
                   <b>{chat.title}</b>
                   <span>{chat.line}</span>
                 </span>
-                {"note" in chat ? <small className={styles.note}>{chat.note}</small> : null}
               </Link>
             </li>
           ))}

@@ -20,7 +20,7 @@ const rows = () => screen.getAllByRole("link").filter((a) => a.getAttribute("hre
 describe("ChatList", () => {
   it("pins the welcome chat, strategies, coach and play above the games", () => {
     render(<ChatList games={games} total={4} />);
-    for (const name of ["Werewolf Coach Start", "Strategies The", "Coach The", "Play Take"]) {
+    for (const name of ["Werewolf Coach Start", "Strategies The", "Coach The", "Play Pick the cards"]) {
       expect(screen.getByRole("link", { name: new RegExp(`^${name}.+`) })).toBeInTheDocument();
     }
   });
@@ -74,5 +74,16 @@ describe("ChatList", () => {
     fireEvent.click(screen.getByRole("button", { name: /Claude Sonnet/ }));
     fireEvent.click(screen.getByRole("button", { name: "Wolves" }));
     expect(screen.getByText("No saved games match.")).toBeInTheDocument();
+  });
+});
+
+
+describe("the Play chat", () => {
+  it("is open for use, not marked as coming soon, and says what it does", () => {
+    render(<ChatList games={games} total={4} />);
+    const play = screen.getByRole("link", { name: /^Play/ });
+    expect(play).toHaveTextContent("Pick the cards, watch the agents play");
+    expect(play).not.toHaveTextContent("soon");
+    expect(play).not.toHaveTextContent("seat");
   });
 });
