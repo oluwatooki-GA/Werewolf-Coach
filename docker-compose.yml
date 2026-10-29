@@ -30,6 +30,9 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # play mode: empty is off, `fake` plays free scripted games, or a model name such as gpt-4.1-mini
       PLAY_MODEL: ${PLAY_MODEL:-}
+      # dollars one game may spend, and what a game is assumed to cost when counting the daily cap
+      PLAY_GAME_BUDGET: ${PLAY_GAME_BUDGET:-0.40}
+      PLAY_GAME_ESTIMATE: ${PLAY_GAME_ESTIMATE:-0.30}
       # the site passes each visitor's address on, so the rate limit counts visitors, not the site
       FORWARDED_ALLOW_IPS: "*"
     volumes:
