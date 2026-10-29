@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { Card, PlayStatus } from "@/lib/api";
+import type { Card, PlayStatus, PlayTable } from "@/lib/api";
 import { cardParts, plural } from "@/lib/format";
 import { roleColor } from "@/lib/people";
-import { DEFAULT, cardsFor, noPicks, readGame, refOf, SIDES, startGame, type Picks, type SideId } from "@/lib/play";
+import { DEFAULT, cardsFor, dealTable, noPicks, readGame, refOf, SIDES, startGame, type Picks } from "@/lib/play";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatPage } from "./ChatPage";
 import { Pill } from "./Pill";
-import { Embed, Post } from "./Post";
+import { Post } from "./Post";
 import { Typing } from "./Typing";
 import styles from "./PlayBoard.module.css";
 
@@ -23,13 +23,15 @@ type Phase =
 const POLL_MS = 2000;
 
 /**
- * The play chat. The visitor picks one strategy card for each side (or the default instructions),
- * starts a game, and when the agents have finished it opens as a replay. The browser only talks to
- * the site's own /api/play routes.
+ * The play chat. The visitor sees a table of eight players, picks a strategy card for each one (or
+ * the default instructions), starts a game, and when the agents have finished it opens as a replay.
+ * The browser only talks to the site's own /api/play routes.
  */
-export function PlayBoard({ cards, status }: { cards: Card[]; status: PlayStatus }) {
-  const [picks, setPicks] = useState<Picks>(noPicks);
+export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; status: PlayStatus; table: PlayTable }) {
+  const [table, setTable] = useState(dealt);
+  const [picks, setPicks] = useState<Picks>(() => noPicks(dealt));
   const [phase, setPhase] = useState<Phase>({ name: "pick" });
+  const [notice, setNotice] = useState("");
   const byRef = new Map(cards.map((card) => [refOf(card), card]));
   const playing = phase.name === "playing" ? phase.id : null;
   const asking = useRef(false);
@@ -62,9 +64,24 @@ export function PlayBoard({ cards, status }: { cards: Card[]; status: PlayStatus
 
   async function start() {
     setPhase({ name: "starting" });
-    const started = await startGame(picks);
+    const started = await startGame(table.seed, picks);
     setPhase(started.ok ? { name: "playing", id: started.id } : { name: "pick", message: started.message });
   }
+
+  // new seats mean new roles, so the old choices no longer fit and start again from Default
+  async function shuffle() {
+    const next = await dealTable();
+    if (!next) {
+      setNotice("The site could not deal new seats. Try again in a moment.");
+      return;
+    }
+    setNotice("");
+    setTable(next);
+    setPicks(noPicks(next));
+  }
+
+  const setCards = (names: string[], ref: string) =>
+    setPicks((now) => ({ ...now, ...Object.fromEntries(names.map((name) => [name, ref])) }));
 
   const busy = phase.name !== "pick";
   const left = status.games_left;
@@ -77,46 +94,80 @@ export function PlayBoard({ cards, status }: { cards: Card[]; status: PlayStatus
     >
       <Post name="Lab" bot>
         <p>
-          Pick a strategy card for each side. The agents play one game with your choices, and when it ends you can read it
+          Pick a strategy card for each player. The agents play one game with your choices, and when it ends you can read it
           like any other game. A card tells a player how to play; Default means the standard instructions for that role.
+          Seats and roles are dealt at random.
         </p>
+        <button type="button" className={styles.shuffle} disabled={busy} onClick={shuffle}>
+          Shuffle seats
+        </button>
+        {notice ? <p role="alert">{notice}</p> : null}
       </Post>
 
       {SIDES.map((side) => {
+        const players = table.seats.filter((seat) => seat.role === side.role);
+        if (players.length === 0) return null;
         const options = cardsFor(cards, side.role);
-        const chosen = byRef.get(picks[side.id]);
+        const names = players.map((seat) => seat.name);
         return (
-          <section key={side.id} className={styles.side} aria-labelledby={`side-${side.id}`}>
-            <Pill as="h2" tone="date" id={`side-${side.id}`}>
+          <section key={side.role} className={styles.side} aria-labelledby={`side-${side.role}`}>
+            <Pill as="h2" tone="date" id={`side-${side.role}`}>
               <span style={{ color: roleColor(side.role) }}>{side.label}</span>
             </Pill>
-            <div className={styles.choice} role="radiogroup" aria-label={side.label}>
-              <Tile
-                label="Default"
-                summary="No strategy card: the agents use the standard instructions for this role."
-                checked={picks[side.id] === DEFAULT}
+            {players.length > 1 ? (
+              <select
+                className={styles.all}
+                aria-label={`Same card for all ${side.label}`}
+                value=""
                 disabled={busy}
-                onPick={() => setPicks((now) => ({ ...now, [side.id]: DEFAULT }))}
-              />
-              {options.map((card) => (
-                <Tile
-                  key={refOf(card)}
-                  label={cardParts(card.id).name}
-                  summary={card.summary}
-                  checked={picks[side.id] === refOf(card)}
-                  disabled={busy}
-                  onPick={() => setPicks((now) => ({ ...now, [side.id as SideId]: refOf(card) }))}
-                />
-              ))}
-            </div>
-            {chosen ? (
-              <Post name="Lab" bot first={false}>
-                <Embed title={`What the card says`}>
-                  <p>{chosen.instructions}</p>
-                  <p className={styles.source}>{chosen.source}</p>
-                </Embed>
-              </Post>
+                onChange={(event) => event.target.value && setCards(names, event.target.value)}
+              >
+                <option value="">Same card for all {side.label}…</option>
+                <option value={DEFAULT}>Default</option>
+                {options.map((card) => (
+                  <option key={refOf(card)} value={refOf(card)}>
+                    {cardParts(card.id).name}
+                  </option>
+                ))}
+              </select>
             ) : null}
+            {players.map((seat) => {
+              const chosen = byRef.get(picks[seat.name] ?? DEFAULT);
+              return (
+                <div key={seat.name} className={styles.player}>
+                  <p className={styles.who}>
+                    <b>{seat.name}</b>
+                    <span style={{ color: roleColor(seat.role) }}>{seat.role}</span>
+                  </p>
+                  <div className={styles.choice} role="radiogroup" aria-label={seat.name}>
+                    <Tile
+                      label="Default"
+                      summary="No strategy card: the agents use the standard instructions for this role."
+                      checked={picks[seat.name] === DEFAULT}
+                      disabled={busy}
+                      onPick={() => setCards([seat.name], DEFAULT)}
+                    />
+                    {options.map((card) => (
+                      <Tile
+                        key={refOf(card)}
+                        label={cardParts(card.id).name}
+                        summary={card.summary}
+                        checked={picks[seat.name] === refOf(card)}
+                        disabled={busy}
+                        onPick={() => setCards([seat.name], refOf(card))}
+                      />
+                    ))}
+                  </div>
+                  {chosen ? (
+                    <details className={styles.says}>
+                      <summary>What the card says</summary>
+                      <p>{chosen.instructions}</p>
+                      <p className={styles.source}>{chosen.source}</p>
+                    </details>
+                  ) : null}
+                </div>
+              );
+            })}
           </section>
         );
       })}

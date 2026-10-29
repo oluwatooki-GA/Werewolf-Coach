@@ -16,6 +16,23 @@ from werewolf.store import make_engine, seed
 from werewolf.tagger.tags import Tag, TagFile, save_tags
 
 WOLF_CARD, VILLAGER_CARD = "wolf.accuse_early@2", "villager.quiet_observer@2"
+PLAY_CARDS = {
+    Role.WEREWOLF: "wolf.lie_low",
+    Role.VILLAGER: "villager.track_votes",
+    Role.SEER: "seer.reveal_now",
+    Role.DOCTOR: "doctor.protect_seer",
+}
+
+
+def play_body(seed: int = 3, **changes: str) -> dict[str, object]:
+    """A POST /play body: each seat of the seed's table on its role's usual card, then `changes`."""
+    cards = {p.name: PLAY_CARDS[p.role] for p in new_game(seed).players}
+    return {"seed": seed, "cards": {**cards, **changes}}
+
+
+def seat_of(role: Role, n: int = 0, seed: int = 3) -> str:
+    """The name of the n-th seat with this role at the seed's table."""
+    return [p.name for p in new_game(seed).players if p.role is role][n]
 
 
 def played(number: int, wolf_card: str | None = None, villager_card: str | None = None) -> GameLog:

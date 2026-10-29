@@ -29,3 +29,9 @@ export async function forwardToApi(path: string, request: Request, method: "GET"
     return Response.json({ detail: "The game server is not answering." }, { status: 502 });
   }
 }
+
+/** The API path for a table: a seed is passed on only if it is up to six digits, nothing else is. */
+export function tablePath(url: string): string {
+  const seed = new URL(url).searchParams.get("seed");
+  return seed !== null && /^\d{1,6}$/.test(seed) ? `/play/table?seed=${seed}` : "/play/table";
+}

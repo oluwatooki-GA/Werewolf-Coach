@@ -1,4 +1,4 @@
-"""Play mode runs one game with the cards a visitor picked, on the v3 rules, with no network."""
+"""Play mode runs one game with a card chosen for each player, on the v3 rules, with no network."""
 
 import asyncio
 from decimal import Decimal
@@ -11,46 +11,68 @@ from werewolf.engine.log import replays_exactly
 from werewolf.engine.roles import Role
 from werewolf.engine.setup import new_game
 from werewolf.engine.views import PlayerView
-from werewolf.play.service import PickError, check_picks, play_visitor_game
+from werewolf.play.service import PickError, check_picks, play_visitor_game, seats
 from werewolf.store.games import rule_version
 
-PICKS = {
-    "wolf": "wolf.lie_low",
-    "villager": "villager.track_votes",
-    "seer": "seer.reveal_now",
-    "doctor": "doctor.protect_seer",
+SEED = 3
+CARD = {
+    Role.WEREWOLF: "wolf.lie_low",
+    Role.VILLAGER: "villager.track_votes",
+    Role.SEER: "seer.reveal_now",
+    Role.DOCTOR: "doctor.protect_seer",
 }
 
 
-def play(picks: dict[str, str] = PICKS, seed: int = 3, **options: object):  # type: ignore[no-untyped-def]
-    return asyncio.run(play_visitor_game(picks, seed, **options))  # type: ignore[arg-type]
+def roles(seed: int = SEED) -> dict[str, Role]:
+    return {p.name: p.role for p in new_game(seed).players}
 
 
-def table(seed: int) -> dict[str, Agent]:
+def seat_of(role: Role, n: int = 0) -> str:
+    return [name for name, r in roles().items() if r is role][n]
+
+
+def picks(**changes: str) -> dict[str, str]:
+    """A card for every seat, by its role's usual card; `changes` set one seat's card by name."""
+    chosen = {name: CARD[role] for name, role in roles().items()}
+    return {**chosen, **changes}
+
+
+def play(chosen: dict[str, str] | None = None, seed: int = SEED, **options: object):  # type: ignore[no-untyped-def]
+    return asyncio.run(play_visitor_game(seed, chosen or picks(), **options))  # type: ignore[arg-type]
+
+
+def table(seed: int = SEED) -> dict[str, Agent]:
     wolves = [p.name for p in new_game(seed).players if p.role is Role.WEREWOLF]
     return {p.name: policy(wolves) for p in new_game(seed).players}
 
 
-def roles(seed: int) -> dict[str, Role]:
-    return {p.name: p.role for p in new_game(seed).players}
+def test_the_table_is_the_eight_seats_and_their_roles_for_a_seed() -> None:
+    assert dict(seats(SEED)) == roles()
+    assert len(seats(SEED)) == 8
+    assert seats(SEED) != seats(SEED + 1)  # another seed deals another table
 
 
-def test_four_cards_play_a_finished_game_with_those_cards() -> None:
-    game = play()
+def test_every_player_gets_the_card_chosen_for_that_player() -> None:
+    first, second = seat_of(Role.WEREWOLF, 0), seat_of(Role.WEREWOLF, 1)
+    game = play(picks(**{first: "wolf.lie_low", second: "wolf.fake_seer"}))
     assert game.status == "finished" and game.log is not None and game.reason is None
-    played = game.log.settings.cards
-    for seat, ref in played.items():
-        role = roles(3)[seat]
-        assert (
-            ref.split(".")[0]
-            == {
-                Role.WEREWOLF: "wolf",
-                Role.VILLAGER: "villager",
-                Role.SEER: "seer",
-                Role.DOCTOR: "doctor",
-            }[role]
-        )
-    assert set(played) == set(roles(3))  # every seat has the card for its role
+    cards = game.log.settings.cards
+    assert cards[first].startswith("wolf.lie_low@") and cards[second].startswith("wolf.fake_seer@")
+    assert set(cards) == set(roles())  # all eight seats have a card
+
+
+def test_the_four_villagers_can_each_play_a_different_card() -> None:
+    villagers = [seat_of(Role.VILLAGER, n) for n in range(4)]
+    wanted = [
+        "villager.ask_questions",
+        "villager.track_votes",
+        "villager.quiet_observer",
+        "default",
+    ]
+    game = play(picks(**dict(zip(villagers, wanted, strict=True))))
+    assert game.log is not None
+    cards = game.log.settings.cards
+    assert [cards.get(v, "default").split("@")[0] for v in villagers] == wanted
 
 
 def test_the_game_is_played_on_the_v3_rules_and_replays_exactly() -> None:
@@ -61,43 +83,48 @@ def test_the_game_is_played_on_the_v3_rules_and_replays_exactly() -> None:
     assert replays_exactly(game.log)
 
 
-def test_default_leaves_a_role_on_the_default_instructions() -> None:
-    game = play({**PICKS, "wolf": "default", "seer": "default"})
+def test_default_leaves_a_player_on_the_default_instructions() -> None:
+    wolf = seat_of(Role.WEREWOLF)
+    game = play(picks(**{wolf: "default"}))
     assert game.log is not None
-    by_role = {roles(3)[seat]: ref for seat, ref in game.log.settings.cards.items()}
-    assert Role.WEREWOLF not in by_role and Role.SEER not in by_role
-    assert by_role[Role.VILLAGER] == "villager.track_votes@2"
+    assert wolf not in game.log.settings.cards
+    assert seat_of(Role.WEREWOLF, 1) in game.log.settings.cards
 
 
 def test_all_default_is_a_game_with_no_cards() -> None:
-    game = play(dict.fromkeys(PICKS, "default"))
+    game = play(dict.fromkeys(roles(), "default"))
     assert game.log is not None and game.log.settings.cards == {}
 
 
-def test_a_card_for_the_wrong_role_is_refused_before_anything_is_played() -> None:
-    with pytest.raises(PickError, match="Villager card, not a Werewolf card"):
-        play({**PICKS, "wolf": "villager.track_votes"})
+def test_a_card_for_the_wrong_role_is_refused_naming_the_player() -> None:
+    villager = seat_of(Role.VILLAGER)
+    with pytest.raises(PickError, match=rf"Werewolf card but {villager} is the Villager"):
+        play(picks(**{villager: "wolf.lie_low"}))
 
 
 def test_an_unknown_card_is_refused() -> None:
     with pytest.raises(PickError, match="no card 'wolf.nonsense'"):
-        play({**PICKS, "wolf": "wolf.nonsense"})
+        play(picks(**{seat_of(Role.WEREWOLF): "wolf.nonsense"}))
 
 
-def test_a_missing_choice_is_refused_and_named() -> None:
-    with pytest.raises(PickError, match="choose a card, or default, for: seer, doctor"):
-        check_picks({"wolf": "default", "villager": "default"})
+def test_a_player_left_out_is_refused_and_named() -> None:
+    chosen = picks()
+    gone = seat_of(Role.SEER)
+    del chosen[gone]
+    with pytest.raises(PickError, match=f"choose a card, or default, for: {gone}"):
+        check_picks(SEED, chosen)
 
 
-def test_an_extra_choice_is_refused() -> None:
-    with pytest.raises(PickError, match="unknown choice: model"):
-        check_picks({**PICKS, "model": "claude-opus"})
+def test_a_seat_that_is_not_at_the_table_is_refused() -> None:
+    with pytest.raises(PickError, match="no player named Zed"):
+        check_picks(SEED, {**picks(), "Zed": "default"})
 
 
 def test_a_version_must_be_the_current_one() -> None:
-    assert check_picks({**PICKS, "wolf": "wolf.lie_low@1"})[Role.WEREWOLF] == "wolf.lie_low@1"
+    wolf = seat_of(Role.WEREWOLF)
+    assert check_picks(SEED, picks(**{wolf: "wolf.lie_low@1"}))[wolf] == "wolf.lie_low@1"
     with pytest.raises(PickError, match="out of date"):
-        check_picks({**PICKS, "wolf": "wolf.lie_low@9"})
+        check_picks(SEED, picks(**{wolf: "wolf.lie_low@9"}))
 
 
 class Stopping:
@@ -108,20 +135,17 @@ class Stopping:
 
 
 def test_a_game_that_hits_its_budget_stops_and_keeps_nothing() -> None:
-    names = [p.name for p in new_game(3).players]
-    agents: dict[str, Agent] = {n: Stopping() for n in names}
+    agents: dict[str, Agent] = {n: Stopping() for n in roles()}
     game = play(agents=agents)
     assert game.status == "stopped" and game.log is None
     assert game.reason == "the run budget is used up"
 
 
 def test_a_game_whose_answers_mostly_failed_is_stopped_not_shown_as_real() -> None:
-    names = [p.name for p in new_game(3).players]
-
     def garbage(view: PlayerView, task: Task) -> object:
         return "this is not json"
 
-    agents: dict[str, Agent] = {n: ScriptedAgent(garbage) for n in names}
+    agents: dict[str, Agent] = {n: ScriptedAgent(garbage) for n in roles()}
     game = play(agents=agents)
     assert game.status == "stopped"
     assert game.log is not None  # kept, so it can be stored out of sight
@@ -136,14 +160,13 @@ class Spent:
 
 
 def test_a_game_stopped_by_its_budget_reports_what_it_had_spent() -> None:
-    names = [p.name for p in new_game(3).players]
-    agents: dict[str, Agent] = {n: Stopping() for n in names}
+    agents: dict[str, Agent] = {n: Stopping() for n in roles()}
     game = play(agents=agents, client=Spent("0.38"))
     assert game.status == "stopped" and game.cost == Decimal("0.38")
 
 
 def test_a_finished_game_costs_at_least_what_the_client_paid() -> None:
-    game = play(client=Spent("0.27"), agents=table(3))
+    game = play(client=Spent("0.27"), agents=table())
     assert game.status == "finished" and game.cost == Decimal("0.27")
 
 

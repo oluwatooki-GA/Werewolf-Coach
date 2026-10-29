@@ -197,6 +197,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/play/table": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Table
+         * @description The seats and roles a seed deals; with no seed, a new table.
+         */
+        get: operations["table_play_table_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/play": {
         parameters: {
             query?: never;
@@ -784,17 +804,22 @@ export interface components {
         };
         /**
          * PlayRequest
-         * @description The four cards, and nothing else: an extra field is refused.
+         * @description A table's seed and a card for each seat, and nothing else: an extra field is refused.
          */
         PlayRequest: {
-            /** Wolf */
-            wolf: string;
-            /** Villager */
-            villager: string;
-            /** Seer */
-            seer: string;
-            /** Doctor */
-            doctor: string;
+            /** Seed */
+            seed: number;
+            /** Cards */
+            cards: {
+                [key: string]: string;
+            };
+        };
+        /** PlaySeat */
+        PlaySeat: {
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
         };
         /** PlayStarted */
         PlayStarted: {
@@ -823,6 +848,13 @@ export interface components {
             reason: string;
             /** Games Left */
             games_left?: number | null;
+        };
+        /** PlayTable */
+        PlayTable: {
+            /** Seed */
+            seed: number;
+            /** Seats */
+            seats: components["schemas"]["PlaySeat"][];
         };
         /** PlayerRecord */
         PlayerRecord: {
@@ -1480,6 +1512,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayStatus"];
+                };
+            };
+        };
+    };
+    table_play_table_get: {
+        parameters: {
+            query?: {
+                seed?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayTable"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

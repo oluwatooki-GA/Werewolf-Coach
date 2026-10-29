@@ -3,6 +3,69 @@
   gap: var(--s2);
 }
 
+.player {
+  display: grid;
+  gap: var(--s2);
+}
+
+.who {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  padding: 0 var(--s2);
+}
+
+.who b {
+  color: var(--strong);
+  font-size: 1.0625rem;
+}
+
+.who span {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.all,
+.shuffle {
+  width: fit-content;
+  padding: 0.4rem var(--s3);
+  border: 0;
+  border-radius: 999px;
+  background: var(--raise);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+  outline: 1px solid var(--raise-2);
+  outline-offset: -1px;
+  cursor: pointer;
+}
+
+.all {
+  margin: 0 var(--s2);
+}
+
+.all:disabled,
+.shuffle:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.says {
+  margin: 0 var(--s2);
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+.says summary {
+  width: fit-content;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.says p {
+  margin: var(--s2) 0 0;
+}
+
 /* every card is the same size, like the Coach page: same width, same height */
 .choice {
   display: grid;

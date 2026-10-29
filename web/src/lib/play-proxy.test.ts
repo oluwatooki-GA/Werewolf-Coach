@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { forwardToApi, isPlayId } from "./play-proxy";
+import { forwardToApi, isPlayId, tablePath } from "./play-proxy";
 
 const fetchMock = vi.fn();
 
@@ -68,6 +68,22 @@ describe("isPlayId", () => {
   it("refuses anything that could reach another route", () => {
     for (const bad of ["", "status", "../games", "abc/def", "0123456789abcdef0123456789abcde", "ZZZZ456789abcdef0123456789abcdef"]) {
       expect(isPlayId(bad)).toBe(false);
+    }
+  });
+});
+
+describe("tablePath", () => {
+  it("asks for a new table when no seed is given", () => {
+    expect(tablePath("http://site.test/api/play/table")).toBe("/play/table");
+  });
+
+  it("passes a seed on when it is a whole number of up to six digits", () => {
+    expect(tablePath("http://site.test/api/play/table?seed=77")).toBe("/play/table?seed=77");
+  });
+
+  it("drops anything else, so nothing but a seed can reach the API", () => {
+    for (const bad of ["x", "-1", "1.5", "1234567", "7&model=opus", "../games"]) {
+      expect(tablePath(`http://site.test/api/play/table?seed=${encodeURIComponent(bad)}`)).toBe("/play/table");
     }
   });
 });

@@ -6,23 +6,20 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from api_support import played
+from api_support import play_body, played, seat_of
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 
 from werewolf.api.app import create_app
 from werewolf.api.deps import ApiSettings
+from werewolf.engine.roles import Role
 from werewolf.play.service import VisitorGame
 from werewolf.store import make_engine
 from werewolf.store.play import add_spend, spent_today, spent_total
 
 REPO = Path(__file__).resolve().parents[2]
-PICKS = {
-    "wolf": "wolf.lie_low",
-    "villager": "villager.track_votes",
-    "seer": "seer.reveal_now",
-    "doctor": "doctor.protect_seer",
-}
+BODY = play_body()
+BAD = play_body(**{seat_of(Role.WEREWOLF): "nonsense"})
 TODAY = "2026-10-29"
 
 
@@ -62,7 +59,7 @@ def test_with_the_daily_cap_used_up_play_is_paused_but_replays_still_work(engine
     with TestClient(app_for(engine)) as client:
         status = client.get("/play/status").json()
         assert status["available"] is False and "tomorrow" in status["reason"].lower()
-        refused = client.post("/play", json=PICKS)
+        refused = client.post("/play", json=BODY)
         assert refused.status_code == 503 and "paused" in refused.json()["detail"]
         assert client.get("/games").status_code == 200
         assert client.get("/strategies").status_code == 200
@@ -74,7 +71,7 @@ def test_with_the_total_cap_used_up_play_is_closed_with_that_reason(engine: Engi
     with TestClient(app_for(engine)) as client:
         status = client.get("/play/status").json()
         assert status["available"] is False and "total" in status["reason"].lower()
-        assert client.post("/play", json=PICKS).status_code == 503
+        assert client.post("/play", json=BODY).status_code == 503
 
 
 def test_the_caps_are_settings(engine: Engine) -> None:
@@ -85,14 +82,14 @@ def test_the_caps_are_settings(engine: Engine) -> None:
 
 
 def test_what_a_game_cost_is_added_to_today_and_to_the_total(engine: Engine) -> None:
-    async def costs(picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
+    async def costs(seed: int, picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
         return VisitorGame("finished", log, Decimal("0.25"))
 
     log = played(3)
     app = app_for(engine)
     app.state.play_run = costs
     with TestClient(app) as client:
-        play_id = client.post("/play", json=PICKS).json()["id"]
+        play_id = client.post("/play", json=BODY).json()["id"]
         for _ in range(100):
             if client.get(f"/play/{play_id}").json()["status"] != "running":
                 break
@@ -103,13 +100,13 @@ def test_what_a_game_cost_is_added_to_today_and_to_the_total(engine: Engine) -> 
 
 
 def test_a_stopped_game_still_counts_what_it_spent(engine: Engine) -> None:
-    async def stops(picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
+    async def stops(seed: int, picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
         return VisitorGame("stopped", None, Decimal("0.40"), reason="the run budget is used up")
 
     app = app_for(engine)
     app.state.play_run = stops
     with TestClient(app) as client:
-        play_id = client.post("/play", json=PICKS).json()["id"]
+        play_id = client.post("/play", json=BODY).json()["id"]
         for _ in range(100):
             if client.get(f"/play/{play_id}").json()["status"] != "running":
                 break
@@ -138,7 +135,9 @@ class Slow:
         self.logs = [played(n) for n in (3, 4, 5)]
         self.used = 0
 
-    async def __call__(self, picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
+    async def __call__(
+        self, seed: int, picks: Mapping[str, str], config: ApiSettings
+    ) -> VisitorGame:
         log = self.logs[self.used]
         self.used += 1
         await self.release.wait()
@@ -151,8 +150,8 @@ def test_games_in_flight_are_set_aside_so_the_cap_cannot_be_passed_by_starting_m
     app = app_for(engine, play_max_games=5)
     app.state.play_run = Slow()
     with TestClient(app) as client:
-        first_three = [client.post("/play", json=PICKS).status_code for _ in range(3)]
-        fourth = client.post("/play", json=PICKS)  # 3 x $0.30 in flight leaves $0.10 of $1.00
+        first_three = [client.post("/play", json=BODY).status_code for _ in range(3)]
+        fourth = client.post("/play", json=BODY)  # 3 x $0.30 in flight leaves $0.10 of $1.00
         assert first_three == [202, 202, 202]
         assert fourth.status_code == 429 and "right now" in fourth.json()["detail"]
         client.portal.call(app.state.play_run.release.set)  # type: ignore[union-attr]
@@ -163,20 +162,18 @@ def test_the_eleventh_request_in_a_minute_from_one_address_is_refused(engine: En
     now = [1000.0]
     app.state.play_clock = lambda: now[0]
     with TestClient(app) as client:
-        bad = {**PICKS, "wolf": "nonsense"}
-        codes = [client.post("/play", json=bad).status_code for _ in range(10)]
+        codes = [client.post("/play", json=BAD).status_code for _ in range(10)]
         assert codes == [422] * 10
-        limited = client.post("/play", json=bad)
+        limited = client.post("/play", json=BAD)
         assert limited.status_code == 429 and "minute" in limited.json()["detail"]
         now[0] += 61  # a minute later it is allowed again
-        assert client.post("/play", json=bad).status_code == 422
+        assert client.post("/play", json=BAD).status_code == 422
 
 
 def test_the_rate_limit_is_a_setting(engine: Engine) -> None:
     app = app_for(engine, play_requests_per_minute=2)
     with TestClient(app) as client:
-        bad = {**PICKS, "wolf": "nonsense"}
-        assert [client.post("/play", json=bad).status_code for _ in range(3)] == [422, 422, 429]
+        assert [client.post("/play", json=BAD).status_code for _ in range(3)] == [422, 422, 429]
 
 
 def test_a_game_is_given_the_per_game_budget_and_never_more(
@@ -195,7 +192,7 @@ def test_a_game_is_given_the_per_game_budget_and_never_more(
     ))  # fmt: skip
     app.state.play_day = lambda: TODAY
     with TestClient(app) as client:
-        play_id = client.post("/play", json=PICKS).json()["id"]
+        play_id = client.post("/play", json=BODY).json()["id"]
         for _ in range(100):
             if client.get(f"/play/{play_id}").json()["status"] != "running":
                 break

@@ -78,6 +78,16 @@ class PlayStatus(BaseModel):
     )
 
 
+class PlaySeat(BaseModel):
+    name: str
+    role: str
+
+
+class PlayTable(BaseModel):
+    seed: int  # send it back with the cards: the same seed deals the same table
+    seats: list[PlaySeat]
+
+
 class PlayStarted(BaseModel):
     id: str
 

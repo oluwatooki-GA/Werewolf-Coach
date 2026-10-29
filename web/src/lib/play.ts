@@ -1,18 +1,17 @@
-import type { Card, PlayState } from "./api";
+import type { Card, PlayState, PlayTable } from "./api";
 
-/** The four things a visitor picks a card for, and the role each card must be for. */
+/** The sides a table is grouped into, in the order they are shown; `role` is what the API calls it. */
 export const SIDES = [
-  { id: "wolf", label: "Wolves", role: "Werewolf", ask: "the wolves play" },
-  { id: "villager", label: "Villagers", role: "Villager", ask: "the villagers play" },
-  { id: "seer", label: "Seer", role: "Seer", ask: "the Seer plays" },
-  { id: "doctor", label: "Doctor", role: "Doctor", ask: "the Doctor plays" },
+  { label: "Wolves", role: "Werewolf" },
+  { label: "Villagers", role: "Villager" },
+  { label: "Seer", role: "Seer" },
+  { label: "Doctor", role: "Doctor" },
 ] as const;
 
-export type SideId = (typeof SIDES)[number]["id"];
-export type Picks = Record<SideId, string>; // a card as "id@version", or "default"
+export type Picks = Record<string, string>; // player name -> a card as "id@version", or "default"
 
 export const DEFAULT = "default";
-export const noPicks = (): Picks => ({ wolf: DEFAULT, villager: DEFAULT, seer: DEFAULT, doctor: DEFAULT });
+export const noPicks = (table: PlayTable): Picks => Object.fromEntries(table.seats.map((s) => [s.name, DEFAULT]));
 export const refOf = (card: Card) => `${card.id}@${card.version}`;
 
 /** Only cards for the role are offered, so a wrong card can never be picked. */
@@ -20,13 +19,13 @@ export const cardsFor = (cards: Card[], role: string) => cards.filter((card) => 
 
 export type Started = { ok: true; id: string } | { ok: false; message: string };
 
-/** Ask the site (which asks the API) to start a game with these cards. */
-export async function startGame(picks: Picks): Promise<Started> {
+/** Ask the site (which asks the API) to start a game on this table with these cards. */
+export async function startGame(seed: number, picks: Picks): Promise<Started> {
   try {
     const response = await fetch("/api/play", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(picks),
+      body: JSON.stringify({ seed, cards: picks }),
     });
     const body = (await response.json().catch(() => ({}))) as { id?: string; detail?: unknown };
     if (response.ok && body.id) return { ok: true, id: body.id };
@@ -34,6 +33,16 @@ export async function startGame(picks: Picks): Promise<Started> {
     return { ok: false, message: detail };
   } catch {
     return { ok: false, message: "The site could not reach the game server. Try again in a moment." };
+  }
+}
+
+/** A newly dealt table, or null if the server could not be reached. */
+export async function dealTable(): Promise<PlayTable | null> {
+  try {
+    const response = await fetch("/api/play/table");
+    return response.ok ? ((await response.json()) as PlayTable) : null;
+  } catch {
+    return null;
   }
 }
 
