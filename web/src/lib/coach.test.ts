@@ -58,6 +58,11 @@ describe("lineage", () => {
     expect(edges[1]?.from).toBe(b?.id);
   });
 
+  it("keeps each card's full reference so its text can be found", () => {
+    const { nodes } = lineage([gen(1, "wolf.a@1", "wolf.b@3", false)]);
+    expect(nodes.map((n) => n.ref)).toEqual(["wolf.a@1", "wolf.b@3"]);
+  });
+
   it("keeps how each card did, and which generation made it", () => {
     const { nodes } = lineage([gen(1, "wolf.a@1", "wolf.b@1", false, [3, 8])]);
     expect(nodes[1]).toMatchObject({ won: 3, games: 8, gen: 1 });

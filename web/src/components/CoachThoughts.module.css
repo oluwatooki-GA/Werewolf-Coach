@@ -1,0 +1,56 @@
+.thoughts {
+  display: grid;
+  gap: var(--s2);
+}
+
+.thoughts h4 {
+  padding: 0 var(--s4);
+  color: var(--dim);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.thoughts h4 em {
+  margin-left: var(--s2);
+  color: var(--accent);
+  font-style: normal;
+}
+
+.chat {
+  display: grid;
+  padding-bottom: var(--s3);
+}
+
+.stack {
+  display: grid;
+  gap: var(--s2);
+}
+
+.concluded {
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.note {
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.arms {
+  display: grid;
+  gap: var(--s3);
+}
+
+.arms li {
+  display: grid;
+  gap: var(--s1);
+}
+
+.arms li > span {
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.arms li > b {
+  color: var(--strong);
+}

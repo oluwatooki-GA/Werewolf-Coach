@@ -40,12 +40,20 @@ function edgePath(from: CardNode, to: CardNode): string {
   return `M${x1} ${y1} C${mid} ${y1} ${mid} ${y2} ${x2 - 6} ${y2}`;
 }
 
+type Props = {
+  generations: Generation[];
+  /** A card was picked. */
+  onPick: (node: CardNode) => void;
+  /** The node whose details are open. */
+  picked: string | null;
+};
+
 /**
  * The coach's cards as a family tree. The champion's line runs along the top; each generation the
  * coach writes one challenger and tests it against the champion, and a winner joins the top line
- * while a loser hangs below it. Each card says what it is in words, and links to its generation.
+ * while a loser hangs below it. Each card says what it is in words. Tapping one opens its details.
  */
-export function CardGraph({ generations }: { generations: Generation[] }) {
+export function CardGraph({ generations, onPick, picked }: Props) {
   const { nodes, edges } = lineage(generations);
   if (nodes.length === 0) return null;
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -60,14 +68,7 @@ export function CardGraph({ generations }: { generations: Generation[] }) {
   return (
     <figure className={styles.figure}>
       <div className={styles.scroll}>
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          width={width}
-          height={height}
-          role="img"
-          aria-label={`The coach's cards, as a family tree. ${summary}.`}
-          focusable="false"
-        >
+        <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} aria-label={`The cards, as a family tree. ${summary}.`} role="group" focusable="false">
           <defs>
             <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
               <path d="M0 0 8 4 0 8Z" className={styles.arrow} />
@@ -90,12 +91,27 @@ export function CardGraph({ generations }: { generations: Generation[] }) {
           })}
 
           {nodes.map((node) => {
-            const left = x(node.col);
-            const top = ROW[node.row];
             const played = result(node);
             const thin = node.games !== null && node.games < ENOUGH_GAMES;
-            const card = (
-              <g className={styles.node} data-status={node.status} transform={`translate(${left} ${top})`}>
+            return (
+              <g
+                key={node.id}
+                className={styles.node}
+                data-status={node.status}
+                data-picked={picked === node.id || undefined}
+                transform={`translate(${x(node.col)} ${ROW[node.row]})`}
+                role="button"
+                tabIndex={0}
+                aria-label={`${node.name}${node.version ? `, version ${node.version}` : ""}. ${role(node)}.${played ? ` ${played}.` : ""} Tap for details.`}
+                aria-pressed={picked === node.id}
+                onClick={() => onPick(node)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onPick(node);
+                  }
+                }}
+              >
                 <rect width={W} height={H} rx="12" />
                 <text x="12" y="25" className={styles.name}>
                   {node.name.length > 21 ? `${node.name.slice(0, 20)}…` : node.name}
@@ -112,17 +128,9 @@ export function CardGraph({ generations }: { generations: Generation[] }) {
                 ) : null}
               </g>
             );
-            return node.gen === null ? (
-              <g key={node.id}>{card}</g>
-            ) : (
-              <a key={node.id} href={`#g${node.gen}`} aria-label={`Generation ${node.gen}: ${node.name}`}>
-                {card}
-              </a>
-            );
           })}
         </svg>
       </div>
-      <figcaption>Top line: the champion. Below it: cards the coach tried and dropped. Tap a card for its generation.</figcaption>
     </figure>
   );
 }

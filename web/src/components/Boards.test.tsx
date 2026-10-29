@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import type { Generation } from "@/lib/api";
 import { CardGraph } from "./CardGraph";
 import { IntervalBar } from "./IntervalBar";
@@ -68,32 +68,44 @@ describe("CardGraph", () => {
       challenger_arm: arm("wolf.quiet_lead@1", 0, 1),
     },
   ] as unknown as Generation[];
+  const show = (onPick = vi.fn(), picked: string | null = null) => {
+    render(<CardGraph generations={gens} onPick={onPick} picked={picked} />);
+    return onPick;
+  };
 
   it("draws each card with what it is in words, so it does not rely on colour", () => {
-    render(<CardGraph generations={gens} />);
+    show();
     expect(screen.getByText("accuse early")).toBeInTheDocument();
     expect(screen.getByText("v2, Starting champion")).toBeInTheDocument();
     expect(screen.getByText("v1, Not better, dropped")).toBeInTheDocument();
   });
 
   it("says how a card did and that a thin sample is not clear yet", () => {
-    render(<CardGraph generations={gens} />);
+    show();
     expect(screen.getByText("Won 0 of 1 game, not clear yet")).toBeInTheDocument();
   });
 
-  it("describes the whole tree to a screen reader", () => {
-    render(<CardGraph generations={gens} />);
-    expect(screen.getByRole("img")).toHaveAccessibleName(/accuse early, version 2, Starting champion.*quiet lead, version 1, Not better, dropped/);
+  it("makes every card a button that says what it is and that it can be opened", () => {
+    show();
+    const quiet = screen.getByRole("button", { name: /quiet lead, version 1\. Not better, dropped\. Won 0 of 1 game\. Tap for details/ });
+    expect(quiet).toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(2);
   });
 
-  it("links a generated card to its generation in the thread, and the start card to nothing", () => {
-    render(<CardGraph generations={gens} />);
-    expect(screen.getByRole("link", { name: "Generation 1: quiet lead" })).toHaveAttribute("href", "#g1");
-    expect(screen.getAllByRole("link")).toHaveLength(1);
+  it("opens a card when you click it or press Enter on it", () => {
+    const onPick = show();
+    fireEvent.click(screen.getByRole("button", { name: /^accuse early/ }));
+    fireEvent.keyDown(screen.getByRole("button", { name: /^quiet lead/ }), { key: "Enter" });
+    expect(onPick.mock.calls.map(([node]) => node.name)).toEqual(["accuse early", "quiet lead"]);
+  });
+
+  it("marks the card whose details are open", () => {
+    show(vi.fn(), "g1:wolf.quiet_lead@1");
+    expect(screen.getByRole("button", { name: /^quiet lead/ })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("draws nothing before the coach has run", () => {
-    const { container } = render(<CardGraph generations={[]} />);
+    const { container } = render(<CardGraph generations={[]} onPick={vi.fn()} picked={null} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

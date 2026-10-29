@@ -3,6 +3,8 @@ import { cardParts } from "./format";
 
 export type CardNode = {
   id: string;
+  /** The card's id and version, such as "wolf.accuse_early@2"; null for a generation with no valid card. */
+  ref: string | null;
   name: string;
   version: string;
   /** The champion's own line runs along the top; challengers that lost hang below it. */
@@ -42,6 +44,7 @@ export function lineage(generations: Generation[]): { nodes: CardNode[]; edges: 
 
   let champion: CardNode = {
     id: `start:${first.champion_before}`,
+    ref: first.champion_before,
     ...parts(first.champion_before),
     row: "champion",
     col: 0,
@@ -57,6 +60,7 @@ export function lineage(generations: Generation[]): { nodes: CardNode[]; edges: 
       // the coach wrote cards but none passed the checks, so nothing was tested
       const stub: CardNode = {
         id: `g${gen.number}:none`,
+        ref: null,
         name: "No valid card",
         version: "",
         row: "challenger",
@@ -73,6 +77,7 @@ export function lineage(generations: Generation[]): { nodes: CardNode[]; edges: 
     const arm = gen.challenger_arm;
     const challenger: CardNode = {
       id: `g${gen.number}:${gen.challenger_card}`,
+      ref: gen.challenger_card,
       ...parts(gen.challenger_card),
       row: gen.promote ? "champion" : "challenger",
       col: gen.number,

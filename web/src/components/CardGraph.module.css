@@ -43,9 +43,20 @@
   stroke-width: 1;
 }
 
-a:hover .node rect,
-a:focus-visible .node rect {
+/* every card is a button: it lifts on hover and shows a ring when picked or focused */
+.node {
+  cursor: pointer;
+  outline: none;
+}
+
+.node:hover rect,
+.node:focus-visible rect {
   stroke: var(--text);
+}
+
+.node[data-picked] rect {
+  stroke: var(--accent);
+  stroke-width: 3;
 }
 
 .name {

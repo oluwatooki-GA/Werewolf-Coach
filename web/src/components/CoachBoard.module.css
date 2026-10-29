@@ -1,0 +1,248 @@
+.board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.board[data-panel="open"] {
+  grid-template-columns: minmax(0, 1fr) var(--info-width);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--chat) var(--wallpaper);
+}
+
+.cards,
+.tree {
+  display: grid;
+  gap: var(--s5);
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: var(--s5) var(--s4) var(--s7);
+}
+
+.cards h2 {
+  margin-bottom: var(--s3);
+  font-size: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--s3);
+}
+
+/* a card as a tile you can pick; the current champion is ringed in amber */
+.tile {
+  display: grid;
+  gap: 0.25rem;
+  align-content: start;
+  width: 100%;
+  height: 100%;
+  padding: var(--s3) var(--s4);
+  border: 0;
+  border-radius: 12px;
+  background: var(--bubble);
+  color: var(--text);
+  text-align: left;
+  outline: 1px solid var(--raise-2);
+  outline-offset: -1px;
+  cursor: pointer;
+  transition: background-color 100ms var(--ease-out);
+}
+
+.tile:hover {
+  background: var(--raise);
+}
+
+.tile[data-champion] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.tile[aria-pressed="true"] {
+  background: var(--accent-bg);
+}
+
+.tile b {
+  color: var(--strong);
+  font-size: 1.0625rem;
+}
+
+.tile small {
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+.tile span {
+  font-size: 0.9375rem;
+}
+
+.tile em {
+  color: var(--dim);
+  font-size: 0.8125rem;
+  font-style: normal;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  width: fit-content;
+  padding: 0.3rem 0.8rem 0.3rem 0.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.back:hover {
+  color: var(--strong);
+}
+
+.lone {
+  display: grid;
+  gap: var(--s3);
+  max-width: 18rem;
+}
+
+.hint {
+  color: var(--dim);
+  font-size: 0.875rem;
+}
+
+/* the info column: a card's details, then the coach's thoughts */
+.info {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--list);
+  border-left: 1px solid var(--line);
+}
+
+.infohead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--bar-height);
+  padding: var(--s2) var(--s3);
+  background: var(--bar);
+}
+
+.infohead h2 {
+  font-size: 1.0625rem;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.icon:hover {
+  background: var(--raise);
+  color: var(--strong);
+}
+
+.infobody {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--s4);
+}
+
+.card {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+}
+
+.card h3 {
+  font-size: 1.25rem;
+}
+
+.card h4 {
+  margin-top: var(--s2);
+  color: var(--dim);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.meta,
+.summary,
+.source {
+  color: var(--dim);
+  font-size: 0.875rem;
+}
+
+.meta span {
+  font-weight: 700;
+}
+
+.script {
+  padding: var(--s3);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.22);
+  line-height: 1.5;
+}
+
+.results {
+  display: grid;
+  gap: var(--s3);
+}
+
+.results li {
+  display: grid;
+  gap: var(--s1);
+}
+
+.results li > span {
+  color: var(--dim);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 80rem) {
+  .board[data-panel="open"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .info {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    width: min(var(--info-width), 100%);
+  }
+}
+
+@media (max-width: 52rem) {
+  .info {
+    width: 100%;
+    border-left: 0;
+  }
+}
