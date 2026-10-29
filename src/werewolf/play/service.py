@@ -7,7 +7,7 @@ rules. `check_picks` turns the choices into cards or refuses them in plain words
 """
 
 import uuid
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -20,7 +20,7 @@ from werewolf.engine.game import play_game
 from werewolf.engine.log import GameLog, to_log
 from werewolf.engine.roles import Role
 from werewolf.engine.setup import new_game
-from werewolf.engine.state import Settings
+from werewolf.engine.state import GameState, Settings
 from werewolf.llm.client import LLMClient
 from werewolf.strategies.cards import CARDS_DIR, load_card
 
@@ -117,13 +117,15 @@ async def play_visitor_game(
     agents: Mapping[str, Agent] | None = None,
     max_tokens: int = 300,
     directory: Path = CARDS_DIR,
+    on_start: Callable[[GameState], None] | None = None,
 ) -> VisitorGame:
     """Play one game with the card the visitor chose for each player, on the v3 rules.
 
     `client=None` plays free scripted players (the fake model). The client's own spending limit is
     the per-game budget: when it is reached the game stops and nothing is kept. A game whose
     answers mostly fell back to defaults is returned as stopped, with its log, so it can be
-    stored but never shown as a real game.
+    stored but never shown as a real game. `on_start` gets the game's state as soon as it is made,
+    so the game can be read while it is played.
     """
     cards = check_picks(seed, picks, directory)
     settings = Settings(
@@ -132,7 +134,7 @@ async def play_visitor_game(
     run_id = uuid.uuid4().hex[:12]
     players = agents or _agents(seed, settings, model, client, run_id, max_tokens)
     try:
-        state = await play_game(seed, settings, players)
+        state = await play_game(seed, settings, players, on_start=on_start)
     except FatalAgentError as exc:
         return VisitorGame("stopped", None, _spent(client), reason=str(exc))
     log = to_log(state, run_id=run_id, model=model if client is not None else "")

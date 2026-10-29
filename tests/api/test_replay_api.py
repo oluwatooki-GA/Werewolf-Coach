@@ -26,7 +26,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from werewolf.api.app import create_app  # noqa: E402
 from werewolf.api.deps import ApiSettings  # noqa: E402
-from werewolf.api.replay import build_replay  # noqa: E402
+from werewolf.api.replay import build_replay, replay_entries  # noqa: E402
 from werewolf.engine.events import (  # noqa: E402
     Death,
     GameOver,
@@ -193,3 +193,37 @@ def test_beliefs_are_read_in_the_form_real_games_store_them() -> None:
     assert said.subtext is not None
     beliefs = {b.player: (b.suspicion, b.reason) for b in said.subtext.beliefs}
     assert beliefs == {WOLF_A: (0.8, "lied"), V2: (0.1, "")}
+
+
+def dumped(entries):  # type: ignore[no-untyped-def]
+    return [e.model_dump() for e in entries]
+
+
+def test_the_entries_of_any_start_of_a_game_are_the_start_of_the_whole_games_entries() -> None:
+    log, _ = game()
+    roles = {p.name: p.role for p in log.players}
+    whole = dumped(replay_entries(roles, log.events, log.calls, end_round=log.rounds))
+    for k in range(len(log.events) + 1):
+        part = dumped(replay_entries(roles, log.events[:k], log.calls))
+        assert part == whole[: len(part)], f"the first {k} events"
+
+
+def test_the_game_so_far_holds_back_a_group_of_listeners_that_may_still_grow() -> None:
+    log, _ = game()
+    roles = {p.name: p.role for p in log.players}
+    until = next(i for i, e in enumerate(log.events) if isinstance(e, Listening)) + 1
+    waiting = replay_entries(roles, log.events[:until], log.calls)
+    assert not any(e.kind == "direction" and e.tone == "listening" for e in waiting)
+    closed = replay_entries(roles, log.events[:until], log.calls, end_round=1)
+    assert closed[-1].kind == "direction" and closed[-1].text == f"Listening: {WOLF_B}"
+
+
+def test_a_replay_is_its_entries_and_nothing_else_changed() -> None:
+    log, tags = game()
+    roles = {p.name: p.role for p in log.players}
+    entries = replay_entries(
+        roles, log.events, log.calls, tags={t.line: t for t in tags.tags},
+        derived=[], end_round=log.rounds,
+    )  # fmt: skip
+    assert dumped(entries)[0]["kind"] == "wolf_chat"
+    assert len(build_replay("g1", log, tags).entries) == len(entries)

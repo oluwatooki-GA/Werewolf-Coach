@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from werewolf.api.replay import Entry
 from werewolf.coach.history import Generation
 from werewolf.engine.log import GameLog
 from werewolf.tagger.tags import DerivedTag, TagFile
@@ -98,6 +99,17 @@ class PlayState(BaseModel):
     status: Literal["running", "finished", "stopped"]
     game_id: str | None  # the stored game, once it has finished
     reason: str | None  # why it stopped
+
+
+class PlayLive(BaseModel):
+    """A game being played, as far as it has got. `entries` are those from the asked-for index on;
+    `total` is how many there are now, so the next ask is `after=total`."""
+
+    status: Literal["running", "finished", "stopped"]
+    game_id: str | None  # the stored game to open, once it has finished
+    reason: str | None  # why it stopped
+    total: int
+    entries: list[Entry]
 
 
 class CoachRunRequest(BaseModel):

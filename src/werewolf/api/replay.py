@@ -6,13 +6,14 @@ Private entries are marked `private` and are only sent because a stored game is 
 """
 
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
 from werewolf.engine.events import (
     Death,
+    Event,
     GameOver,
     Listening,
     NightSummary,
@@ -27,9 +28,10 @@ from werewolf.engine.events import (
 from werewolf.engine.log import GameLog
 from werewolf.engine.record import numbered_speeches
 from werewolf.engine.roles import Role, Team
+from werewolf.engine.state import CallRecord
 from werewolf.store.games import rule_version
 from werewolf.tagger.derive import derive
-from werewolf.tagger.tags import Tag, TagFile
+from werewolf.tagger.tags import DerivedTag, Tag, TagFile
 
 
 class BeliefOut(BaseModel):
@@ -220,9 +222,9 @@ class _Answers:
     """Each player's answers by round and kind, handed out once each, so a line gets the note
     that wrote it even when the questions were asked in another order."""
 
-    def __init__(self, log: GameLog) -> None:
+    def __init__(self, calls: Sequence[CallRecord]) -> None:
         self._by: dict[tuple[int, str, str], list[dict[str, Any]]] = {}
-        for call in log.calls:
+        for call in calls:
             answer = _answer(call.responses)
             if answer is not None:
                 key = (call.round, call.player, str(call.task.get("kind")))
@@ -243,13 +245,21 @@ class _Answers:
         return _subtext(pool.pop(0)) if pool else None
 
 
-def build_replay(game_id: str, log: GameLog, tagfile: TagFile | None) -> Replay:
-    roles = {p.name: p.role for p in log.players}
-    cards = log.settings.cards
-    answers = _Answers(log)
-    tags: dict[str, Tag] = {t.line: t for t in tagfile.tags} if tagfile else {}
-    derived = derive(log, tagfile.tags) if tagfile else []
-    refs = {id(speech): line for line, speech in numbered_speeches(log.events)}
+def replay_entries(
+    roles: Mapping[str, Role],
+    events: Sequence[Event],
+    calls: Sequence[CallRecord],
+    tags: Mapping[str, Tag] | None = None,
+    derived: Sequence[DerivedTag] = (),
+    end_round: int | None = None,
+) -> list[Entry]:
+    """The entries for these events, in order. A finished game passes `end_round`; a game still
+    being played does not, so a group of listeners that may still grow waits for the next event.
+    Entries only ever grow at the end, so the entries of any start of a game are a start of the
+    whole game's entries."""
+    answers = _Answers(calls)
+    tags = tags or {}
+    refs = {id(speech): line for line, speech in numbered_speeches(events)}
 
     def marks_for(line: str | None, speaker: str, round_: int) -> list[Mark]:
         return [
@@ -267,7 +277,7 @@ def build_replay(game_id: str, log: GameLog, tagfile: TagFile | None) -> Replay:
             entries.append(Direction(round=round_, tone="listening", text=f"Listening: {names}"))
             quiet.clear()
 
-    for event in log.events:
+    for event in events:
         if isinstance(event, Listening):
             quiet.append(event.player)
             continue
@@ -346,7 +356,17 @@ def build_replay(game_id: str, log: GameLog, tagfile: TagFile | None) -> Replay:
             if event.winner is Team.VILLAGE:
                 text = "Game over: the village wins."
             entries.append(Direction(round=event.round, tone="end", text=text))
-    flush(log.rounds)
+    if end_round is not None:
+        flush(end_round)
+    return entries
+
+
+def build_replay(game_id: str, log: GameLog, tagfile: TagFile | None) -> Replay:
+    roles = {p.name: p.role for p in log.players}
+    cards = log.settings.cards
+    tags = {t.line: t for t in tagfile.tags} if tagfile else {}
+    derived = derive(log, tagfile.tags) if tagfile else []
+    entries = replay_entries(roles, log.events, log.calls, tags, derived, end_round=log.rounds)
     stats = log.stats
     return Replay(
         id=game_id,

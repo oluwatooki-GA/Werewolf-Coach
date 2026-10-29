@@ -26,7 +26,16 @@ from pydantic import BaseModel, ConfigDict, Field
 from werewolf import runtime
 from werewolf.agents.prompt import DEFAULT_CARD
 from werewolf.api.deps import DB, ApiSettings, Settings
-from werewolf.api.schemas import PlaySeat, PlayStarted, PlayState, PlayStatus, PlayTable
+from werewolf.api.replay import replay_entries
+from werewolf.api.schemas import (
+    PlayLive,
+    PlaySeat,
+    PlayStarted,
+    PlayState,
+    PlayStatus,
+    PlayTable,
+)
+from werewolf.engine.state import GameState
 from werewolf.play.budget import Caps, Verdict, check
 from werewolf.play.service import (
     SEEDS,
@@ -41,7 +50,9 @@ from werewolf.store.play import add_spend, finish_session, get_session, new_sess
 
 router = APIRouter(prefix="/play", tags=["play"])
 log = logging.getLogger(__name__)
-RunGame = Callable[[int, Mapping[str, str], ApiSettings], Awaitable[VisitorGame]]
+RunGame = Callable[
+    [int, Mapping[str, str], ApiSettings, Callable[[GameState], None]], Awaitable[VisitorGame]
+]
 NUMBERS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
 
 
@@ -54,7 +65,12 @@ class PlayRequest(BaseModel):
     cards: dict[str, str]  # seat name -> "id@version", or "default"
 
 
-async def run_visitor(seed: int, picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
+async def run_visitor(
+    seed: int,
+    picks: Mapping[str, str],
+    config: ApiSettings,
+    on_start: Callable[[GameState], None],
+) -> VisitorGame:
     """Play one game for real: the free scripted players, or the configured model with the
     per-game spending limit."""
     client = None
@@ -69,6 +85,7 @@ async def run_visitor(seed: int, picks: Mapping[str, str], config: ApiSettings) 
         client=client,
         max_tokens=max_tokens,
         directory=config.cards_dir,
+        on_start=on_start,
     )
 
 
@@ -118,17 +135,21 @@ async def _play(request: Request, play_id: str, seed: int, picks: Mapping[str, s
                 cost=float(game.cost) if game is not None else 0.0,
             )
 
+    live: dict[str, GameState] = request.app.state.play_live
     try:
-        game = await run(seed, picks, config)
-    except Exception:  # a game must end as stopped, never as a row that says running forever
-        log.exception("play game %s crashed", play_id)
-        await asyncio.to_thread(finish, None, "the game could not be played; try again later")
-        return
-    try:
-        await asyncio.to_thread(finish, game, game.reason or "")
-    except Exception:  # played but not stored: say so rather than leave it running
-        log.exception("play game %s could not be saved", play_id)
-        await asyncio.to_thread(finish, None, "the game was played but could not be saved")
+        try:
+            game = await run(seed, picks, config, lambda state: live.__setitem__(play_id, state))
+        except Exception:  # a game must end as stopped, never as a row that says running forever
+            log.exception("play game %s crashed", play_id)
+            await asyncio.to_thread(finish, None, "the game could not be played; try again later")
+            return
+        try:
+            await asyncio.to_thread(finish, game, game.reason or "")
+        except Exception:  # played but not stored: say so rather than leave it running
+            log.exception("play game %s could not be saved", play_id)
+            await asyncio.to_thread(finish, None, "the game was played but could not be saved")
+    finally:
+        live.pop(play_id, None)  # after the row says it is over, so a reader never sees a gap
 
 
 @router.get("/status")
@@ -185,3 +206,29 @@ def state(play_id: str, db: DB) -> PlayState:
     if row is None:
         raise HTTPException(404, "no such game")
     return PlayState(id=row.id, status=row.status, game_id=row.game_id, reason=row.reason or None)
+
+
+@router.get("/{play_id}/live")
+def live(
+    request: Request, play_id: str, db: DB, after: Annotated[int, Query(ge=0)] = 0
+) -> PlayLive:
+    """A game being played, as the entries a replay is made of, from index `after` on. Once it is
+    over it says how it ended and gives no entries: the stored game is read from the replay."""
+    state: GameState | None = request.app.state.play_live.get(play_id)
+    if state is not None:
+        # events first, then calls: a call is recorded before the event it led to, so every event
+        # taken here has its call in the (later) list of calls
+        events = list(state.events)
+        calls = list(state.calls)
+        roles = {p.name: p.role for p in state.players}
+        entries = replay_entries(roles, events, calls)
+        return PlayLive(
+            status="running", game_id=None, reason=None, total=len(entries), entries=entries[after:]
+        )
+    with db.connect() as conn:
+        row = get_session(conn, play_id)
+    if row is None:
+        raise HTTPException(404, "no such game")
+    return PlayLive(
+        status=row.status, game_id=row.game_id, reason=row.reason or None, total=0, entries=[]
+    )

@@ -164,7 +164,7 @@ class Slow:
         self.used = 0
 
     async def __call__(
-        self, seed: int, picks: Mapping[str, str], config: ApiSettings
+        self, seed: int, picks: Mapping[str, str], config: ApiSettings, *_: object
     ) -> VisitorGame:
         log = self.logs[self.used]
         self.used += 1
@@ -192,7 +192,9 @@ def test_only_two_games_run_at_once(engine: Engine) -> None:
 def test_a_game_that_stopped_is_reported_but_never_listed_as_a_real_game(engine: Engine) -> None:
     broken = played(3)
 
-    async def stops(seed: int, picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
+    async def stops(
+        seed: int, picks: Mapping[str, str], config: ApiSettings, *_: object
+    ) -> VisitorGame:
         return VisitorGame("stopped", broken, Decimal("0.3"), reason="most answers failed")
 
     app = create_app(engine, settings())
@@ -208,7 +210,9 @@ def test_a_game_that_stopped_is_reported_but_never_listed_as_a_real_game(engine:
 
 
 def test_a_game_that_crashes_is_reported_as_stopped_not_lost(engine: Engine) -> None:
-    async def crashes(seed: int, picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
+    async def crashes(
+        seed: int, picks: Mapping[str, str], config: ApiSettings, *_: object
+    ) -> VisitorGame:
         raise RuntimeError("OPENAI_API_KEY is not set")
 
     app = create_app(engine, settings())

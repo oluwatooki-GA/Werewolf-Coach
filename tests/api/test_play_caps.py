@@ -82,7 +82,9 @@ def test_the_caps_are_settings(engine: Engine) -> None:
 
 
 def test_what_a_game_cost_is_added_to_today_and_to_the_total(engine: Engine) -> None:
-    async def costs(seed: int, picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
+    async def costs(
+        seed: int, picks: Mapping[str, str], config: ApiSettings, *_: object
+    ) -> VisitorGame:
         return VisitorGame("finished", log, Decimal("0.25"))
 
     log = played(3)
@@ -100,7 +102,9 @@ def test_what_a_game_cost_is_added_to_today_and_to_the_total(engine: Engine) -> 
 
 
 def test_a_stopped_game_still_counts_what_it_spent(engine: Engine) -> None:
-    async def stops(seed: int, picks: Mapping[str, str], config: ApiSettings) -> VisitorGame:
+    async def stops(
+        seed: int, picks: Mapping[str, str], config: ApiSettings, *_: object
+    ) -> VisitorGame:
         return VisitorGame("stopped", None, Decimal("0.40"), reason="the run budget is used up")
 
     app = app_for(engine)
@@ -136,7 +140,7 @@ class Slow:
         self.used = 0
 
     async def __call__(
-        self, seed: int, picks: Mapping[str, str], config: ApiSettings
+        self, seed: int, picks: Mapping[str, str], config: ApiSettings, *_: object
     ) -> VisitorGame:
         log = self.logs[self.used]
         self.used += 1

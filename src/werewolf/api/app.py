@@ -12,6 +12,7 @@ from sqlalchemy import Engine
 
 from werewolf.api import cards, coach, coach_runs, games, health, play
 from werewolf.api.deps import ApiSettings
+from werewolf.engine.state import GameState
 from werewolf.store import make_engine
 from werewolf.store.play import stop_unfinished
 
@@ -31,6 +32,7 @@ def create_app(engine: Engine | None = None, settings: ApiSettings | None = None
     app.state.settings = settings
     app.state.play_run = play.run_visitor  # tests swap in slow or failing games
     app.state.play_tasks = set[asyncio.Task[None]]()  # games being played now
+    app.state.play_live = dict[str, GameState]()  # the state of each of those, to read live
     app.state.play_day = play.today  # the day the caps count in (UTC); tests fix it
     app.state.play_clock = time.monotonic  # for the rate limit; tests move it
     app.state.play_hits = dict[str, deque[float]]()  # recent attempts by address
