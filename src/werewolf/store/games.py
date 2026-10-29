@@ -20,8 +20,11 @@ def card_ids(log: GameLog) -> str:
 
 
 def rule_version(log: GameLog) -> str:
-    """v2 is the rule set from Oct 21, 2026 (4 tokens a day, 10 turns); E1 was played on v1."""
+    """v2 is the rule set from Oct 21, 2026 (4 tokens a day, 10 turns); E1 was played on v1. v3 is
+    v2 with the wolves talking in turn at night, up to a limit of messages."""
     s = log.settings
+    if s.wolf_chat_messages > 0:
+        return "v3"
     return "v2" if (s.tokens_per_day, s.speaking_turns) == (4, 10) else "v1"
 
 

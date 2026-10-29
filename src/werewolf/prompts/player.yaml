@@ -1,4 +1,4 @@
-version: 2
+version: 3
 
 # Everything a player is told. ${name} marks a value the code fills in. Folded blocks (>-) join
 # their lines with single spaces. Edit the wording here; the code only picks and fills pieces.
@@ -247,6 +247,19 @@ wolf_chat: >-
   It is night. Write one private message to your partner ${partner} (at most ${max_chars}
   characters) ${why}. Only the two of you can read it. Also write a private note (at most
   ${note_max} characters). JSON fields: text, note.
+
+# The v3 night: the wolves talk in turn, so the second sees the first and they can settle on one kill.
+wolf_talk_first: >-
+  It is night. You and your partner ${partner} talk in private, at most ${total} messages between
+  you, before you each choose a kill. Write the first message (at most ${max_chars} characters)
+  ${why}. Only the two of you can read it. Also write a private note (at most ${note_max}
+  characters). JSON fields: text, note.
+wolf_talk_reply: >-
+  The private wolf chat so far is in the log above (${sent} of at most ${total} messages). Reply
+  to ${partner} (at most ${max_chars} characters): agree on who to kill, answer their point, or
+  push back. If you are both settled and have nothing to add, leave text empty to end the chat.
+  Only the two of you can read it. Also write a private note (at most ${note_max} characters).
+  JSON fields: text, note.
 
 night_kill: Choose which player the wolves kill tonight.
 night_check: Choose one player to check tonight; you will learn their true role.

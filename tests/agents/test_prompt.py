@@ -581,3 +581,26 @@ def test_a_wolfs_memory_is_headed_threat_list_and_a_villagers_suspicions() -> No
         build(state_with(), who="Eve", beliefs={"Cy": held["Cy"]})
     )
     assert "Your suspicions" not in _all_text(build(state_with(), who="Fay", beliefs=held))
+
+
+def test_with_the_v3_night_the_first_wolf_opens_a_chat_and_the_second_replies() -> None:
+    talk = Settings(wolf_chat_messages=5)
+    opening = _all_text(
+        build(state_with(settings=talk), who="Fay", task=WolfChatTask(max_chars=300))
+    )
+    assert "talk in private, at most 5 messages between you" in opening
+    assert "Write the first message" in opening
+
+    chat = WolfChat(round=1, speaker="Fay", text="Take Eve.", audience=("Fay", "Hal"))
+    reply = _all_text(
+        build(state_with(chat, settings=talk), who="Hal", task=WolfChatTask(max_chars=300))
+    )
+    assert "(1 of at most 5 messages)" in reply
+    assert "leave text empty to end the chat" in reply
+    assert "[Wolf chat, private to you and your partner] Fay: Take Eve." in reply
+
+
+def test_without_it_the_wolves_are_asked_for_one_message_as_before() -> None:
+    said = _all_text(build(state_with(), who="Fay", task=WolfChatTask(max_chars=300)))
+    assert "Write one private message to your partner Hal" in said
+    assert "talk in private" not in said

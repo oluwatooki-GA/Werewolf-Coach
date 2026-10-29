@@ -34,6 +34,9 @@ class Settings(BaseModel):
     max_message_chars: int = 300
     summarize_rounds: bool = False  # ask every player for a summary at the end of each round
     max_summary_chars: int = 800
+    # 0 is the old night: each wolf writes one message at the same time. Above 0 the wolves talk in
+    # turn, up to this many messages a night, and either can end the chat by sending nothing.
+    wolf_chat_messages: int = 0
     names: tuple[str, ...] = DEFAULT_NAMES
     cards: dict[str, str] = {}  # seat name -> strategy card id; logged, never shown to the engine
     personas: dict[str, str] = {}  # seat name -> table manner id; logged, the engine ignores it
@@ -46,10 +49,14 @@ class Settings(BaseModel):
         return names
 
     @model_serializer(mode="wrap")
-    def _leave_out_empty_personas(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+    def _leave_out_defaults_old_logs_lack(
+        self, handler: SerializerFunctionWrapHandler
+    ) -> dict[str, Any]:
         data: dict[str, Any] = handler(self)
         if not data.get("personas"):  # so a log without personas keeps its exact old bytes
             data.pop("personas", None)
+        if not data.get("wolf_chat_messages"):  # and so does a log from before the wolf chat grew
+            data.pop("wolf_chat_messages", None)
         return data
 
 

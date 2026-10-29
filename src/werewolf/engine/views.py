@@ -51,6 +51,7 @@ class RuleSet(BaseModel):
     max_rounds: int
     tokens_per_day: int
     max_message_chars: int
+    wolf_chat_messages: int = 0
 
 
 class PlayerView(BaseModel):
@@ -88,5 +89,6 @@ def make_view(state: GameState, name: str) -> PlayerView:
             max_rounds=state.settings.max_rounds,
             tokens_per_day=state.settings.tokens_per_day,
             max_message_chars=state.settings.max_message_chars,
+            wolf_chat_messages=state.settings.wolf_chat_messages,
         ),
     )

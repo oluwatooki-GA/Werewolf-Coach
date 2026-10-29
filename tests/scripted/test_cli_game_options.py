@@ -22,8 +22,17 @@ def test_the_talking_length_can_be_set(tmp_path: Path) -> None:
     assert log.settings.max_message_chars == 120
 
 
-def test_without_options_the_game_keeps_its_usual_settings(tmp_path: Path) -> None:
-    assert played(tmp_path).settings == Settings()
+def test_without_options_the_game_keeps_its_usual_settings_and_the_new_wolf_chat(
+    tmp_path: Path,
+) -> None:
+    assert played(tmp_path).settings == Settings(wolf_chat_messages=5)
+
+
+def test_the_wolf_chat_limit_can_be_set_and_zero_is_the_old_night(tmp_path: Path) -> None:
+    assert played(tmp_path, "--wolf-chat", "3").settings.wolf_chat_messages == 3
+    for old in tmp_path.glob("*.json"):
+        old.unlink()
+    assert played(tmp_path, "--wolf-chat", "0").settings == Settings()
 
 
 @pytest.mark.parametrize(

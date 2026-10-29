@@ -38,6 +38,25 @@ def _target(action: Action) -> str | None:
     return action.target if isinstance(action, TargetAction) else None
 
 
+async def _wolf_talk(
+    state: GameState, agents: Mapping[str, Agent], wolves: tuple[str, ...], limit: int
+) -> None:
+    """The wolves talk in turn, each seeing what the other wrote, up to the night's message limit.
+    The wolf who speaks first alternates by round, so neither always opens. Sending nothing ends
+    the chat, which lets two wolves who agree stop early."""
+    order = wolves if state.round % 2 else (wolves[1], wolves[0])
+    for n in range(state.settings.wolf_chat_messages):
+        speaker = order[n % 2]
+        [reply] = await ask_many(
+            state, agents, [Request(speaker, WolfChatTask(max_chars=limit), chat_check(limit))]
+        )
+        if not (isinstance(reply, ChatAction) and reply.text):
+            return
+        state.events.append(
+            WolfChat(round=state.round, speaker=speaker, text=reply.text, audience=wolves)
+        )
+
+
 async def run_night(state: GameState, agents: Mapping[str, Agent]) -> None:
     alive = [p for p in state.players if p.alive]
     wolves = tuple(state.wolf_names(alive_only=True))
@@ -45,7 +64,9 @@ async def run_night(state: GameState, agents: Mapping[str, Agent]) -> None:
     doctor = next((p.name for p in alive if p.role is Role.DOCTOR), None)
     limit = state.settings.max_message_chars
 
-    if len(wolves) == 2:  # a lone wolf has nobody to talk to
+    if len(wolves) == 2 and state.settings.wolf_chat_messages > 0:
+        await _wolf_talk(state, agents, wolves, limit)
+    elif len(wolves) == 2:  # a lone wolf has nobody to talk to
         # both ask at once, so the second wolf cannot just copy the first one's pick
         replies = await ask_many(
             state,

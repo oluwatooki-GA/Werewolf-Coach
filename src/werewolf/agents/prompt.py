@@ -269,6 +269,17 @@ def _bid_ask(view: PlayerView, task: BidTask) -> str:
 def _task(view: PlayerView, task: Task) -> str:
     if isinstance(task, WolfChatTask):
         why = _t("wolf_chat_no_read") if view.round == 1 else _t("wolf_chat_why")
+        if view.rules.wolf_chat_messages > 0:
+            said = [e for e in view.events if isinstance(e, WolfChat) and e.round == view.round]
+            return _t(
+                "wolf_talk_reply" if said else "wolf_talk_first",
+                partner=view.partner,
+                max_chars=task.max_chars,
+                why=why,
+                note_max=NOTE_MAX,
+                total=view.rules.wolf_chat_messages,
+                sent=len(said),
+            )
         return _t(
             "wolf_chat",
             partner=view.partner,

@@ -50,6 +50,13 @@ def _add_game_options(parser: argparse.ArgumentParser) -> None:
         "(default: %(default)s)",
     )
     parser.add_argument(
+        "--wolf-chat",
+        type=_bounded(0, 10),
+        default=5,
+        help="most messages the two wolves send each night, in turn; 0 is the old night, one "
+        "message each at once (default: %(default)s)",
+    )
+    parser.add_argument(
         "--message-chars",
         type=_bounded(50, 2000),
         default=defaults.max_message_chars,
@@ -113,6 +120,7 @@ def _settings(args: argparse.Namespace, **more: bool) -> Settings:
         speaking_turns=args.turns,
         tokens_per_day=args.tokens_per_day,
         max_message_chars=args.message_chars,
+        wolf_chat_messages=getattr(args, "wolf_chat", 0),
         **more,
     )
 
