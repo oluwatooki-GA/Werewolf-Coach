@@ -50,9 +50,8 @@ export function lineNumber(ref: string): [number, number] {
 
 /** The rule sets the games were played under. */
 export function ruleLabel(version: string): string {
-  return version === "v2"
-    ? "v2 rules: 4 tokens a day, 10 turns"
-    : "v1 rules: 3 tokens a day, 8 turns";
+  if (version === "v3") return "v3 rules: 4 tokens a day, 10 turns, wolves talk up to 5 messages a night";
+  return version === "v2" ? "v2 rules: 4 tokens a day, 10 turns" : "v1 rules: 3 tokens a day, 8 turns";
 }
 
 /** One lighting-gel colour per game (from its id), so tabs are told apart at a glance. */

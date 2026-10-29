@@ -24,13 +24,42 @@
   background: var(--chat) var(--wallpaper);
 }
 
-.cards,
-.tree {
-  display: grid;
+/* the cards and, once one is picked, its tree sit side by side; the cards fold into a narrow rail */
+.layout {
+  display: flex;
+  align-items: flex-start;
   gap: var(--s5);
-  max-width: 62rem;
+  max-width: 78rem;
   margin: 0 auto;
   padding: var(--s5) var(--s4) var(--s7);
+}
+
+.cards {
+  display: grid;
+  gap: var(--s5);
+  flex: 1 1 auto;
+  min-width: 0;
+  transition: flex-basis 260ms var(--ease-out);
+}
+
+.layout[data-folded] .cards {
+  flex: 0 0 15rem;
+  gap: var(--s3);
+}
+
+.tree {
+  display: grid;
+  gap: var(--s4);
+  flex: 1 1 0;
+  min-width: 0;
+  animation: unfold 260ms var(--ease-out) both;
+}
+
+@keyframes unfold {
+  from {
+    opacity: 0;
+    translate: 1rem 0;
+  }
 }
 
 .cards h2 {
@@ -38,10 +67,23 @@
   font-size: 1rem;
 }
 
+.layout[data-folded] .cards h2 {
+  margin-bottom: var(--s2);
+  font-size: 0.8125rem;
+}
+
+/* every card is the same size: the same width and the same height, whatever its text */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, 15rem);
+  grid-auto-rows: 11.5rem;
   gap: var(--s3);
+}
+
+.layout[data-folded] .grid {
+  grid-template-columns: 100%;
+  grid-auto-rows: 4rem;
+  gap: var(--s2);
 }
 
 /* a card as a tile you can pick; the current champion is ringed in amber */
@@ -52,6 +94,7 @@
   width: 100%;
   height: 100%;
   padding: var(--s3) var(--s4);
+  overflow: hidden;
   border: 0;
   border-radius: 12px;
   background: var(--bubble);
@@ -77,8 +120,11 @@
 }
 
 .tile b {
+  overflow: hidden;
   color: var(--strong);
   font-size: 1.0625rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tile small {
@@ -87,13 +133,29 @@
 }
 
 .tile span {
+  display: -webkit-box;
+  overflow: hidden;
   font-size: 0.9375rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .tile em {
   color: var(--dim);
   font-size: 0.8125rem;
   font-style: normal;
+}
+
+/* folded: just the name and version, so the rail stays narrow */
+.layout[data-folded] .tile {
+  align-content: center;
+  padding: var(--s2) var(--s3);
+}
+
+.layout[data-folded] .tile span,
+.layout[data-folded] .tile em {
+  display: none;
 }
 
 .back {
@@ -224,6 +286,23 @@
 .results li > span {
   color: var(--dim);
   font-size: 0.8125rem;
+}
+
+/* on a phone the folded rail becomes a row above the tree */
+@media (max-width: 52rem) {
+  .layout[data-folded] {
+    flex-direction: column;
+  }
+  .layout[data-folded] .cards {
+    flex: none;
+    width: 100%;
+  }
+  .layout[data-folded] .grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 12rem;
+    overflow-x: auto;
+  }
 }
 
 @media (max-width: 80rem) {

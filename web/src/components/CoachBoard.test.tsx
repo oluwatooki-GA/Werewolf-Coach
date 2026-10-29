@@ -120,7 +120,7 @@ describe("a card's details", () => {
   };
 
   it("opens the card's text, source and how it did in the saved games", () => {
-    pick(/^accuse early, version 2/);
+    pick(/^accuse early, version 2\./);
     const info = within(screen.getByLabelText("Details"));
     expect(info.getByText("Instructions for wolf.accuse_early.")).toBeInTheDocument();
     expect(info.getByText("Source of wolf.accuse_early")).toBeInTheDocument();
@@ -128,12 +128,12 @@ describe("a card's details", () => {
   });
 
   it("gives the starting card no coach thoughts, since the coach did not write it", () => {
-    pick(/^accuse early, version 2/);
+    pick(/^accuse early, version 2\./);
     expect(screen.queryByLabelText("The coach's thoughts")).toBeNull();
   });
 
   it("closes", () => {
-    pick(/^accuse early, version 2/);
+    pick(/^accuse early, version 2\./);
     fireEvent.click(within(screen.getByLabelText("Details")).getByRole("button", { name: "Close" }));
     expect(screen.getByLabelText("Details")).toHaveAttribute("hidden");
   });
@@ -143,7 +143,7 @@ describe("the coach's thoughts", () => {
   const pickCoachCard = () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: /accuse early/ }));
-    fireEvent.click(screen.getByRole("button", { name: /^coach smoke g1/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^coach smoke g1, version 1\./ }));
   };
 
   it("shows that the coach is typing before anything is said", () => {
@@ -181,7 +181,33 @@ describe("the coach's thoughts", () => {
   it("starts again for a different card", () => {
     pickCoachCard();
     wait(8000);
-    fireEvent.click(screen.getByRole("button", { name: /^accuse early/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^accuse early, version 2\./ }));
     expect(screen.queryByLabelText("The coach's thoughts")).toBeNull();
+  });
+});
+
+describe("the layout", () => {
+  it("keeps the cards in the page when one is picked, folded to a rail beside the tree", () => {
+    const { container } = open();
+    expect(container.querySelector("[data-folded]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /accuse early/ }));
+    expect(container.querySelector("[data-folded]")).not.toBeNull();
+    expect(screen.getByRole("button", { name: /lie low/ })).toBeInTheDocument();
+  });
+
+  it("marks the picked card in the rail, and picking another moves the tree to it", () => {
+    open();
+    fireEvent.click(screen.getByRole("button", { name: /^accuse early version 2/ }));
+    expect(screen.getByRole("button", { name: /^accuse early version 2/ })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: /^lie low version 1/ }));
+    expect(screen.getByText("Cards built from lie low")).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: /family tree/ })).toBeNull();
+  });
+
+  it("unfolds the rail again when you tap the picked card a second time", () => {
+    const { container } = open();
+    fireEvent.click(screen.getByRole("button", { name: /^accuse early version 2/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^accuse early version 2/ }));
+    expect(container.querySelector("[data-folded]")).toBeNull();
   });
 });

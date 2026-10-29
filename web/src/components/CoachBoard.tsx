@@ -144,7 +144,7 @@ export function CoachBoard({
         />
 
         <div className={styles.canvas}>
-          {root === null ? (
+          <div className={styles.layout} data-folded={root !== null || undefined}>
             <div className={styles.cards}>
               {roles.map((role) => (
                 <section key={role} aria-labelledby={`cards-${role}`}>
@@ -162,15 +162,14 @@ export function CoachBoard({
                               type="button"
                               className={styles.tile}
                               data-champion={ref(c) === champion || undefined}
-                              onClick={() => choose(c)}
+                              aria-pressed={root === null ? undefined : ref(c) === root}
+                              onClick={() => (ref(c) === root ? setRoot(null) : choose(c))}
                             >
                               <b>{cardParts(c.id).name}</b>
                               <small>version {c.version}</small>
                               {c.summary ? <span>{c.summary}</span> : null}
                               <em>
-                                {ref(c) === champion
-                                  ? "Current champion. "
-                                  : ""}
+                                {ref(c) === champion ? "Current champion. " : ""}
                                 {built > 0
                                   ? `The coach built ${plural(built, "card")} from it.`
                                   : "The coach has not built on it yet."}
@@ -183,51 +182,45 @@ export function CoachBoard({
                 </section>
               ))}
             </div>
-          ) : (
-            <div className={styles.tree}>
-              <button
-                type="button"
-                className={styles.back}
-                onClick={() => {
-                  setRoot(null);
-                  setPicked(null);
-                }}
-              >
-                <Back size={18} /> All cards
-              </button>
-              {root === start && generations.length > 0 ? (
-                <CardGraph
-                  generations={generations}
-                  picked={picked?.id ?? null}
-                  onPick={(node) => setPicked(node)}
-                />
-              ) : (
-                <div className={styles.lone}>
-                  <button
-                    type="button"
-                    className={styles.tile}
-                    data-champion={root === champion || undefined}
-                    aria-pressed={picked?.id === `root:${root}`}
-                    onClick={() =>
-                      setPicked({ id: `root:${root}`, ref: root, gen: null })
-                    }
-                  >
-                    <b>{rootCard ? cardParts(rootCard.id).name : root}</b>
-                    <small>version {rootCard?.version}</small>
-                    {rootCard?.summary ? <span>{rootCard.summary}</span> : null}
-                  </button>
-                  <p className={styles.hint}>
-                    The coach has not built on this card yet. Tap it for the
-                    card itself.
-                  </p>
-                </div>
-              )}
-              <p className={styles.hint}>
-                Top line: the champion. Below it: cards the coach tried and
-                dropped. Tap any card for its details.
-              </p>
-            </div>
-          )}
+
+            {root !== null ? (
+              <div className={styles.tree}>
+                <button
+                  type="button"
+                  className={styles.back}
+                  onClick={() => {
+                    setRoot(null);
+                    setPicked(null);
+                  }}
+                >
+                  <Back size={18} /> All cards
+                </button>
+                {root === start && generations.length > 0 ? (
+                  <CardGraph generations={generations} picked={picked?.id ?? null} onPick={(node) => setPicked(node)} />
+                ) : (
+                  <div className={styles.lone}>
+                    <button
+                      type="button"
+                      className={styles.tile}
+                      data-champion={root === champion || undefined}
+                      aria-pressed={picked?.id === `root:${root}`}
+                      onClick={() => setPicked({ id: `root:${root}`, ref: root, gen: null })}
+                    >
+                      <b>{rootCard ? cardParts(rootCard.id).name : root}</b>
+                      <small>version {rootCard?.version}</small>
+                      {rootCard?.summary ? <span>{rootCard.summary}</span> : null}
+                    </button>
+                    <p className={styles.hint}>
+                      The coach has not built on this card yet. Tap it for the card itself.
+                    </p>
+                  </div>
+                )}
+                <p className={styles.hint}>
+                  Top line: the champion. Below it: cards the coach tried and dropped. Tap any card for its details.
+                </p>
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
 
