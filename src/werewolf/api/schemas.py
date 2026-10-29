@@ -73,6 +73,9 @@ class CoachHistory(BaseModel):
 class PlayStatus(BaseModel):
     available: bool
     reason: str  # why play mode is not available, or "" when it is
+    games_left: int | None = (
+        None  # games the caps can still pay for today; None if play is not set up
+    )
 
 
 class PlayStarted(BaseModel):

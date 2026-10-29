@@ -27,6 +27,7 @@ class Caps:
 class Verdict:
     state: State  # open: start one; paused: no money left; busy: wait for a running game
     reason: str
+    games_left: int = 0  # more games the caps can pay for, after the ones running now
 
 
 def check(conn: Connection, caps: Caps, *, running: int, day: str) -> Verdict:
@@ -38,6 +39,7 @@ def check(conn: Connection, caps: Caps, *, running: int, day: str) -> Verdict:
     if left_in_all < caps.estimate:
         return Verdict("paused", "The total play budget is used up, so play mode is closed.")
     room = min(left_today, left_in_all) - caps.estimate * running
+    left = max(0, int(room / caps.estimate))
     if room < caps.estimate:
-        return Verdict("busy", "Games are being played right now. Try again in a minute.")
-    return Verdict("open", "")
+        return Verdict("busy", "Games are being played right now. Try again in a minute.", left)
+    return Verdict("open", "", left)

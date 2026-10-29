@@ -201,3 +201,24 @@ def test_a_game_is_given_the_per_game_budget_and_never_more(
                 break
             asyncio.run(asyncio.sleep(0.05))
     assert seen == [("gpt-4.1-mini", Decimal("0.40"))]
+
+
+def test_the_status_says_how_many_games_are_left_today(engine: Engine) -> None:
+    with TestClient(app_for(engine)) as client:
+        assert client.get("/play/status").json() == {
+            "available": True,
+            "reason": "",
+            "games_left": 3,
+        }
+    spend(engine, 0.40)  # $0.60 left
+    with TestClient(app_for(engine)) as client:
+        assert client.get("/play/status").json()["games_left"] == 2
+
+
+def test_a_paused_play_mode_has_none_left_and_an_unset_one_says_nothing(engine: Engine) -> None:
+    spend(engine, 0.90)
+    with TestClient(app_for(engine)) as client:
+        assert client.get("/play/status").json()["games_left"] == 0
+    unset = create_app(engine, ApiSettings(web_origin="http://site.test", cards_dir=REPO / "cards"))
+    with TestClient(unset) as client:
+        assert client.get("/play/status").json()["games_left"] is None

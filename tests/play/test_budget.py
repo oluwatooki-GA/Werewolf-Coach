@@ -24,6 +24,11 @@ def verdict(engine: Engine, running: int = 0, day: str = DAY) -> tuple[str, str]
     return result.state, result.reason
 
 
+def games_left(engine: Engine, running: int = 0, day: str = DAY) -> int:
+    with engine.connect() as conn:
+        return check(conn, CAPS, running=running, day=day).games_left
+
+
 def test_a_fresh_day_with_nothing_spent_is_open(engine: Engine) -> None:
     assert verdict(engine) == ("open", "")
 
@@ -87,3 +92,23 @@ def test_spending_is_kept_in_the_database_so_a_restart_forgets_nothing(tmp_path)
     first.dispose()
     second = make_engine(url)
     assert verdict(second)[0] == "paused"
+
+
+def test_it_says_how_many_more_games_today_can_be_paid_for(engine: Engine) -> None:
+    assert games_left(engine) == 3  # $1.00 at $0.30 a game
+    with engine.begin() as conn:
+        add_spend(conn, DAY, 0.30)  # $0.70 left
+    assert games_left(engine) == 2
+    assert games_left(engine, running=1) == 1  # one in flight has its $0.30 set aside
+
+
+def test_the_total_cap_can_be_the_tighter_one(engine: Engine) -> None:
+    with engine.begin() as conn:
+        add_spend(conn, "2026-10-20", 9.40)  # $0.60 left in all, though today is untouched
+    assert games_left(engine) == 2
+
+
+def test_when_play_is_paused_no_games_are_left(engine: Engine) -> None:
+    with engine.begin() as conn:
+        add_spend(conn, DAY, 0.90)
+    assert games_left(engine) == 0

@@ -128,8 +128,8 @@ def status(request: Request, db: DB, config: Settings) -> PlayStatus:
         return PlayStatus(available=False, reason="play mode is not set up on this server")
     verdict = _verdict(request, db, config)
     if verdict.state == "paused":
-        return PlayStatus(available=False, reason=verdict.reason)
-    return PlayStatus(available=True, reason="")
+        return PlayStatus(available=False, reason=verdict.reason, games_left=0)
+    return PlayStatus(available=True, reason="", games_left=verdict.games_left)
 
 
 @router.post("", status_code=202)

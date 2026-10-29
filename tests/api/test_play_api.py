@@ -57,7 +57,7 @@ def wait_for(client: TestClient, play_id: str, done: set[str] | None = None) -> 
 
 def test_play_is_open_when_a_model_is_set_and_closed_with_a_reason_when_not(engine: Engine) -> None:
     with TestClient(create_app(engine, settings())) as open_:
-        assert open_.get("/play/status").json() == {"available": True, "reason": ""}
+        assert open_.get("/play/status").json() == {"available": True, "reason": "", "games_left": 3}
     with TestClient(create_app(engine, settings(model=""))) as closed:
         status = closed.get("/play/status").json()
         assert status["available"] is False and "not set up" in status["reason"]
