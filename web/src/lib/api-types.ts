@@ -251,6 +251,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/play/{play_id}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live
+         * @description A game being played, as the entries a replay is made of, from index `after` on. Once it is
+         *     over it says how it ended and, if it finished, goes on from `after` with the stored game, so a
+         *     reader never misses the last few entries. A stopped game gives its reason and no entries.
+         */
+        get: operations["live_play__play_id__live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -801,6 +823,26 @@ export interface components {
              * @constant
              */
             kind: "no_removal";
+        };
+        /**
+         * PlayLive
+         * @description A game being played, as far as it has got. `entries` are those from the asked-for index on;
+         *     `total` is how many there are now, so the next ask is `after=total`.
+         */
+        PlayLive: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "finished" | "stopped";
+            /** Game Id */
+            game_id: string | null;
+            /** Reason */
+            reason: string | null;
+            /** Total */
+            total: number;
+            /** Entries */
+            entries: (components["schemas"]["Line"] | components["schemas"]["Vote"] | components["schemas"]["WolfChatEntry"] | components["schemas"]["Night"] | components["schemas"]["SeerCheck"] | components["schemas"]["Direction"])[];
         };
         /**
          * PlayRequest
@@ -1600,6 +1642,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    live_play__play_id__live_get: {
+        parameters: {
+            query?: {
+                after?: number;
+            };
+            header?: never;
+            path: {
+                play_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayLive"];
                 };
             };
             /** @description Validation Error */

@@ -224,3 +224,52 @@ describe("the welcome chat", () => {
     expect(screen.queryByText(/The chat is public/)).toBeNull();
   });
 });
+
+describe("a game that is still being played", () => {
+  const room = (props: Partial<React.ComponentProps<typeof Room>> = {}) => (
+    <Room
+      entries={replay.entries.slice(0, 6)}
+      players={replay.players}
+      title="Play"
+      avatar={<span />}
+      label="Your game"
+      {...props}
+    />
+  );
+
+  it("is not finished when it has shown everything so far, and says it is waiting", () => {
+    render(room({ growing: true }));
+    wait(15000);
+    expect(screen.queryByRole("button", { name: "Watch again" })).toBeNull();
+    expect(screen.getByText(/Waiting for the next message/)).toBeInTheDocument();
+  });
+
+  it("carries on with the entries that arrive later", () => {
+    const view = render(room({ growing: true }));
+    wait(15000);
+    const before = posted();
+    view.rerender(room({ growing: true, entries: replay.entries.slice(0, 12) }));
+    wait(15000);
+    expect(posted()).toBeGreaterThan(before);
+    expect(screen.getByText(/ of 12$/)).toBeInTheDocument();
+  });
+
+  it("shows later entries at once when the reader has chosen Instant", () => {
+    const view = render(room({ growing: true }));
+    fireEvent.click(screen.getByRole("radio", { name: "Instant" }));
+    const before = posted();
+    view.rerender(room({ growing: true, entries: replay.entries.slice(0, 12) }));
+    expect(screen.getByText("12 of 12")).toBeInTheDocument();
+    expect(posted()).toBeGreaterThan(before);
+  });
+
+  it("is finished once nothing more is coming, and then shows what follows the game", () => {
+    const end = <p>The end note</p>;
+    const view = render(room({ growing: true, after: end }));
+    wait(15000);
+    expect(screen.queryByText("The end note")).toBeNull();
+    view.rerender(room({ growing: false, after: end }));
+    expect(screen.getByRole("button", { name: "Watch again" })).toBeInTheDocument();
+    expect(screen.getByText("The end note")).toBeInTheDocument();
+  });
+});

@@ -18,6 +18,7 @@ export type Featured = Schemas["Featured"];
 export type PlayStatus = Schemas["PlayStatus"];
 export type PlayState = Schemas["PlayState"];
 export type PlayTable = Schemas["PlayTable"];
+export type PlayLive = Schemas["PlayLive"];
 
 /** The API answered, but not with what we asked for. */
 export class ApiError extends Error {

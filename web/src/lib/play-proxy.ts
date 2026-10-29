@@ -35,3 +35,9 @@ export function tablePath(url: string): string {
   const seed = new URL(url).searchParams.get("seed");
   return seed !== null && /^\d{1,6}$/.test(seed) ? `/play/table?seed=${seed}` : "/play/table";
 }
+
+/** The API path for a game's live entries: the point to read from is passed on only if it is a number. */
+export function livePath(id: string, url: string): string {
+  const after = new URL(url).searchParams.get("after");
+  return after !== null && /^\d{1,6}$/.test(after) ? `/play/${id}/live?after=${after}` : `/play/${id}/live`;
+}

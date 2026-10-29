@@ -56,6 +56,10 @@ type Props = {
   cards?: Record<string, Card>;
   /** A notice at the top of the chat, like a messenger's encryption notice. */
   welcome?: React.ReactNode;
+  /** More entries are still on the way (a game being played): it is never "finished", and waits. */
+  growing?: boolean;
+  /** Shown under the last message once the game is over and the chat has caught up. */
+  after?: React.ReactNode;
   label: string;
 };
 
@@ -72,6 +76,8 @@ export function Room({
   story = false,
   cards = {},
   welcome,
+  growing = false,
+  after,
   label,
 }: Props) {
   const feed = useRef<HTMLDivElement>(null);
@@ -105,7 +111,8 @@ export function Room({
   const [isolated, setIsolated] = useState<string | null>(null);
 
   const count = Math.min(shown, total);
-  const finished = shown >= total;
+  const finished = shown >= total && !growing;
+  const waiting = growing && playing && shown >= total;
   const ids = entries.map((e, i) =>
     e.kind === "line" ? e.ref : e.kind === "vote" ? `vote-${i}` : "",
   );
@@ -178,6 +185,13 @@ export function Room({
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoplay, story, total]);
+
+  // in instant mode the chat shows everything, including entries that arrive later
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- keeps what is shown in step with the entries */
+    if (speed === "instant") setShown(total);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [speed, total]);
 
   // the live chat: wait, show "typing", then post the next message
   useEffect(() => {
@@ -695,6 +709,12 @@ export function Room({
                 );
               })}
               {typist && !voting ? <Typing name={typist} /> : null}
+              {waiting && !typist ? (
+                <div role="status">
+                  <Pill tone="system">Waiting for the next message…</Pill>
+                </div>
+              ) : null}
+              {finished && after ? <div className={styles.after}>{after}</div> : null}
             </div>
 
             {!atBottom && playing && !finished ? (

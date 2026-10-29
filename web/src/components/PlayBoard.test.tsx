@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Card, PlayStatus, PlayTable } from "@/lib/api";
+import type { Card, PlayStatus, PlayTable, Replay } from "@/lib/api";
+import fixture from "../test/replay.fixture.json";
 import { PlayBoard } from "./PlayBoard";
 
 const card = (id: string, version: string, role: string, summary: string) =>
@@ -262,49 +263,7 @@ describe("starting a game", () => {
     });
   });
 
-  it("shows the agents playing, with a typing indicator, and cannot be started twice", async () => {
-    fetchMock.mockResolvedValue(json({ id: GAME }, 202));
-    picked();
-    await act(async () => fireEvent.click(start()));
-    expect(screen.getByText(/The agents are playing/)).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("is typing");
-    expect(screen.queryByRole("button", { name: "Start the game" })).toBeNull();
-    expect(shuffle()).toBeDisabled();
-  });
-
-  it("polls, and when the game is finished links to its replay", async () => {
-    fetchMock.mockImplementation(async (url: string) =>
-      url === "/api/play"
-        ? json({ id: GAME }, 202)
-        : json({ id: GAME, status: fetchMock.mock.calls.length > 3 ? "finished" : "running", game_id: "1-abcd1234", reason: null }),
-    );
-    picked();
-    await act(async () => fireEvent.click(start()));
-    await tick(2100);
-    await tick(2100);
-    await tick(2100);
-    const link = screen.getByRole("link", { name: "Watch the game" });
-    expect(link).toHaveAttribute("href", "/games/1-abcd1234");
-    expect(screen.queryByRole("status")).toBeNull();
-    expect(calls().filter(([, method]) => method === "GET").every(([url]) => url === `/api/play/${GAME}`)).toBe(true);
-  });
-
-  it("says why a game stopped, and lets you try again", async () => {
-    fetchMock.mockImplementation(async (url: string) =>
-      url === "/api/play"
-        ? json({ id: GAME }, 202)
-        : json({ id: GAME, status: "stopped", game_id: null, reason: "most answers failed" }),
-    );
-    picked();
-    await act(async () => fireEvent.click(start()));
-    await tick(2100);
-    expect(screen.getByText(/most answers failed/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(start()).toBeEnabled();
-    expect(player("Ada").getByRole("radio", { name: "lie low" })).toBeChecked(); // your picks are kept
-  });
-
-  it("shows the reason when the start is refused, and lets you press it again", async () => {
+  it("shows the refusal when the start is refused, and lets you press it again", async () => {
     fetchMock.mockResolvedValue(json({ detail: "Too many requests. Wait a minute and try again." }, 429));
     picked();
     await act(async () => fireEvent.click(start()));
@@ -319,14 +278,125 @@ describe("starting a game", () => {
     expect(screen.getByText(/could not reach the game server/i)).toBeInTheDocument();
     expect(start()).toBeEnabled();
   });
+});
+
+describe("watching the game as it is played", () => {
+  const replay = fixture as unknown as Replay;
+  const seats = replay.players.map((p) => ({ name: p.name, role: p.role }));
+  const wolf = replay.players.find((p) => p.role === "Werewolf")?.name ?? "";
+  const entries = replay.entries;
+  const page = (status: string, total: number, part: unknown[], extra: object = {}) => ({
+    status,
+    game_id: null,
+    reason: null,
+    total,
+    entries: part,
+    ...extra,
+  });
+  const running = (to: number, from = 0) => page("running", to, entries.slice(from, to));
+  const finished = page("finished", entries.length, entries.slice(10), { game_id: "1-abcd1234" });
+
+  /** A server that answers each look at the game with the next page. */
+  function serve(pages: unknown[]) {
+    let n = 0;
+    fetchMock.mockImplementation(async (url: string) =>
+      url === "/api/play" ? json({ id: GAME }, 202) : json(pages[Math.min(n++, pages.length - 1)]),
+    );
+  }
+
+  async function begin() {
+    render(<PlayBoard cards={cards} status={open} table={{ seed: 1, default_card: DEFAULT_TEXT, seats }} />);
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: wolf })).getByRole("radio", { name: "lie low" }));
+    await act(async () => fireEvent.click(start()));
+  }
+  const looks = () => calls().filter(([, method]) => method === "GET").map(([url]) => url);
+  const instant = () => fireEvent.click(screen.getByRole("radio", { name: "Instant" }));
+
+  it("swaps the picker for the game, which cannot be started twice", async () => {
+    serve([running(4)]);
+    await begin();
+    expect(screen.getByRole("feed")).toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: wolf })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Start the game" })).toBeNull();
+  });
+
+  it("asks from the first entry, and each time from the entries it already has", async () => {
+    serve([running(4), running(10, 4), finished]);
+    await begin();
+    await tick(1100);
+    await tick(1100);
+    expect(looks()).toEqual([
+      `/api/play/${GAME}/live?after=0`,
+      `/api/play/${GAME}/live?after=4`,
+      `/api/play/${GAME}/live?after=10`,
+    ]);
+  });
+
+  it("shows the whole game, in order and once, and then links to the full replay", async () => {
+    serve([running(4), running(10, 4), finished]);
+    await begin();
+    instant();
+    await tick(1100);
+    await tick(1100);
+    expect(screen.getByText(`${entries.length} of ${entries.length}`)).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Watch the full replay" });
+    expect(link).toHaveAttribute("href", "/games/1-abcd1234");
+  });
+
+  it("says it is waiting while the game goes on, and has no link yet", async () => {
+    serve([running(4), page("running", 4, [])]); // then nothing new, as a real server would say
+    await begin();
+    for (let i = 0; i < 150; i++) await tick(100); // in small steps: each message waits for a render
+    expect(screen.getByText(/Waiting for the next message/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Watch the full replay" })).toBeNull();
+  });
 
   it("stops asking once the game is over", async () => {
-    fetchMock.mockImplementation(async (url: string) =>
-      url === "/api/play" ? json({ id: GAME }, 202) : json({ id: GAME, status: "finished", game_id: "1-x", reason: null }),
-    );
-    picked();
+    serve([running(4), finished]);
+    await begin();
+    await tick(1100);
+    const after = fetchMock.mock.calls.length;
+    await tick(10_000);
+    expect(fetchMock.mock.calls.length).toBe(after);
+  });
+
+  it("keeps what was played, says why a game stopped, and lets you try again with your picks", async () => {
+    serve([running(4), page("stopped", 4, [], { reason: "most answers failed" })]);
+    await begin();
+    instant();
+    await tick(1100);
+    expect(screen.getByText(/most answers failed/)).toBeInTheDocument();
+    expect(screen.getByText("4 of 4")).toBeInTheDocument(); // what was played stays
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(start()).toBeEnabled();
+    expect(within(screen.getByRole("radiogroup", { name: wolf })).getByRole("radio", { name: "lie low" })).toBeChecked();
     await act(async () => fireEvent.click(start()));
-    await tick(2100);
+    expect(looks().at(-1)).toBe(`/api/play/${GAME}/live?after=0`); // a new game starts from the first entry
+  });
+
+  it("tries a failed look again, and carries on", async () => {
+    let n = 0;
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === "/api/play") return json({ id: GAME }, 202);
+      n += 1;
+      if (n === 1) throw new Error("blip");
+      return json(n === 2 ? running(4) : finished);
+    });
+    await begin();
+    instant();
+    await tick(1100);
+    await tick(1100);
+    expect(screen.getByRole("link", { name: "Watch the full replay" })).toBeInTheDocument();
+  });
+
+  it("gives up after five failed looks in a row, and says the game goes on without it", async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === "/api/play") return json({ id: GAME }, 202);
+      throw new Error("offline");
+    });
+    await begin();
+    for (let i = 0; i < 6; i++) await tick(1100);
+    expect(screen.getByText(/lost the connection/i)).toBeInTheDocument();
     const after = fetchMock.mock.calls.length;
     await tick(10_000);
     expect(fetchMock.mock.calls.length).toBe(after);

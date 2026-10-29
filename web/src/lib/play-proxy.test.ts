@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { forwardToApi, isPlayId, tablePath } from "./play-proxy";
+import { forwardToApi, isPlayId, livePath, tablePath } from "./play-proxy";
 
 const fetchMock = vi.fn();
 
@@ -84,6 +84,24 @@ describe("tablePath", () => {
   it("drops anything else, so nothing but a seed can reach the API", () => {
     for (const bad of ["x", "-1", "1.5", "1234567", "7&model=opus", "../games"]) {
       expect(tablePath(`http://site.test/api/play/table?seed=${encodeURIComponent(bad)}`)).toBe("/play/table");
+    }
+  });
+});
+
+describe("livePath", () => {
+  const ID = "0123456789abcdef0123456789abcdef";
+
+  it("asks for a game from the start when no point is given", () => {
+    expect(livePath(ID, `http://site.test/api/play/${ID}/live`)).toBe(`/play/${ID}/live`);
+  });
+
+  it("passes on the point to read from when it is a whole number", () => {
+    expect(livePath(ID, `http://site.test/api/play/${ID}/live?after=12`)).toBe(`/play/${ID}/live?after=12`);
+  });
+
+  it("drops anything else, so nothing but that number can reach the API", () => {
+    for (const bad of ["x", "-1", "1.5", "1234567", "3&model=opus", "../games"]) {
+      expect(livePath(ID, `http://site.test/api/play/${ID}/live?after=${encodeURIComponent(bad)}`)).toBe(`/play/${ID}/live`);
     }
   });
 });

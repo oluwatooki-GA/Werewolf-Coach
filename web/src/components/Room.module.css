@@ -267,3 +267,10 @@
     border-left: 0;
   }
 }
+
+.after {
+  display: grid;
+  justify-items: center;
+  gap: var(--s2);
+  padding: var(--s4) var(--s3) 0;
+}

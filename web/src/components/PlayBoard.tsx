@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { Card, PlayStatus, PlayTable } from "@/lib/api";
+import type { Card, PlayStatus, PlayTable, ReplayEntry, ReplayPlayer } from "@/lib/api";
 import { cardParts, plural } from "@/lib/format";
 import { roleColor } from "@/lib/people";
-import { DEFAULT, cardsFor, dealTable, noPicks, readGame, refOf, SIDES, startGame, type Picks } from "@/lib/play";
+import { DEFAULT, cardsFor, dealTable, noPicks, readLive, refOf, SIDES, startGame, type Picks } from "@/lib/play";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatPage } from "./ChatPage";
 import { Pill } from "./Pill";
 import { Post } from "./Post";
-import { Typing } from "./Typing";
+import { Room } from "./Room";
 import styles from "./PlayBoard.module.css";
 
 type Phase =
@@ -18,14 +18,17 @@ type Phase =
   | { name: "starting" }
   | { name: "playing"; id: string }
   | { name: "finished"; gameId: string }
-  | { name: "stopped"; reason: string };
+  | { name: "stopped"; reason: string }
+  | { name: "lost" };
 
-const POLL_MS = 2000;
+const POLL_MS = 1000;
+const MAX_FAILURES = 5; // failed looks in a row before the page stops asking
 
 /**
  * The play chat. The visitor sees a table of eight players, picks a strategy card for each one (or
- * the default instructions), starts a game, and when the agents have finished it opens as a replay.
- * The browser only talks to the site's own /api/play routes.
+ * the default instructions) and starts a game. The game then plays out on the page as the agents
+ * play it, in the same chat a replay uses, and ends with a link to the finished replay. The
+ * browser only talks to the site's own /api/play routes.
  */
 export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; status: PlayStatus; table: PlayTable }) {
   const [table, setTable] = useState(dealt);
@@ -34,28 +37,39 @@ export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; stat
   const [notice, setNotice] = useState("");
   const byRef = new Map(cards.map((card) => [refOf(card), card]));
   const playing = phase.name === "playing" ? phase.id : null;
-  const asking = useRef(false);
+  const [entries, setEntries] = useState<ReplayEntry[]>([]);
+  const got = useRef(0); // how many entries of this game the page has
 
-  // while a game is being played, ask how it is going until it is over
+  // while a game is being played, ask for what is new once a second until it is over
   useEffect(() => {
     if (!playing) return;
     let timer: number | undefined;
     let cancelled = false;
+    let failures = 0;
     const poll = async () => {
-      if (asking.current) return;
-      asking.current = true;
-      const state = await readGame(playing);
-      asking.current = false;
+      const after = got.current;
+      const live = await readLive(playing, after);
       if (cancelled) return;
-      if (state?.status === "finished" && state.game_id) {
-        setPhase({ name: "finished", gameId: state.game_id });
-      } else if (state?.status === "stopped") {
-        setPhase({ name: "stopped", reason: state.reason ?? "The game stopped." });
+      if (!live) {
+        failures += 1;
+        if (failures >= MAX_FAILURES) setPhase({ name: "lost" });
+        else timer = window.setTimeout(poll, POLL_MS);
+        return;
+      }
+      failures = 0;
+      if (live.entries.length > 0) {
+        got.current = after + live.entries.length;
+        setEntries((now) => (now.length === after ? [...now, ...live.entries] : now));
+      }
+      if (live.status === "finished" && live.game_id) {
+        setPhase({ name: "finished", gameId: live.game_id });
+      } else if (live.status === "stopped") {
+        setPhase({ name: "stopped", reason: live.reason ?? "The game stopped." });
       } else {
         timer = window.setTimeout(poll, POLL_MS);
       }
     };
-    timer = window.setTimeout(poll, POLL_MS);
+    void poll();
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
@@ -63,6 +77,8 @@ export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; stat
   }, [playing]);
 
   async function start() {
+    got.current = 0;
+    setEntries([]);
     setPhase({ name: "starting" });
     const started = await startGame(table.seed, picks);
     setPhase(started.ok ? { name: "playing", id: started.id } : { name: "pick", message: started.message });
@@ -83,8 +99,50 @@ export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; stat
   const setCards = (names: string[], ref: string) =>
     setPicks((now) => ({ ...now, ...Object.fromEntries(names.map((name) => [name, ref])) }));
 
-  const busy = phase.name !== "pick";
+  const busy = phase.name !== "pick" && phase.name !== "stopped" && phase.name !== "lost";
   const left = status.games_left;
+
+  if (phase.name === "playing" || phase.name === "finished" || phase.name === "stopped" || phase.name === "lost") {
+    const cast: ReplayPlayer[] = table.seats.map((seat) => ({
+      name: seat.name,
+      role: seat.role,
+      team: seat.role === "Werewolf" ? "Wolves" : "Village",
+      card: picks[seat.name] && picks[seat.name] !== DEFAULT ? (picks[seat.name] ?? null) : null,
+    }));
+    return (
+      <Room
+        entries={entries}
+        players={cast}
+        title="Play"
+        subtitle="Your game"
+        avatar={<ChatAvatar kind="play" size={40} />}
+        label="Your game"
+        cards={Object.fromEntries(byRef)}
+        growing={phase.name === "playing"}
+        after={
+          phase.name === "finished" ? (
+            <>
+              <p>Your game is ready.</p>
+              <Link href={`/games/${phase.gameId}`} className={styles.watch}>
+                Watch the full replay
+              </Link>
+            </>
+          ) : phase.name === "stopped" || phase.name === "lost" ? (
+            <>
+              <p>
+                {phase.name === "stopped"
+                  ? phase.reason
+                  : "The site lost the connection to the game. The game carries on without it, and will be in the games list when it ends."}
+              </p>
+              <button type="button" className={styles.start} onClick={() => setPhase({ name: "pick" })}>
+                {phase.name === "stopped" ? "Try again" : "Back to the cards"}
+              </button>
+            </>
+          ) : null
+        }
+      />
+    );
+  }
 
   return (
     <ChatPage
@@ -194,30 +252,6 @@ export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; stat
       {phase.name === "starting" ? (
         <Post name="Lab" bot>
           <p>Starting your game…</p>
-        </Post>
-      ) : null}
-      {phase.name === "playing" ? (
-        <>
-          <Post name="Lab" bot>
-            <p>The agents are playing. This usually takes a minute or two. You can leave this page open.</p>
-          </Post>
-          <Typing name="Lab" />
-        </>
-      ) : null}
-      {phase.name === "finished" ? (
-        <Post name="Lab" bot>
-          <p>Your game is ready.</p>
-          <Link href={`/games/${phase.gameId}`} className={styles.watch}>
-            Watch the game
-          </Link>
-        </Post>
-      ) : null}
-      {phase.name === "stopped" ? (
-        <Post name="Lab" bot>
-          <p>{phase.reason}</p>
-          <button type="button" className={styles.start} onClick={() => setPhase({ name: "pick" })}>
-            Try again
-          </button>
         </Post>
       ) : null}
     </ChatPage>

@@ -1,4 +1,4 @@
-import type { Card, PlayState, PlayTable } from "./api";
+import type { Card, PlayLive, PlayTable } from "./api";
 
 /** The sides a table is grouped into, in the order they are shown; `role` is what the API calls it. */
 export const SIDES = [
@@ -46,10 +46,13 @@ export async function dealTable(): Promise<PlayTable | null> {
   }
 }
 
-export async function readGame(id: string): Promise<PlayState | null> {
+/** A game being played, from entry `after` on; null if it could not be read. */
+export async function readLive(id: string, after: number): Promise<PlayLive | null> {
   try {
-    const response = await fetch(`/api/play/${id}`);
-    return response.ok ? ((await response.json()) as PlayState) : null;
+    const response = await fetch(`/api/play/${id}/live?after=${after}`);
+    if (!response.ok) return null;
+    const live = (await response.json()) as PlayLive;
+    return Array.isArray(live.entries) ? live : null;
   } catch {
     return null;
   }
