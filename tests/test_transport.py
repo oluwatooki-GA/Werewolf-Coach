@@ -223,6 +223,32 @@ def test_a_refused_key_becomes_a_hard_stop_not_a_bad_answer() -> None:
         asyncio.run(LiteLLMTransport().call(request("claude-haiku-5-5")))
 
 
+def test_openai_reporting_an_expired_key_as_a_bad_request_is_still_a_hard_stop() -> None:
+    async def expired(**kwargs: Any) -> ModelResponse:
+        raise litellm.BadRequestError(
+            message="OpenAIException - Your API key has expired. Create a new API key to continue.",
+            llm_provider="openai",
+            model="gpt-4.1-nano",
+        )
+
+    litellm.acompletion = expired
+    with pytest.raises(RateLimited, match="openai refused the call.*API key has expired"):
+        asyncio.run(LiteLLMTransport().call(request("gpt-4.1-nano")))
+
+
+def test_an_ordinary_bad_request_is_not_mistaken_for_a_bad_key() -> None:
+    async def too_long(**kwargs: Any) -> ModelResponse:
+        raise litellm.BadRequestError(
+            message="maximum context length is exceeded",
+            llm_provider="openai",
+            model="gpt-4.1-nano",
+        )
+
+    litellm.acompletion = too_long
+    with pytest.raises(litellm.BadRequestError):  # stays an ordinary failed answer
+        asyncio.run(LiteLLMTransport().call(request("gpt-4.1-nano")))
+
+
 # --- Claude: priced from Anthropic's own pricing page --------------------------------------
 
 

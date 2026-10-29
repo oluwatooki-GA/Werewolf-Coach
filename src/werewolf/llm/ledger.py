@@ -24,6 +24,7 @@ DEFAULT_CAPS: dict[str, Decimal] = {
 
 
 LOCK_WAIT_S = 10.0  # how long to wait for another process to finish writing the file
+DENIED_GRACE_S = 0.3  # "permission denied" with no lock file this long is a real refusal
 LOCK_STALE_S = 10.0  # a lock this old was left behind by a crashed process
 
 
@@ -74,24 +75,30 @@ class Ledger:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         lock = self._path.with_suffix(".lock")
         deadline = time.monotonic() + LOCK_WAIT_S
+        denied_since: float | None = None
         while True:
             try:
                 os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
                 break
-            except (
-                FileExistsError,
-                PermissionError,
-            ) as exc:  # Windows: Permission... while deleted
-                if isinstance(exc, PermissionError) and not lock.exists():  # nobody holds it
-                    raise LedgerError(
-                        f"cannot write to {self._path.parent}: permission denied"
-                    ) from exc
-                if _is_stale(lock):
-                    lock.unlink(missing_ok=True)
-                    continue
-                if time.monotonic() > deadline:
-                    raise LedgerError(f"ledger file {self._path} is locked by another process")
-                time.sleep(0.01)
+            except FileExistsError:
+                denied_since = None
+            except PermissionError as exc:
+                # Windows refuses for a moment while another process deletes the lock. Refused
+                # for longer with no lock there means the folder itself cannot be written.
+                if lock.exists():
+                    denied_since = None
+                else:
+                    denied_since = denied_since or time.monotonic()
+                    if time.monotonic() - denied_since > DENIED_GRACE_S:
+                        raise LedgerError(
+                            f"cannot write to {self._path.parent}: permission denied"
+                        ) from exc
+            if _is_stale(lock):
+                lock.unlink(missing_ok=True)
+                continue
+            if time.monotonic() > deadline:
+                raise LedgerError(f"ledger file {self._path} is locked by another process")
+            time.sleep(0.01)
         try:
             yield
         finally:

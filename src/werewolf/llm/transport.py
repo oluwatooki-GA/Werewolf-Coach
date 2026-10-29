@@ -6,7 +6,12 @@ from decimal import Decimal
 from typing import Any
 
 import litellm
-from litellm.exceptions import AuthenticationError, PermissionDeniedError, RateLimitError
+from litellm.exceptions import (
+    AuthenticationError,
+    BadRequestError,
+    PermissionDeniedError,
+    RateLimitError,
+)
 
 from werewolf.llm.prices import EXTRA_PRICES
 from werewolf.llm.types import (
@@ -106,6 +111,12 @@ class LiteLLMTransport:
         except RateLimitError as exc:  # still limited after LiteLLM's own retries
             raise RateLimited(f"{provider} rate limit reached: {exc}") from exc
         except (AuthenticationError, PermissionDeniedError) as exc:
+            raise ProviderRefused(
+                f"{provider} refused the call (check the API key): {exc}"
+            ) from exc
+        except BadRequestError as exc:
+            if "api key" not in str(exc).lower():  # OpenAI sends an expired key as a 400
+                raise
             raise ProviderRefused(
                 f"{provider} refused the call (check the API key): {exc}"
             ) from exc
