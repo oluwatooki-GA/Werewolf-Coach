@@ -9,6 +9,7 @@ import litellm
 from litellm.exceptions import (
     AuthenticationError,
     BadRequestError,
+    NotFoundError,
     PermissionDeniedError,
     RateLimitError,
 )
@@ -114,6 +115,8 @@ class LiteLLMTransport:
             raise ProviderRefused(
                 f"{provider} refused the call (check the API key): {exc}"
             ) from exc
+        except NotFoundError as exc:  # a model the provider has retired or never had
+            raise ProviderRefused(f"{provider} has no model {request.model}: {exc}") from exc
         except BadRequestError as exc:
             if "api key" not in str(exc).lower():  # OpenAI sends an expired key as a 400
                 raise

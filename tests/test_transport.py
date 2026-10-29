@@ -249,6 +249,19 @@ def test_an_ordinary_bad_request_is_not_mistaken_for_a_bad_key() -> None:
         asyncio.run(LiteLLMTransport().call(request("gpt-4.1-nano")))
 
 
+def test_a_retired_model_is_a_hard_stop_that_names_the_model() -> None:
+    async def gone(**kwargs: Any) -> ModelResponse:
+        raise litellm.NotFoundError(
+            message="OpenAIException - The model `gpt-4.1-nano` has been deprecated",
+            llm_provider="openai",
+            model="gpt-4.1-nano",
+        )
+
+    litellm.acompletion = gone
+    with pytest.raises(RateLimited, match="openai has no model gpt-4.1-nano.*deprecated"):
+        asyncio.run(LiteLLMTransport().call(request("gpt-4.1-nano")))
+
+
 # --- Claude: priced from Anthropic's own pricing page --------------------------------------
 
 
