@@ -50,7 +50,7 @@ export function lineNumber(ref: string): [number, number] {
 
 /** The rule sets the games were played under. */
 export function ruleLabel(version: string): string {
-  if (version === "v3") return "v3 rules: 4 tokens a day, 10 turns, wolves talk up to 5 messages a night";
+  if (version === "v3") return "v3 rules: 4 tokens a day, 10 turns, wolves talk up to 5 messages a night, an abstention counts against a removal";
   return version === "v2" ? "v2 rules: 4 tokens a day, 10 turns" : "v1 rules: 3 tokens a day, 8 turns";
 }
 

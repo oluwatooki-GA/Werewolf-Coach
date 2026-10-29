@@ -41,6 +41,12 @@ class Settings(BaseModel):
     cards: dict[str, str] = {}  # seat name -> strategy card id; logged, never shown to the engine
     personas: dict[str, str] = {}  # seat name -> table manner id; logged, the engine ignores it
 
+    @property
+    def v3_rules(self) -> bool:
+        """The v3 rule set: the wolves talk in turn at night, and an abstention is a vote for
+        "nobody goes", so a player leaves only if more people vote for them than abstain."""
+        return self.wolf_chat_messages > 0
+
     @field_validator("names")
     @classmethod
     def _eight_unique_names(cls, names: tuple[str, ...]) -> tuple[str, ...]:

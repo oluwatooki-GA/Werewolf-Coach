@@ -1,4 +1,4 @@
-version: 3
+version: 4
 
 # Everything a player is told. ${name} marks a value the code fills in. Folded blocks (>-) join
 # their lines with single spaces. Edit the wording here; the code only picks and fills pieces.
@@ -25,6 +25,9 @@ each_round: >-
   someone. 2. Morning: it is announced who died; roles of the dead stay hidden. 3. Day: players
   talk. 4. Vote: every living player votes to remove one player and gives a reason; the most
   votes is removed, and a tie removes nobody.
+each_round_abstain: >-
+  An abstention counts as a vote for nobody: a player is removed only if more players vote for
+  them than abstain.
 
 # How the day is run, one text for each speaking mode.
 speaking_floor_tokens: >-

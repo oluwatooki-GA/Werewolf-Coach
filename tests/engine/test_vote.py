@@ -4,7 +4,7 @@ from werewolf.agents.scripted import ScriptedAgent
 from werewolf.engine.actions import Agent, Task, VoteAction, VoteTask
 from werewolf.engine.events import NoRemoval, Removal, VoteCast
 from werewolf.engine.setup import new_game
-from werewolf.engine.state import GameState
+from werewolf.engine.state import GameState, Settings
 from werewolf.engine.views import PlayerView
 from werewolf.engine.vote import run_vote
 
@@ -119,3 +119,56 @@ def test_the_removal_announcement_never_names_a_role() -> None:
     vote(state, voters(state, {a: b}))
     text = next(e for e in state.events if isinstance(e, Removal)).model_dump_json()
     assert not any(role in text for role in ("Werewolf", "Seer", "Doctor", "Villager"))
+
+
+V3 = Settings(wolf_chat_messages=5)
+
+
+def removed(state: GameState) -> list[str]:
+    return [e.player for e in state.events if isinstance(e, Removal)]
+
+
+def test_one_vote_against_six_abstentions_removes_nobody_under_the_v3_rules() -> None:
+    state = new_game(seed=1, settings=V3)
+    a, b = names(state)[:2]
+    vote(state, voters(state, {a: b}))
+    assert removed(state) == []
+    assert [e for e in state.events if isinstance(e, NoRemoval)]
+
+
+def test_the_old_rules_still_remove_a_player_on_a_single_vote() -> None:
+    state = new_game(seed=1)
+    a, b = names(state)[:2]
+    vote(state, voters(state, {a: b}))
+    assert removed(state) == [b]
+
+
+def test_the_leader_must_have_more_votes_than_there_were_abstentions() -> None:
+    state = new_game(seed=1, settings=V3)
+    a, b, c, d, e, f, g, h = names(state)
+    # three vote for h, one for g, four abstain: 3 is fewer than 4
+    vote(state, voters(state, {a: h, b: h, c: h, d: g}))
+    assert removed(state) == []
+
+
+def test_a_leader_with_more_votes_than_abstentions_is_removed() -> None:
+    state = new_game(seed=1, settings=V3)
+    a, b, c, d, e, f, g, h = names(state)
+    # four vote for h, one for g, three abstain
+    vote(state, voters(state, {a: h, b: h, c: h, d: h, e: g}))
+    assert removed(state) == [h]
+
+
+def test_as_many_votes_as_abstentions_is_not_enough() -> None:
+    state = new_game(seed=1, settings=V3)
+    a, b, c, d, e, f, g, h = names(state)
+    # four vote for h, four abstain
+    vote(state, voters(state, {a: h, b: h, c: h, d: h}))
+    assert removed(state) == []
+
+
+def test_a_tie_still_removes_nobody_under_the_v3_rules() -> None:
+    state = new_game(seed=1, settings=V3)
+    a, b, c, d, e, f, g, h = names(state)
+    vote(state, voters(state, {a: g, b: g, c: h, d: h, e: g, f: h, g: h, h: g}))
+    assert removed(state) == []

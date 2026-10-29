@@ -1,4 +1,8 @@
-"""The vote: everyone votes at once, the votes are shown together, the most votes is removed."""
+"""The vote: everyone votes at once, the votes are shown together, the most votes is removed.
+
+Under the v3 rules an abstention counts as a vote for nobody, so the leader must beat the
+abstentions too.
+"""
 
 from collections import Counter
 from collections.abc import Callable, Mapping
@@ -32,6 +36,7 @@ async def run_vote(state: GameState, agents: Mapping[str, Agent]) -> None:
     answers = await ask_many(state, agents, requests)
 
     tally: Counter[str] = Counter()
+    abstained = 0
     for name, answer in zip(alive, answers, strict=True):
         vote = answer if isinstance(answer, VoteAction) else VoteAction(target=None)
         state.events.append(
@@ -39,9 +44,14 @@ async def run_vote(state: GameState, agents: Mapping[str, Agent]) -> None:
         )
         if vote.target is not None:
             tally[vote.target] += 1
+        else:
+            abstained += 1
 
     top = tally.most_common(2)
-    if top and (len(top) == 1 or top[0][1] > top[1][1]):
+    leads = bool(top) and (len(top) == 1 or top[0][1] > top[1][1])
+    if leads and state.settings.v3_rules and top[0][1] <= abstained:
+        leads = False  # more people abstained than voted for the leader: nobody goes
+    if leads:
         out = top[0][0]
         state.player(out).alive = False
         state.events.append(Removal(round=state.round, player=out))

@@ -604,3 +604,10 @@ def test_without_it_the_wolves_are_asked_for_one_message_as_before() -> None:
     said = _all_text(build(state_with(), who="Fay", task=WolfChatTask(max_chars=300)))
     assert "Write one private message to your partner Hal" in said
     assert "talk in private" not in said
+
+
+def test_players_are_told_how_an_abstention_counts_only_under_the_v3_rules() -> None:
+    v3 = _all_text(build(state_with(settings=Settings(wolf_chat_messages=5)), who="Cy"))
+    old = _all_text(build(state_with(), who="Cy"))
+    assert "An abstention counts as a vote for nobody" in v3
+    assert "An abstention counts as a vote for nobody" not in old

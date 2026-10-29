@@ -100,7 +100,7 @@ def _system(view: PlayerView, card: str, persona: str = "") -> str:
             _t("roles"),
             _t("win", max_rounds=r.max_rounds),
             "",
-            _t("each_round"),
+            _t("each_round") + (" " + _t("each_round_abstain") if r.wolf_chat_messages else ""),
             _speaking_rules(view),
             "",
             _t(
