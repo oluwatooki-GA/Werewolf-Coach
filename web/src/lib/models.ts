@@ -3,7 +3,7 @@ import type { GameSummary } from "./api";
 /**
  * A rough tier by name, best first: Opus, Fable, Sonnet, GPT-4.1, Haiku, GPT-4.1 mini, nano, then
  * anything unknown, then scripted test agents (no model). It is an ordering for the list, not a
- * benchmark, and ties keep the order the API gave (newest first).
+ * benchmark, and ties keep the order the API gave (by seed: games have no date).
  */
 export function modelRank(model: string): number {
   if (!model) return 9;
@@ -30,7 +30,7 @@ export function modelLabel(model: string): string {
   return model;
 }
 
-/** Games with the strongest models first. The sort is stable, so newest stays first within a model. */
+/** Games with the strongest models first. The sort is stable, so the API's order holds within a model. */
 export function byModel(games: GameSummary[]): GameSummary[] {
   return [...games].sort((a, b) => modelRank(a.model) - modelRank(b.model));
 }
@@ -42,4 +42,23 @@ export function modelsIn(games: GameSummary[]): { model: string; games: number }
   return [...counts]
     .map(([model, count]) => ({ model, games: count }))
     .sort((a, b) => modelRank(a.model) - modelRank(b.model));
+}
+
+export type SortId = "model" | "site" | "most" | "fewest";
+
+/** The ways the list of games can be ordered. */
+export const SORTS: { id: SortId; label: string }[] = [
+  { id: "model", label: "Strongest model" },
+  { id: "site", label: "Played here first" },
+  { id: "most", label: "Most rounds" },
+  { id: "fewest", label: "Fewest rounds" },
+];
+
+/** Every sort starts from strongest model first, so games that tie keep that order. */
+export function sortGames(games: GameSummary[], sort: SortId): GameSummary[] {
+  const ranked = byModel(games);
+  if (sort === "site") return ranked.sort((a, b) => Number(b.source === "play") - Number(a.source === "play"));
+  if (sort === "most") return ranked.sort((a, b) => b.rounds - a.rounds);
+  if (sort === "fewest") return ranked.sort((a, b) => a.rounds - b.rounds);
+  return ranked;
 }

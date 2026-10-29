@@ -87,3 +87,65 @@ describe("the Play chat", () => {
     expect(play).not.toHaveTextContent("seat");
   });
 });
+
+const made = (id: string, model: string, rounds: number, source = "experiment") =>
+  ({ id, model, winner: "Village", rounds, cards: {}, rule_version: "v3", source }) as unknown as GameSummary;
+
+const mixed = [
+  made("2-aaa", "gpt-4.1-mini", 3),
+  made("2-bbb", "gpt-4.1-mini", 5),
+  made("2-ccc", "claude-sonnet-5-5", 2),
+  made("2-ddd", "gpt-4o-mini", 5, "play"),
+  made("2-eee", "gpt-4.1-mini", 2),
+];
+const ids = () => rows().map((a) => a.getAttribute("href")?.replace("/games/", ""));
+const sortBy = (name: string) =>
+  fireEvent.click(within(screen.getByRole("group", { name: "Sort games" })).getByRole("button", { name }));
+
+describe("sorting the games", () => {
+  it("offers a sort, starting on the strongest model first", () => {
+    render(<ChatList games={mixed} total={5} />);
+    const group = within(screen.getByRole("group", { name: "Sort games" }));
+    expect(group.getAllByRole("button").map((b) => b.textContent)).toEqual([
+      "Strongest model",
+      "Played here first",
+      "Most rounds",
+      "Fewest rounds",
+    ]);
+    expect(group.getByRole("button", { name: "Strongest model" })).toHaveAttribute("aria-pressed", "true");
+    expect(ids()[0]).toBe("2-ccc");
+  });
+
+  it("puts the longest games first, and keeps the earlier order between equals", () => {
+    render(<ChatList games={mixed} total={5} />);
+    sortBy("Most rounds");
+    expect(ids()).toEqual(["2-bbb", "2-ddd", "2-aaa", "2-ccc", "2-eee"]);
+    expect(within(screen.getByRole("group", { name: "Sort games" })).getByRole("button", { name: "Most rounds" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("puts the shortest games first", () => {
+    render(<ChatList games={mixed} total={5} />);
+    sortBy("Fewest rounds");
+    expect(ids()).toEqual(["2-ccc", "2-eee", "2-aaa", "2-bbb", "2-ddd"]);
+  });
+
+  it("puts games played on this site first, then the rest as before", () => {
+    render(<ChatList games={mixed} total={5} />);
+    sortBy("Played here first");
+    expect(ids()).toEqual(["2-ddd", "2-ccc", "2-aaa", "2-bbb", "2-eee"]);
+  });
+
+  it("goes back to the strongest model first", () => {
+    render(<ChatList games={mixed} total={5} />);
+    sortBy("Most rounds");
+    sortBy("Strongest model");
+    expect(ids()[0]).toBe("2-ccc");
+  });
+
+  it("sorts only the games that the filters leave", () => {
+    render(<ChatList games={mixed} total={5} />);
+    fireEvent.click(screen.getByRole("button", { name: /GPT-4.1 mini/ }));
+    sortBy("Most rounds");
+    expect(ids()).toEqual(["2-bbb", "2-aaa", "2-eee"]);
+  });
+});

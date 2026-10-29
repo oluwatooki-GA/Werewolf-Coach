@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { GameSummary } from "@/lib/api";
 import { plural } from "@/lib/format";
-import { byModel, modelLabel, modelsIn } from "@/lib/models";
+import { modelLabel, modelsIn, SORTS, sortGames, type SortId } from "@/lib/models";
 import { ChatAvatar } from "./ChatAvatar";
 import { TeamMark } from "./TeamMark";
 import styles from "./ChatList.module.css";
@@ -31,14 +31,15 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "Village", label: "Village" },
 ];
 
-/** The list of chats on the left: the pinned ones, then every saved game, newest first. */
+/** The list of chats on the left: the pinned ones, then every saved game, sorted as the reader chooses. */
 export function ChatList({ games, total, down = false }: Props) {
   const path = usePathname();
   const [filter, setFilter] = useState<Filter>("all");
   const [model, setModel] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortId>("model");
   const models = modelsIn(games);
-  // the strongest models' games come first, and a model can be picked to see only its games
-  const shown = byModel(games).filter(
+  // strongest models first unless another sort is chosen, and a model can be picked to see only its games
+  const shown = sortGames(games, sort).filter(
     (g) => (filter === "all" || g.winner === filter) && (model === null || g.model === model),
   );
   const on = (match: string) => path === match || path.startsWith(`${match}/`);
@@ -76,6 +77,14 @@ export function ChatList({ games, total, down = false }: Props) {
         </ul>
 
         <div className={styles.filters}>
+          <div role="group" aria-label="Sort games">
+            <span>Sort</span>
+            {SORTS.map((s) => (
+              <button key={s.id} type="button" aria-pressed={sort === s.id} onClick={() => setSort(s.id)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
           {models.length > 1 ? (
             <div role="group" aria-label="Filter by model">
               <span>Model</span>
