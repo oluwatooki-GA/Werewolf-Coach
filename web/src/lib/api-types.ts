@@ -853,6 +853,8 @@ export interface components {
         PlayTable: {
             /** Seed */
             seed: number;
+            /** Default Card */
+            default_card: string;
             /** Seats */
             seats: components["schemas"]["PlaySeat"][];
         };

@@ -158,13 +158,13 @@ export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; stat
                       />
                     ))}
                   </div>
-                  {chosen ? (
-                    <details className={styles.says}>
-                      <summary>What the card says</summary>
-                      <p>{chosen.instructions}</p>
-                      <p className={styles.source}>{chosen.source}</p>
-                    </details>
-                  ) : null}
+                  <details className={styles.says}>
+                    <summary>What the card says</summary>
+                    <p>{chosen ? chosen.instructions : table.default_card}</p>
+                    <p className={styles.source}>
+                      {chosen ? chosen.source : "The default: what every player is told when no card is chosen."}
+                    </p>
+                  </details>
                 </div>
               );
             })}

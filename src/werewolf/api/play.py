@@ -24,6 +24,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from werewolf import runtime
+from werewolf.agents.prompt import DEFAULT_CARD
 from werewolf.api.deps import DB, ApiSettings, Settings
 from werewolf.api.schemas import PlaySeat, PlayStarted, PlayState, PlayStatus, PlayTable
 from werewolf.play.budget import Caps, Verdict, check
@@ -144,7 +145,11 @@ def status(request: Request, db: DB, config: Settings) -> PlayStatus:
 def table(seed: Annotated[int | None, Query(ge=0, lt=SEEDS)] = None) -> PlayTable:
     """The seats and roles a seed deals; with no seed, a new table."""
     seed = secrets.randbelow(SEEDS) if seed is None else seed
-    return PlayTable(seed=seed, seats=[PlaySeat(name=n, role=r.value) for n, r in seats(seed)])
+    return PlayTable(
+        seed=seed,
+        default_card=DEFAULT_CARD,
+        seats=[PlaySeat(name=n, role=r.value) for n, r in seats(seed)],
+    )
 
 
 @router.post("", status_code=202)

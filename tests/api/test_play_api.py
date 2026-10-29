@@ -11,6 +11,7 @@ from api_support import play_body, played, seat_of
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, select
 
+from werewolf.agents.prompt import DEFAULT_CARD
 from werewolf.api.app import create_app
 from werewolf.api.deps import ApiSettings
 from werewolf.engine.roles import Role
@@ -129,6 +130,11 @@ def test_the_table_shows_the_seats_and_roles_a_seed_deals(client: TestClient) ->
     assert [(s["name"], s["role"]) for s in table["seats"]] == [
         (name, role.value) for name, role in seats(3)
     ]
+
+
+def test_the_table_carries_what_the_default_card_says(client: TestClient) -> None:
+    table = client.get("/play/table", params={"seed": 3}).json()
+    assert table["default_card"] == DEFAULT_CARD and "Play to win" in table["default_card"]
 
 
 def test_a_table_without_a_seed_is_dealt_a_new_seed_that_can_be_played(client: TestClient) -> None:

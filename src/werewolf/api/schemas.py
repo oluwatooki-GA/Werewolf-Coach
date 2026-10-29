@@ -85,6 +85,7 @@ class PlaySeat(BaseModel):
 
 class PlayTable(BaseModel):
     seed: int  # send it back with the cards: the same seed deals the same table
+    default_card: str  # what a player is told when no card is chosen
     seats: list[PlaySeat]
 
 

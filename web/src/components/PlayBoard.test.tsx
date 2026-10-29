@@ -26,9 +26,11 @@ const cards = [
 const open: PlayStatus = { available: true, reason: "", games_left: 3 };
 const GAME = "0123456789abcdef0123456789abcdef";
 
+const DEFAULT_TEXT = "Play to win for your team.";
 const seat = (name: string, role: string) => ({ name, role });
 const table: PlayTable = {
   seed: 3,
+  default_card: DEFAULT_TEXT,
   seats: [
     seat("Ada", "Werewolf"),
     seat("Bo", "Villager"),
@@ -151,6 +153,14 @@ describe("picking cards", () => {
     expect(screen.queryByRole("combobox", { name: /Doctor/ })).toBeNull();
   });
 
+  it("shows what the default card says for every player left on Default", () => {
+    show();
+    expect(screen.getAllByText(DEFAULT_TEXT)).toHaveLength(8);
+    pick("Ada", "lie low");
+    expect(screen.getAllByText(DEFAULT_TEXT)).toHaveLength(7);
+    expect(screen.getByText("Instructions for wolf.lie_low.")).toBeInTheDocument();
+  });
+
   it("explains what Default means", () => {
     show();
     expect(screen.getAllByText(/standard instructions/i).length).toBeGreaterThan(0);
@@ -160,6 +170,7 @@ describe("picking cards", () => {
 describe("dealing new seats", () => {
   const next: PlayTable = {
     seed: 77,
+    default_card: DEFAULT_TEXT,
     seats: [
       seat("Ada", "Villager"),
       seat("Bo", "Werewolf"),
