@@ -96,7 +96,7 @@ def today() -> str:
     return datetime.now(UTC).date().isoformat()
 
 
-def _verdict(request: Request, db: DB, config: ApiSettings) -> Verdict:
+def current_verdict(request: Request, db: DB, config: ApiSettings) -> Verdict:
     caps = Caps(config.play_daily_cap, config.play_total_cap, config.play_game_estimate)
     running = len(request.app.state.play_tasks)
     with db.connect() as conn:
@@ -159,7 +159,7 @@ async def _play(request: Request, play_id: str, seed: int, picks: Mapping[str, s
 def status(request: Request, db: DB, config: Settings) -> PlayStatus:
     if not config.play_model:
         return PlayStatus(available=False, reason="play mode is not set up on this server")
-    verdict = _verdict(request, db, config)
+    verdict = current_verdict(request, db, config)
     if verdict.state == "paused":
         return PlayStatus(available=False, reason=verdict.reason, games_left=0)
     return PlayStatus(available=True, reason="", games_left=verdict.games_left)
@@ -181,7 +181,7 @@ async def start(request: Request, body: PlayRequest, db: DB, config: Settings) -
     _limit_rate(request, config)
     if not config.play_model:
         raise HTTPException(503, "play mode is not set up on this server")
-    verdict = _verdict(request, db, config)
+    verdict = current_verdict(request, db, config)
     if verdict.state == "paused":
         raise HTTPException(503, f"Play mode is paused. {verdict.reason}")
     try:

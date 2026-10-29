@@ -12,8 +12,14 @@ from werewolf.tagger.tags import DerivedTag, TagFile
 
 
 class Health(BaseModel):
-    status: Literal["ok", "down"]
+    """`down` (503) only when the database cannot be reached; `degraded` when play is set up with
+    a model whose key is missing; a used-up cap shows as `play: paused` and is not a fault."""
+
+    status: Literal["ok", "degraded", "down"]
     database: Literal["ok", "down"]
+    provider: Literal["ok", "missing_key", "off"] = "off"  # the play model's key; never its value
+    play: Literal["open", "paused", "off"] = "off"
+    active_games: int = 0  # games being played right now
 
 
 class GameSummary(BaseModel):
