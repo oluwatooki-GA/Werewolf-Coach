@@ -149,16 +149,23 @@ def test_after_returns_only_what_is_new_and_the_rest_matches_the_finished_replay
         assert replay["entries"][:total] == everything["entries"]  # nothing skipped or changed
 
 
-def test_a_finished_game_says_so_and_gives_the_game_to_open(engine: Engine) -> None:
+def test_a_finished_game_says_so_and_carries_on_from_the_cursor_with_the_stored_game(
+    engine: Engine,
+) -> None:
     halfway = Halfway()
     with TestClient(app_with(engine, halfway)) as client:
         play_id = client.post("/play", json=BODY).json()["id"]
         assert halfway.arrived.wait(10)
+        so_far = client.get(f"/play/{play_id}/live").json()["total"]
         client.portal.call(halfway.release.set)  # type: ignore[union-attr]
         state = wait_for(client, play_id)
-        live = client.get(f"/play/{play_id}/live").json()
+        replay = client.get(f"/games/{state['game_id']}/replay").json()
+        live = client.get(f"/play/{play_id}/live", params={"after": so_far}).json()
         assert live["status"] == "finished" and live["game_id"] == state["game_id"]
-        assert live["entries"] == [] and live["reason"] is None
+        assert live["reason"] is None and live["total"] == len(replay["entries"])
+        assert live["entries"] == replay["entries"][so_far:]  # the tail the last poll missed
+        end = client.get(f"/play/{play_id}/live", params={"after": live["total"]}).json()
+        assert end["entries"] == [] and end["total"] == live["total"]
 
 
 def test_a_stopped_game_gives_its_reason(engine: Engine) -> None:

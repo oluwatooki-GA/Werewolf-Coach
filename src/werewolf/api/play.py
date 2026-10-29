@@ -22,11 +22,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import select
 
 from werewolf import runtime
 from werewolf.agents.prompt import DEFAULT_CARD
 from werewolf.api.deps import DB, ApiSettings, Settings
-from werewolf.api.replay import replay_entries
+from werewolf.api.replay import Entry, build_replay, replay_entries
 from werewolf.api.schemas import (
     PlayLive,
     PlaySeat,
@@ -35,6 +36,7 @@ from werewolf.api.schemas import (
     PlayStatus,
     PlayTable,
 )
+from werewolf.engine.log import GameLog
 from werewolf.engine.state import GameState
 from werewolf.play.budget import Caps, Verdict, check
 from werewolf.play.service import (
@@ -47,6 +49,7 @@ from werewolf.play.service import (
 )
 from werewolf.store.games import add_game
 from werewolf.store.play import add_spend, finish_session, get_session, new_session
+from werewolf.store.tables import games
 
 router = APIRouter(prefix="/play", tags=["play"])
 log = logging.getLogger(__name__)
@@ -213,7 +216,8 @@ def live(
     request: Request, play_id: str, db: DB, after: Annotated[int, Query(ge=0)] = 0
 ) -> PlayLive:
     """A game being played, as the entries a replay is made of, from index `after` on. Once it is
-    over it says how it ended and gives no entries: the stored game is read from the replay."""
+    over it says how it ended and, if it finished, goes on from `after` with the stored game, so a
+    reader never misses the last few entries. A stopped game gives its reason and no entries."""
     state: GameState | None = request.app.state.play_live.get(play_id)
     if state is not None:
         # events first, then calls: a call is recorded before the event it led to, so every event
@@ -221,14 +225,24 @@ def live(
         events = list(state.events)
         calls = list(state.calls)
         roles = {p.name: p.role for p in state.players}
-        entries = replay_entries(roles, events, calls)
+        so_far = replay_entries(roles, events, calls)
         return PlayLive(
-            status="running", game_id=None, reason=None, total=len(entries), entries=entries[after:]
+            status="running", game_id=None, reason=None, total=len(so_far), entries=so_far[after:]
         )
     with db.connect() as conn:
         row = get_session(conn, play_id)
+        stored = None
+        if row is not None and row.game_id:
+            stored = conn.execute(select(games.c.log).where(games.c.id == row.game_id)).scalar()
     if row is None:
         raise HTTPException(404, "no such game")
+    entries: list[Entry] = []
+    if stored is not None:  # finished: the entries that came after the reader's last look
+        entries = build_replay(row.game_id or "", GameLog.from_json(stored), None).entries
     return PlayLive(
-        status=row.status, game_id=row.game_id, reason=row.reason or None, total=0, entries=[]
+        status=row.status,
+        game_id=row.game_id,
+        reason=row.reason or None,
+        total=len(entries),
+        entries=entries[after:],
     )
