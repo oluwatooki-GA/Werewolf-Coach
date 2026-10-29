@@ -5,13 +5,17 @@ background, in this process. `GET /play/{id}` says `running`, `finished` (with t
 which opens as a replay) or `stopped` (with why). A game still running when the server restarts is
 marked stopped. The picks are the only input: no model, seed or budget comes from the visitor.
 
-Caps on spending are T8; the number of games at once is limited here.
+Money: a game starts only if today's cap and the total cap can both pay for one more (see
+`play/budget.py`), each game has its own spending limit, and one address may try to start at most
+`play_requests_per_minute` games a minute. Replays and the board are never touched by any of this.
 """
 
 import asyncio
 import logging
 import secrets
+from collections import deque
 from collections.abc import Awaitable, Callable, Mapping
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
@@ -19,9 +23,10 @@ from pydantic import BaseModel, ConfigDict
 from werewolf import runtime
 from werewolf.api.deps import DB, ApiSettings, Settings
 from werewolf.api.schemas import PlayStarted, PlayState, PlayStatus
+from werewolf.play.budget import Caps, Verdict, check
 from werewolf.play.service import PickError, VisitorGame, check_picks, play_visitor_game
 from werewolf.store.games import add_game
-from werewolf.store.play import finish_session, get_session, new_session
+from werewolf.store.play import add_spend, finish_session, get_session, new_session
 
 router = APIRouter(prefix="/play", tags=["play"])
 log = logging.getLogger(__name__)
@@ -58,6 +63,31 @@ async def run_visitor(picks: Mapping[str, str], config: ApiSettings) -> VisitorG
     )
 
 
+def today() -> str:
+    return datetime.now(UTC).date().isoformat()
+
+
+def _verdict(request: Request, db: DB, config: ApiSettings) -> Verdict:
+    caps = Caps(config.play_daily_cap, config.play_total_cap, config.play_game_estimate)
+    running = len(request.app.state.play_tasks)
+    with db.connect() as conn:
+        return check(conn, caps, running=running, day=request.app.state.play_day())
+
+
+def _limit_rate(request: Request, config: ApiSettings) -> None:
+    """At most `play_requests_per_minute` attempts a minute from one address, counted whether the
+    attempt was good or not."""
+    who = request.client.host if request.client else "unknown"
+    now: float = request.app.state.play_clock()
+    hits: dict[str, deque[float]] = request.app.state.play_hits
+    window = hits.setdefault(who, deque())
+    while window and now - window[0] >= 60:
+        window.popleft()
+    if len(window) >= config.play_requests_per_minute:
+        raise HTTPException(429, "Too many requests. Wait a minute and try again.")
+    window.append(now)
+
+
 async def _play(request: Request, play_id: str, picks: Mapping[str, str]) -> None:
     engine, config = request.app.state.engine, request.app.state.settings
     run: RunGame = request.app.state.play_run
@@ -68,6 +98,8 @@ async def _play(request: Request, play_id: str, picks: Mapping[str, str]) -> Non
             if game is not None and game.log is not None:
                 stored = add_game(conn, game.log, source="play", status=game.status)
             status = game.status if game is not None else "stopped"
+            if game is not None and game.cost:
+                add_spend(conn, request.app.state.play_day(), float(game.cost))
             finish_session(
                 conn,
                 play_id,
@@ -91,16 +123,23 @@ async def _play(request: Request, play_id: str, picks: Mapping[str, str]) -> Non
 
 
 @router.get("/status")
-def status(config: Settings) -> PlayStatus:
+def status(request: Request, db: DB, config: Settings) -> PlayStatus:
     if not config.play_model:
         return PlayStatus(available=False, reason="play mode is not set up on this server")
+    verdict = _verdict(request, db, config)
+    if verdict.state == "paused":
+        return PlayStatus(available=False, reason=verdict.reason)
     return PlayStatus(available=True, reason="")
 
 
 @router.post("", status_code=202)
 async def start(request: Request, picks: PlayRequest, db: DB, config: Settings) -> PlayStarted:
+    _limit_rate(request, config)
     if not config.play_model:
         raise HTTPException(503, "play mode is not set up on this server")
+    verdict = _verdict(request, db, config)
+    if verdict.state == "paused":
+        raise HTTPException(503, f"Play mode is paused. {verdict.reason}")
     try:
         check_picks(picks.model_dump(), config.cards_dir)
     except PickError as exc:
@@ -109,6 +148,8 @@ async def start(request: Request, picks: PlayRequest, db: DB, config: Settings) 
     if len(running) >= config.play_max_games:
         many = NUMBERS.get(config.play_max_games, str(config.play_max_games))
         raise HTTPException(429, f"Only {many} games can be played at once. Try again in a minute.")
+    if verdict.state == "busy":
+        raise HTTPException(429, verdict.reason)
     with db.begin() as conn:
         play_id = new_session(conn, picks.model_dump())
     task = asyncio.create_task(_play(request, play_id, picks.model_dump()))

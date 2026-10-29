@@ -1,10 +1,11 @@
 """Play mode runs one game with the cards a visitor picked, on the v3 rules, with no network."""
 
 import asyncio
+from decimal import Decimal
 
 import pytest
 
-from werewolf.agents.scripted import ScriptedAgent
+from werewolf.agents.scripted import ScriptedAgent, policy
 from werewolf.engine.actions import Agent, FatalAgentError, Task
 from werewolf.engine.log import replays_exactly
 from werewolf.engine.roles import Role
@@ -23,6 +24,11 @@ PICKS = {
 
 def play(picks: dict[str, str] = PICKS, seed: int = 3, **options: object):  # type: ignore[no-untyped-def]
     return asyncio.run(play_visitor_game(picks, seed, **options))  # type: ignore[arg-type]
+
+
+def table(seed: int) -> dict[str, Agent]:
+    wolves = [p.name for p in new_game(seed).players if p.role is Role.WEREWOLF]
+    return {p.name: policy(wolves) for p in new_game(seed).players}
 
 
 def roles(seed: int) -> dict[str, Role]:
@@ -120,3 +126,26 @@ def test_a_game_whose_answers_mostly_failed_is_stopped_not_shown_as_real() -> No
     assert game.status == "stopped"
     assert game.log is not None  # kept, so it can be stored out of sight
     assert game.reason is not None and "was not a real game" in game.reason
+
+
+class Spent:
+    """Stands in for the model client: it only has to say what the run has paid for so far."""
+
+    def __init__(self, dollars: str) -> None:
+        self.run_spent = Decimal(dollars)
+
+
+def test_a_game_stopped_by_its_budget_reports_what_it_had_spent() -> None:
+    names = [p.name for p in new_game(3).players]
+    agents: dict[str, Agent] = {n: Stopping() for n in names}
+    game = play(agents=agents, client=Spent("0.38"))
+    assert game.status == "stopped" and game.cost == Decimal("0.38")
+
+
+def test_a_finished_game_costs_at_least_what_the_client_paid() -> None:
+    game = play(client=Spent("0.27"), agents=table(3))
+    assert game.status == "finished" and game.cost == Decimal("0.27")
+
+
+def test_free_scripted_games_cost_nothing() -> None:
+    assert play().cost == Decimal("0")

@@ -4,9 +4,10 @@ import time
 import uuid
 from collections.abc import Mapping
 
-from sqlalchemy import Connection, Row, insert, select, update
+from sqlalchemy import Connection, Row, func, insert, select, update
+from sqlalchemy.exc import IntegrityError
 
-from werewolf.store.tables import play_sessions
+from werewolf.store.tables import play_sessions, play_spend
 
 
 def new_session(conn: Connection, picks: Mapping[str, str]) -> str:
@@ -54,3 +55,28 @@ def stop_unfinished(conn: Connection, reason: str) -> int:
         .values(status="stopped", reason=reason)
     )
     return result.rowcount
+
+
+def add_spend(conn: Connection, day: str, amount: float) -> None:
+    """Add what a game cost to that day's total, starting the day's row if it has none."""
+    bump = (
+        update(play_spend).where(play_spend.c.day == day).values(spent=play_spend.c.spent + amount)
+    )
+    if conn.execute(bump).rowcount:
+        return
+    try:
+        with conn.begin_nested():  # two games finishing together may both try to start the row
+            conn.execute(insert(play_spend).values(day=day, spent=amount))
+    except IntegrityError:
+        conn.execute(bump)
+
+
+def spent_today(conn: Connection, day: str) -> float:
+    row = conn.execute(select(play_spend.c.spent).where(play_spend.c.day == day)).first()
+    return float(row.spent) if row else 0.0
+
+
+def spent_total(conn: Connection) -> float:
+    return float(
+        conn.execute(select(func.coalesce(func.sum(play_spend.c.spent), 0.0))).scalar_one()
+    )

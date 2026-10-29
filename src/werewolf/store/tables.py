@@ -66,3 +66,11 @@ play_sessions = Table(
     Column("cost", Float, nullable=False, default=0.0),
     Column("created_at", Float, nullable=False),
 )
+
+# What play mode has spent, a row for each day (UTC). The total is the sum of the rows.
+play_spend = Table(
+    "play_spend",
+    metadata,
+    Column("day", String(10), primary_key=True),  # "2026-10-29"
+    Column("spent", Float, nullable=False, default=0.0),
+)

@@ -104,6 +104,10 @@ def _agents(
     }
 
 
+def _spent(client: LLMClient | None) -> Decimal:
+    return client.run_spent if client is not None else Decimal("0")
+
+
 async def play_visitor_game(
     picks: Mapping[str, str],
     seed: int,
@@ -135,15 +139,16 @@ async def play_visitor_game(
     try:
         state = await play_game(seed, settings, players)
     except FatalAgentError as exc:
-        return VisitorGame("stopped", None, Decimal("0"), reason=str(exc))
+        return VisitorGame("stopped", None, _spent(client), reason=str(exc))
     log = to_log(state, run_id=run_id, model=model if client is not None else "")
+    cost = max(log.stats.cost, _spent(client))  # the client's own count is the one money follows
     failed = sum(1 for call in log.calls if call.failed)
     if log.calls and failed / len(log.calls) > BROKEN_SHARE:
         return VisitorGame(
             "stopped",
             log,
-            log.stats.cost,
+            cost,
             reason=f"{failed} of {len(log.calls)} answers failed, so this was not a real game "
             "(is the model provider out of credit?)",
         )
-    return VisitorGame("finished", log, log.stats.cost)
+    return VisitorGame("finished", log, cost)

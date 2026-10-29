@@ -1,6 +1,8 @@
 """The API: builds the app from its parts. Each area is a router in its own file."""
 
 import asyncio
+import time
+from collections import deque
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -29,6 +31,9 @@ def create_app(engine: Engine | None = None, settings: ApiSettings | None = None
     app.state.settings = settings
     app.state.play_run = play.run_visitor  # tests swap in slow or failing games
     app.state.play_tasks = set[asyncio.Task[None]]()  # games being played now
+    app.state.play_day = play.today  # the day the caps count in (UTC); tests fix it
+    app.state.play_clock = time.monotonic  # for the rate limit; tests move it
+    app.state.play_hits = dict[str, deque[float]]()  # recent attempts by address
     app.add_middleware(
         CORSMiddleware, allow_origins=[settings.web_origin], allow_methods=["GET", "POST"]
     )

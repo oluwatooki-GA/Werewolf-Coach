@@ -50,6 +50,11 @@ class LLMClient:
         self._pacers: dict[tuple[int, str], asyncio.Lock] = {}
 
     @property
+    def run_spent(self) -> Decimal:
+        """What this client has paid for so far, in dollars."""
+        return self._run_spent
+
+    @property
     def requests_per_minute(self) -> dict[str, int]:
         return dict(self._rpm)
 
