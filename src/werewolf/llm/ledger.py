@@ -78,7 +78,14 @@ class Ledger:
             try:
                 os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
                 break
-            except (FileExistsError, PermissionError):  # Windows: PermissionError while deleted
+            except (
+                FileExistsError,
+                PermissionError,
+            ) as exc:  # Windows: Permission... while deleted
+                if isinstance(exc, PermissionError) and not lock.exists():  # nobody holds it
+                    raise LedgerError(
+                        f"cannot write to {self._path.parent}: permission denied"
+                    ) from exc
                 if _is_stale(lock):
                     lock.unlink(missing_ok=True)
                     continue

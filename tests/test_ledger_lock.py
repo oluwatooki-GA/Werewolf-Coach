@@ -57,3 +57,18 @@ def test_a_lock_that_stays_held_stops_the_run_instead_of_hanging(
     path.with_suffix(".lock").write_text("")  # fresh, so not stale: someone is working
     with pytest.raises(LedgerError):
         Ledger(path).spent("openai")
+
+
+def test_a_folder_that_cannot_be_written_is_reported_as_that_not_as_a_held_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import werewolf.llm.ledger as module
+
+    def denied(*args: object, **kwargs: object) -> int:
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(module.os, "open", denied)  # no lock file exists: nobody holds it
+    started = time.monotonic()
+    with pytest.raises(LedgerError, match="cannot write.*permission denied"):
+        Ledger(tmp_path / "ledger.json").spent("openai")
+    assert time.monotonic() - started < 1  # at once, not after the 10 second wait

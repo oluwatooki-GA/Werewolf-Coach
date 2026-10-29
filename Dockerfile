@@ -14,6 +14,8 @@ WORKDIR /app
 COPY --from=build --chown=app:app /app /app
 COPY --chown=app:app cards ./cards
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
+# the app is not root, and the spending ledger writes its file and lock here
+RUN mkdir -p /app/data && chown app:app /app/data
 USER app
 EXPOSE 8000
 CMD ["python", "-m", "werewolf.cli", "app", "serve", "--host", "0.0.0.0", "--port", "8000"]

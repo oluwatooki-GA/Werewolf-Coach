@@ -84,3 +84,10 @@ def test_play_mode_is_off_by_default_and_the_api_trusts_the_site_to_name_the_vis
     # the site passes each visitor's address on; without this the rate limit would count the
     # site as one visitor and every real one would share a single allowance
     assert env["FORWARDED_ALLOW_IPS"] == "*"
+
+
+def test_the_api_user_can_write_its_data_folder_for_the_spending_ledger() -> None:
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    # the app runs as a normal user; without this /app/data is root's and the ledger cannot lock
+    assert "mkdir -p /app/data" in dockerfile and "chown app:app /app/data" in dockerfile
+    assert dockerfile.index("chown app:app /app/data") < dockerfile.index("USER app")
