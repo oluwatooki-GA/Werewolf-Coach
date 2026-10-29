@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import type { Generation } from "@/lib/api";
+import { CardGraph } from "./CardGraph";
 import { IntervalBar } from "./IntervalBar";
 import { Revision } from "./Revision";
 
@@ -50,5 +52,48 @@ describe("Revision", () => {
   it("still shows what was cut when the base text is not on the site", () => {
     const { container } = render(<Revision base={null} changes={["- Old sentence."]} />);
     expect(container.querySelector("del")).toHaveTextContent("Old sentence.");
+  });
+});
+
+describe("CardGraph", () => {
+  const arm = (card: string, wins: number, games: number) => ({ card, seeds: [1], wins, games, clean: true, cost: "0", stopped: null });
+  const gens = [
+    {
+      number: 1,
+      champion_before: "wolf.accuse_early@2",
+      champion_after: "wolf.accuse_early@2",
+      challenger_card: "wolf.quiet_lead@1",
+      promote: false,
+      champion_arm: arm("wolf.accuse_early@2", 1, 1),
+      challenger_arm: arm("wolf.quiet_lead@1", 0, 1),
+    },
+  ] as unknown as Generation[];
+
+  it("draws each card with what it is in words, so it does not rely on colour", () => {
+    render(<CardGraph generations={gens} />);
+    expect(screen.getByText("accuse early")).toBeInTheDocument();
+    expect(screen.getByText("v2, Starting champion")).toBeInTheDocument();
+    expect(screen.getByText("v1, Not better, dropped")).toBeInTheDocument();
+  });
+
+  it("says how a card did and that a thin sample is not clear yet", () => {
+    render(<CardGraph generations={gens} />);
+    expect(screen.getByText("Won 0 of 1 game, not clear yet")).toBeInTheDocument();
+  });
+
+  it("describes the whole tree to a screen reader", () => {
+    render(<CardGraph generations={gens} />);
+    expect(screen.getByRole("img")).toHaveAccessibleName(/accuse early, version 2, Starting champion.*quiet lead, version 1, Not better, dropped/);
+  });
+
+  it("links a generated card to its generation in the thread, and the start card to nothing", () => {
+    render(<CardGraph generations={gens} />);
+    expect(screen.getByRole("link", { name: "Generation 1: quiet lead" })).toHaveAttribute("href", "#g1");
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
+
+  it("draws nothing before the coach has run", () => {
+    const { container } = render(<CardGraph generations={[]} />);
+    expect(container).toBeEmptyDOMElement();
   });
 });

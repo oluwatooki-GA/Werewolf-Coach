@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ChatAvatar } from "@/components/ChatAvatar";
+import { CardGraph } from "@/components/CardGraph";
 import { ChatPage } from "@/components/ChatPage";
 import { Chips } from "@/components/Chips";
 import { IntervalBar } from "@/components/IntervalBar";
@@ -71,6 +72,15 @@ export default async function CoachPage({ params }: Props) {
           </p>
         </Pill>
       )}
+
+      {generations.length > 0 ? (
+        <Post name="Lab" bot>
+          <p>Here are the coach&apos;s cards so far, and how each one came about.</p>
+          <Embed>
+            <CardGraph generations={generations} />
+          </Embed>
+        </Post>
+      ) : null}
 
       {startCard ? (
         <Post name="Lab" bot>
