@@ -14,6 +14,7 @@ from sqlalchemy import Engine, select
 from werewolf.agents.prompt import DEFAULT_CARD
 from werewolf.api.app import create_app
 from werewolf.api.deps import ApiSettings
+from werewolf.api.play import UNAVAILABLE, public_reason
 from werewolf.engine.roles import Role
 from werewolf.play.service import VisitorGame, seats
 from werewolf.store import make_engine
@@ -22,6 +23,8 @@ from werewolf.store.tables import games
 
 REPO = Path(__file__).resolve().parents[2]
 BODY = play_body()
+SPENDING_TEXT = "This game reached its spending limit, so it was stopped."
+FAILED_TEXT = "Most of the AI's answers failed, so the game was stopped."
 
 
 def settings(model: str = "fake", **more: object) -> ApiSettings:
@@ -195,13 +198,18 @@ def test_a_game_that_stopped_is_reported_but_never_listed_as_a_real_game(engine:
     async def stops(
         seed: int, picks: Mapping[str, str], config: ApiSettings, *_: object
     ) -> VisitorGame:
-        return VisitorGame("stopped", broken, Decimal("0.3"), reason="most answers failed")
+        return VisitorGame(
+            "stopped",
+            broken,
+            Decimal("0.3"),
+            reason="9 of 12 answers failed, so this was not a real game",
+        )
 
     app = create_app(engine, settings())
     app.state.play_run = stops
     with TestClient(app) as client:
         state = wait_for(client, client.post("/play", json=BODY).json()["id"])
-        assert state["status"] == "stopped" and state["reason"] == "most answers failed"
+        assert state["status"] == "stopped" and state["reason"] == FAILED_TEXT
         assert state["game_id"] is None
         assert client.get("/games").json()["total"] == 0
         assert client.get("/results").json() == []
@@ -249,3 +257,79 @@ def test_a_game_that_cannot_be_saved_ends_as_stopped_not_running_forever(
     with TestClient(create_app(engine, settings())) as client:
         state = wait_for(client, client.post("/play", json=BODY).json()["id"])
         assert state["status"] == "stopped" and "could not be saved" in str(state["reason"])
+
+
+# --- what a visitor is told when a game stops --------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("raw", "told"),
+    [
+        (
+            "run budget $0.15 would be passed",
+            "This game reached its spending limit, so it was stopped.",
+        ),
+        (
+            "openai refused the call (check the API key): litellm.AuthenticationError: invalid",
+            UNAVAILABLE,
+        ),
+        (
+            "openai has no model gpt-4.1-nano: litellm.NotFoundError: deprecated",
+            UNAVAILABLE,
+        ),
+        (
+            "openai rate limit reached: 429 from the provider",
+            UNAVAILABLE,
+        ),
+        (
+            "cannot write to /app/data: permission denied",
+            UNAVAILABLE,
+        ),
+        (
+            "166 of 166 answers failed, so this was not a real game "
+            "(is the model provider out of credit?)",
+            FAILED_TEXT,
+        ),
+        (
+            "the server restarted while this game was running",
+            "The server restarted while this game was running.",
+        ),
+        (
+            "the game could not be played; try again later",
+            "The game could not be played. Please try again later.",
+        ),
+        (
+            "the game was played but could not be saved",
+            "The game was played but could not be saved. Please try again later.",
+        ),
+    ],
+)
+def test_a_visitor_is_told_a_plain_reason_never_the_providers_own_words(
+    raw: str, told: str
+) -> None:
+    assert public_reason(raw) == told
+    for leak in ("litellm", "API key", "credit", "/app", "gpt-", "openai", "429"):
+        assert leak.lower() not in public_reason(raw).lower()
+
+
+def test_the_page_and_the_live_route_both_give_the_plain_reason_but_the_owner_keeps_the_raw_one(
+    engine: Engine,
+) -> None:
+    raw = "openai refused the call (check the API key): litellm.AuthenticationError: invalidated"
+
+    async def refused(*args: object) -> VisitorGame:
+        return VisitorGame("stopped", None, Decimal("0"), reason=raw)
+
+    app = create_app(engine, ApiSettings(
+        web_origin="http://site.test", cards_dir=REPO / "cards", play_model="fake",
+        admin_token="t0ken",
+    ))  # fmt: skip
+    app.state.play_run = refused
+    with TestClient(app) as client:
+        play_id = client.post("/play", json=BODY).json()["id"]
+        wait_for(client, play_id)
+        told = client.get(f"/play/{play_id}").json()["reason"]
+        assert "litellm" not in told and "API key" not in told
+        assert client.get(f"/play/{play_id}/live").json()["reason"] == told
+        recent = client.get("/admin/overview", headers={"Authorization": "Bearer t0ken"}).json()
+        assert recent["recent"][0]["reason"] == raw  # the owner sees what really happened

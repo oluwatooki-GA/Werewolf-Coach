@@ -92,6 +92,28 @@ async def run_visitor(
     )
 
 
+UNAVAILABLE = (
+    "The game could not continue because the AI model was not available. Please try again later."
+)
+
+
+def public_reason(reason: str) -> str:
+    """What a visitor is told about a game that stopped. The provider's own words, a key, a model
+    name or a path never go to a visitor; the full reason stays in the log and the admin page."""
+    said = reason.lower()
+    if "run budget" in said:
+        return "This game reached its spending limit, so it was stopped."
+    if "answers failed" in said:
+        return "Most of the AI's answers failed, so the game was stopped."
+    if "restarted" in said:
+        return "The server restarted while this game was running."
+    if "could not be played" in said:
+        return "The game could not be played. Please try again later."
+    if "could not be saved" in said:
+        return "The game was played but could not be saved. Please try again later."
+    return UNAVAILABLE
+
+
 def today() -> str:
     return datetime.now(UTC).date().isoformat()
 
@@ -221,7 +243,12 @@ def state(play_id: str, db: DB) -> PlayState:
         row = get_session(conn, play_id)
     if row is None:
         raise HTTPException(404, "no such game")
-    return PlayState(id=row.id, status=row.status, game_id=row.game_id, reason=row.reason or None)
+    return PlayState(
+        id=row.id,
+        status=row.status,
+        game_id=row.game_id,
+        reason=public_reason(row.reason) if row.reason else None,
+    )
 
 
 @router.get("/{play_id}/live")
@@ -255,7 +282,7 @@ def live(
     return PlayLive(
         status=row.status,
         game_id=row.game_id,
-        reason=row.reason or None,
+        reason=public_reason(row.reason) if row.reason else None,
         total=len(entries),
         entries=entries[after:],
     )

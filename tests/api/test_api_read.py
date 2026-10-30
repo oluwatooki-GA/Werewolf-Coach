@@ -30,9 +30,13 @@ def client(tmp_path: Path, logs: list[GameLog]) -> TestClient:
     )
 
 
-def test_health_is_ok_with_a_database_and_503_without_one(client: TestClient) -> None:
+def test_health_is_ok_with_a_database_and_503_without_one(
+    client: TestClient, tmp_path: Path
+) -> None:
     assert client.get("/health").json()["database"] == "ok"  # more in test_ops.py
-    broken = create_engine("sqlite:////no/such/folder/x.db")
+    blocker = tmp_path / "a-file"
+    blocker.write_text("not a folder")  # a database cannot live inside a file
+    broken = create_engine(f"sqlite:///{blocker / 'x.db'}")
     response = TestClient(create_app(broken)).get("/health")
     assert response.status_code == 503 and response.json()["database"] == "down"
 

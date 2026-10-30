@@ -120,8 +120,10 @@ def test_health_names_the_fault_switches_that_are_on_so_production_can_be_checke
         assert client.get("/health").json()["faults"] == ["timeout", "bad_json"]
 
 
-def test_health_is_503_when_the_database_cannot_be_reached() -> None:
-    broken = create_engine("sqlite:////no/such/folder/x.db")
+def test_health_is_503_when_the_database_cannot_be_reached(tmp_path: Path) -> None:
+    blocker = tmp_path / "a-file"
+    blocker.write_text("not a folder")  # a database cannot live inside a file
+    broken = create_engine(f"sqlite:///{blocker / 'x.db'}")
     response = TestClient(create_app(broken)).get("/health")
     assert response.status_code == 503
     assert (response.json()["status"], response.json()["database"]) == ("down", "down")

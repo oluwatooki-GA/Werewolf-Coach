@@ -179,7 +179,7 @@ def test_a_stopped_game_gives_its_reason(engine: Engine) -> None:
         client.portal.call(halfway.release.set)  # type: ignore[union-attr]
         wait_for(client, play_id)
         live = client.get(f"/play/{play_id}/live").json()
-        assert live["status"] == "stopped" and live["reason"] == "the run budget is used up"
+        assert live["status"] == "stopped" and "spending limit" in live["reason"]
         assert live["entries"] == [] and live["game_id"] is None
 
 
