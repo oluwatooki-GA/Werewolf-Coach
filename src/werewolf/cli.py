@@ -502,6 +502,24 @@ def _app_seed(args: argparse.Namespace) -> int:
     return 0
 
 
+def _app_migrate(args: argparse.Namespace) -> int:
+    """Make sure every table exists. It only adds a table that is missing: a changed column needs a
+    real migration, which this project has not needed yet."""
+    from sqlalchemy import inspect
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from werewolf.store import make_engine
+
+    try:
+        engine = make_engine(args.database)
+        names = sorted(inspect(engine).get_table_names())
+    except (SQLAlchemyError, OSError) as exc:
+        print(f"cannot prepare the database: {type(exc).__name__}", file=sys.stderr)
+        return 2
+    print("tables ready: " + ", ".join(names))
+    return 0
+
+
 def _app_serve(args: argparse.Namespace) -> int:
     """Run the website's API."""
     import uvicorn
@@ -785,6 +803,11 @@ def main(argv: list[str] | None = None) -> int:
     app_seed.add_argument("--games-dir", default="data/games")
     app_seed.add_argument("--coach-dir", default="data/coach")
     app_seed.set_defaults(run=_app_seed)
+    app_migrate = app_commands.add_parser("migrate", help="create any missing tables")
+    app_migrate.add_argument(
+        "--database", help="a database URL (default: DATABASE_URL or data/app.db)"
+    )
+    app_migrate.set_defaults(run=_app_migrate)
     app_serve = app_commands.add_parser("serve", help="run the API")
     app_serve.add_argument(
         "--database", help="a database URL (default: DATABASE_URL or data/app.db)"
