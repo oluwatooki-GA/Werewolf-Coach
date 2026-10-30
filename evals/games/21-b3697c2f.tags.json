@@ -1,0 +1,344 @@
+{
+ "version": 1,
+ "model": "claude-haiku-5-5",
+ "tags": [
+  {
+   "line": "R1-1",
+   "speaker": "Di",
+   "round": 1,
+   "moves": [
+    "probe"
+   ],
+   "target": "Fay",
+   "claimed": null
+  },
+  {
+   "line": "R1-2",
+   "speaker": "Fay",
+   "round": 1,
+   "moves": [
+    "probe"
+   ],
+   "target": "Di",
+   "claimed": null
+  },
+  {
+   "line": "R1-3",
+   "speaker": "Di",
+   "round": 1,
+   "moves": [
+    "probe"
+   ],
+   "target": "Fay",
+   "claimed": {
+    "role": "",
+    "checked": "",
+    "result": "",
+    "vote": "Fay"
+   }
+  },
+  {
+   "line": "R1-4",
+   "speaker": "Cy",
+   "round": 1,
+   "moves": [
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R1-5",
+   "speaker": "Gus",
+   "round": 1,
+   "moves": [
+    "accuse_reasoned",
+    "accuse_bare"
+   ],
+   "target": "Cy",
+   "claimed": null
+  },
+  {
+   "line": "R1-6",
+   "speaker": "Cy",
+   "round": 1,
+   "moves": [
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R1-7",
+   "speaker": "Bo",
+   "round": 1,
+   "moves": [
+    "accuse_reasoned"
+   ],
+   "target": "Cy",
+   "claimed": null
+  },
+  {
+   "line": "R1-8",
+   "speaker": "Hal",
+   "round": 1,
+   "moves": [
+    "probe",
+    "record_check"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R1-9",
+   "speaker": "Gus",
+   "round": 1,
+   "moves": [
+    "accuse_reasoned"
+   ],
+   "target": "Cy",
+   "claimed": null
+  },
+  {
+   "line": "R1-10",
+   "speaker": "Fay",
+   "round": 1,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-1",
+   "speaker": "Gus",
+   "round": 2,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R2-2",
+   "speaker": "Bo",
+   "round": 2,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-3",
+   "speaker": "Gus",
+   "round": 2,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R2-4",
+   "speaker": "Fay",
+   "round": 2,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-5",
+   "speaker": "Ada",
+   "round": 2,
+   "moves": [
+    "result_claim",
+    "rally"
+   ],
+   "target": "Gus",
+   "claimed": {
+    "role": "Seer",
+    "checked": "Fay",
+    "result": "not_wolf",
+    "vote": "Gus"
+   }
+  },
+  {
+   "line": "R2-6",
+   "speaker": "Hal",
+   "round": 2,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-7",
+   "speaker": "Di",
+   "round": 2,
+   "moves": [
+    "probe"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R2-8",
+   "speaker": "Bo",
+   "round": 2,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-9",
+   "speaker": "Eve",
+   "round": 2,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-10",
+   "speaker": "Eve",
+   "round": 2,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R3-1",
+   "speaker": "Di",
+   "round": 3,
+   "moves": [
+    "probe"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R3-2",
+   "speaker": "Bo",
+   "round": 3,
+   "moves": [
+    "accuse_reasoned",
+    "record_check"
+   ],
+   "target": "Di",
+   "claimed": {
+    "role": "",
+    "checked": "",
+    "result": "",
+    "vote": "Cy"
+   }
+  },
+  {
+   "line": "R3-3",
+   "speaker": "Di",
+   "round": 3,
+   "moves": [
+    "probe"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R3-4",
+   "speaker": "Ada",
+   "round": 3,
+   "moves": [
+    "result_claim",
+    "vouch"
+   ],
+   "target": "Fay",
+   "claimed": {
+    "role": "Seer",
+    "checked": "Fay",
+    "result": "not_wolf",
+    "vote": ""
+   }
+  },
+  {
+   "line": "R3-5",
+   "speaker": "Hal",
+   "round": 3,
+   "moves": [
+    "probe"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R3-6",
+   "speaker": "Bo",
+   "round": 3,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Hal",
+   "claimed": null
+  },
+  {
+   "line": "R3-7",
+   "speaker": "Hal",
+   "round": 3,
+   "moves": [
+    "probe"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R3-8",
+   "speaker": "Eve",
+   "round": 3,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R3-9",
+   "speaker": "Eve",
+   "round": 3,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Bo",
+   "claimed": null
+  },
+  {
+   "line": "R3-10",
+   "speaker": "Di",
+   "round": 3,
+   "moves": [
+    "probe"
+   ],
+   "target": "Bo",
+   "claimed": null
+  }
+ ],
+ "untagged": {}
+}

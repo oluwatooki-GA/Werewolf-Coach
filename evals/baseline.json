@@ -1,0 +1,45 @@
+{
+ "adherence": {
+  "doctor.protect_self on claude-sonnet-5-5": [
+   3,
+   3
+  ],
+  "doctor.protect_self on gpt-4.1-nano": [
+   50,
+   51
+  ],
+  "seer.reveal_now on claude-sonnet-5-5": [
+   2,
+   2
+  ],
+  "seer.reveal_now on gpt-4.1-nano": [
+   10,
+   10
+  ],
+  "villager.ask_questions on claude-sonnet-5-5": [
+   18,
+   18
+  ],
+  "villager.ask_questions on gpt-4.1-nano": [
+   86,
+   87
+  ],
+  "wolf.accuse_early": [
+   0,
+   0
+  ],
+  "wolf.accuse_early on claude-sonnet-5-5": [
+   7,
+   8
+  ],
+  "wolf.accuse_early on gpt-4.1-nano": [
+   52,
+   58
+  ]
+ },
+ "games": 8,
+ "leaks": 0,
+ "rejected": 50,
+ "replay_errors": 0,
+ "responses": 1410
+}

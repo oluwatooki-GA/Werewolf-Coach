@@ -14,3 +14,4 @@ web/.next/
 .pytest_cache/
 *.md
 web/
+evals/

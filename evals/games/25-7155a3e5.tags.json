@@ -1,0 +1,210 @@
+{
+ "version": 1,
+ "model": "claude-haiku-5-5",
+ "tags": [
+  {
+   "line": "R1-1",
+   "speaker": "Eve",
+   "round": 1,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Fay",
+   "claimed": null
+  },
+  {
+   "line": "R1-2",
+   "speaker": "Fay",
+   "round": 1,
+   "moves": [
+    "probe"
+   ],
+   "target": "Eve",
+   "claimed": null
+  },
+  {
+   "line": "R1-3",
+   "speaker": "Eve",
+   "round": 1,
+   "moves": [
+    "accuse_reasoned"
+   ],
+   "target": "Fay",
+   "claimed": null
+  },
+  {
+   "line": "R1-4",
+   "speaker": "Gus",
+   "round": 1,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Fay",
+   "claimed": null
+  },
+  {
+   "line": "R1-5",
+   "speaker": "Cy",
+   "round": 1,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Fay",
+   "claimed": null
+  },
+  {
+   "line": "R1-6",
+   "speaker": "Bo",
+   "round": 1,
+   "moves": [
+    "probe",
+    "accuse_bare"
+   ],
+   "target": "Eve",
+   "claimed": null
+  },
+  {
+   "line": "R1-7",
+   "speaker": "Hal",
+   "round": 1,
+   "moves": [
+    "probe",
+    "record_check"
+   ],
+   "target": "Eve",
+   "claimed": null
+  },
+  {
+   "line": "R1-8",
+   "speaker": "Fay",
+   "round": 1,
+   "moves": [
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R1-9",
+   "speaker": "Gus",
+   "round": 1,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Fay",
+   "claimed": null
+  },
+  {
+   "line": "R1-10",
+   "speaker": "Di",
+   "round": 1,
+   "moves": [
+    "probe"
+   ],
+   "target": "Eve",
+   "claimed": null
+  },
+  {
+   "line": "R2-1",
+   "speaker": "Hal",
+   "round": 2,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-2",
+   "speaker": "Gus",
+   "round": 2,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Hal",
+   "claimed": null
+  },
+  {
+   "line": "R2-3",
+   "speaker": "Hal",
+   "round": 2,
+   "moves": [
+    "probe",
+    "record_check"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-4",
+   "speaker": "Cy",
+   "round": 2,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-5",
+   "speaker": "Bo",
+   "round": 2,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-6",
+   "speaker": "Gus",
+   "round": 2,
+   "moves": [
+    "accuse_reasoned",
+    "probe"
+   ],
+   "target": "Cy",
+   "claimed": null
+  },
+  {
+   "line": "R2-7",
+   "speaker": "Cy",
+   "round": 2,
+   "moves": [
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-8",
+   "speaker": "Di",
+   "round": 2,
+   "moves": [
+    "probe",
+    "accuse_reasoned"
+   ],
+   "target": "Gus",
+   "claimed": null
+  },
+  {
+   "line": "R2-9",
+   "speaker": "Di",
+   "round": 2,
+   "moves": [
+    "probe"
+   ],
+   "target": "Gus",
+   "claimed": null
+  }
+ ],
+ "untagged": {}
+}

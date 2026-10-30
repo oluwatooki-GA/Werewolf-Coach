@@ -91,7 +91,10 @@ def rebuild(log: GameLog, keep_notes: int = 0) -> list[Rebuilt]:
     posted = {(e.speaker, e.round, e.text) for e in state.events if isinstance(e, Speech)}
     for item in found:
         if item.kind == "bid":
-            message = json.loads(item.answer).get("message", "") if item.answer[:1] == "{" else ""
+            try:  # an answer cut off mid-JSON (a model that ran out of room) has no message
+                message = json.loads(item.answer).get("message", "")
+            except ValueError:
+                message = ""
             item.spoke = (item.player, item.round, message) in posted
     return found
 

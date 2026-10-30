@@ -398,6 +398,31 @@ def _adherence(args: argparse.Namespace) -> int:
     return 0
 
 
+def _evals(args: argparse.Namespace) -> int:
+    """Replay the recorded games and hold the numbers to the baseline. 1 if one got worse."""
+    from werewolf.evals import Measures, compare, measure, table
+
+    now = measure(Path(args.games))
+    baseline = Path(args.baseline)
+    if args.write_baseline:
+        baseline.parent.mkdir(parents=True, exist_ok=True)
+        baseline.write_text(now.to_json(), encoding="utf-8")
+        print(f"baseline written to {baseline}")
+        return 0
+    try:
+        before = Measures.from_json(baseline.read_text(encoding="utf-8"))
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f"{baseline}: cannot read the baseline: {exc}", file=sys.stderr)
+        return 2
+    print(table(before, now))
+    problems = compare(before, now)
+    for problem in problems:
+        print(f"worse: {problem}")
+    if not problems:
+        print("nothing got worse")
+    return 1 if problems else 0
+
+
 def _spend(text: str | None) -> Decimal | None:
     return Decimal(text) if text is not None else None
 
@@ -709,6 +734,12 @@ def main(argv: list[str] | None = None) -> int:
     follow = commands.add_parser("adherence", help="do players follow their strategy card?")
     follow.add_argument("paths", nargs="+", help="tagged game logs or folders of them")
     follow.set_defaults(run=_adherence)
+
+    held = commands.add_parser("evals", help="replay recorded games and hold the numbers")
+    held.add_argument("--games", default="evals/games", help="folder of recorded games and tags")
+    held.add_argument("--baseline", default="evals/baseline.json")
+    held.add_argument("--write-baseline", action="store_true", help="record today's numbers")
+    held.set_defaults(run=_evals)
 
     check = commands.add_parser("smoke", help="call a real model once per answer shape")
     check.add_argument("--model", required=True)
