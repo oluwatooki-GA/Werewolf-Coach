@@ -1,0 +1,71 @@
+name: eval-check
+
+# When a pull request touches what shapes the agents' prompts, answers or cards, replay the
+# recorded games in evals/ (no model, no money) and compare three numbers with evals/baseline.json:
+# answers the rules reject, prompt leaks, and how well each card is followed. A change that makes
+# one worse fails here. A change that means to move them rewrites the baseline in the same pull
+# request, so the new numbers are reviewed like any other change.
+on:
+  pull_request:
+    paths:
+      - "src/werewolf/prompts/**"
+      - "src/werewolf/agents/**"
+      - "src/werewolf/engine/**"
+      - "src/werewolf/tagger/**"
+      - "cards/**"
+      - "evals/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.0
+
+      - run: uv sync --locked
+
+      - name: Replay the recorded games
+        id: evals
+        run: |
+          set +e
+          uv run python -m werewolf.cli evals > evals.txt
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+          cat evals.txt
+
+      - name: Show the table on the run page
+        run: |
+          {
+            echo "### Recorded games, before and after"
+            echo
+            cat evals.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # a pull request from a fork has no write access, so the comment is a courtesy
+      - name: Post the table on the pull request
+        continue-on-error: true
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("fs");
+            const body = "### Recorded games, before and after\n\n" + fs.readFileSync("evals.txt", "utf8");
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const marker = "### Recorded games, before and after";
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const mine = comments.find((c) => c.user.type === "Bot" && c.body.startsWith(marker));
+            if (mine) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Fail if anything got worse
+        if: steps.evals.outputs.code != '0'
+        run: |
+          echo "A recorded-game number got worse. See the table above."
+          exit 1

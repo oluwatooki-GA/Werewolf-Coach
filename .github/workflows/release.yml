@@ -1,0 +1,81 @@
+name: release
+
+# Pushing a tag such as v0.1.0 deploys: the checks run again, the database is prepared, Render is
+# asked to deploy the API, Vercel the site, the new API is waited for, and a GitHub release marks
+# the deploy. Every secret comes from the repository's Actions secrets; none is written here.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uv sync --locked
+      - run: uv run python -m werewolf.cli evals
+
+  deploy:
+    needs: [checks, evals]
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write # to write the release that marks the deploy
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.0
+
+      - run: uv sync --locked
+
+      - name: Prepare the database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: uv run python -m werewolf.cli app migrate
+
+      - name: Deploy the API on Render
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null
+
+      # Vercel can also deploy by itself from the repository; the hook is for when it does not
+      - name: Deploy the site on Vercel
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$VERCEL_DEPLOY_HOOK_URL" ]; then
+            curl --fail --silent --show-error --request POST "$VERCEL_DEPLOY_HOOK_URL" > /dev/null
+          else
+            echo "No VERCEL_DEPLOY_HOOK_URL secret: Vercel deploys from its own link to the repository."
+          fi
+
+      # the API's address is a repository variable (not a secret): the Render address
+      - name: Wait for the new API, and check no fault switch is on
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          for attempt in $(seq 1 60); do
+            body=$(curl --silent --max-time 20 "$API_URL/health" || true)
+            if echo "$body" | grep -q '"status":"ok"'; then
+              echo "$body"
+              echo "$body" | grep -q '"faults":\[\]' || { echo "A fault switch is on in production."; exit 1; }
+              exit 0
+            fi
+            echo "attempt $attempt: not ready yet"
+            sleep 20
+          done
+          echo "The API did not become healthy in 20 minutes."
+          exit 1
+
+      - name: Mark the deploy with a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag

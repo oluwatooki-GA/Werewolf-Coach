@@ -1,9 +1,16 @@
 name: ci
 
-on: push
+# Runs on every push and pull request, and the release workflow runs it again before deploying.
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
-  check:
+  python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -15,3 +22,32 @@ jobs:
       - run: uv run ruff check .
       - run: uv run mypy src
       - run: uv run pytest -q
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # the compose file must parse, and both images (the API and the site) must build
+      - run: docker compose config --quiet
+      - run: docker compose build
