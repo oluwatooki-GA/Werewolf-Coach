@@ -82,6 +82,8 @@ def test_play_mode_is_off_by_default_and_the_api_trusts_the_site_to_name_the_vis
     assert env["PLAY_GAME_BUDGET"] == "${PLAY_GAME_BUDGET:-0.40}"  # defaults match the API's own
     assert env["PLAY_GAME_ESTIMATE"] == "${PLAY_GAME_ESTIMATE:-0.30}"
     assert env["ADMIN_TOKEN"] == "${ADMIN_TOKEN:-}"  # no admin page unless one is set
+    for name in ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_HOST"):
+        assert env[name] == f"${{{name}:-}}"  # empty unless the owner sets it: nothing is sent
     # the site passes each visitor's address on; without this the rate limit would count the
     # site as one visitor and every real one would share a single allowance
     assert env["FORWARDED_ALLOW_IPS"] == "*"

@@ -7,7 +7,7 @@ from pathlib import Path
 from werewolf.llm.cache import FileCache
 from werewolf.llm.client import LLMClient
 from werewolf.llm.ledger import Ledger
-from werewolf.llm.transport import FREE_PROVIDERS, LiteLLMTransport
+from werewolf.llm.transport import FREE_PROVIDERS, LiteLLMTransport, attach_langfuse
 
 KEY_FOR = {
     "openai": "OPENAI_API_KEY",
@@ -64,6 +64,7 @@ def build_client(
     key = KEY_FOR.get(provider)
     if key is not None and not os.environ.get(key):
         raise RuntimeError(f"{key} is not set (add it to .env)")
+    attach_langfuse()  # a no-op unless the three LANGFUSE_ variables are set
     pace = dict(DEFAULT_RPM)
     if requests_per_minute is not None:
         pace[provider] = requests_per_minute

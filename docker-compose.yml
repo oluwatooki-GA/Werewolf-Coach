@@ -35,6 +35,10 @@ services:
       PLAY_GAME_ESTIMATE: ${PLAY_GAME_ESTIMATE:-0.30}
       # the owner's admin page: empty means there is none
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      # Langfuse traces of every model call: all three set, or none and nothing is sent
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-}
       # the site passes each visitor's address on, so the rate limit counts visitors, not the site
       FORWARDED_ALLOW_IPS: "*"
     volumes:

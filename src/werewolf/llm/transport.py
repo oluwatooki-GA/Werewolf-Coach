@@ -1,7 +1,9 @@
 """The real transport: LiteLLM. This is the only file that imports `litellm`."""
 
 import json
+import os
 import time
+from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any
 
@@ -23,6 +25,7 @@ from werewolf.llm.types import (
     UnknownPrice,
 )
 
+LANGFUSE_VARS = ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_HOST")
 FREE_PROVIDERS = frozenset({"groq", "cerebras"})  # free tiers: cost 0, limited by rate limits
 _ACCEPTS_CACHE_KEY = frozenset({"openai", "groq"})  # providers that take prompt_cache_key
 # Claude 5 models reject the temperature setting ("`temperature` is deprecated for this model").
@@ -154,3 +157,14 @@ class LiteLLMTransport:
             # that used the whole output budget as cut off.
             truncated=choice.finish_reason == "length" or completion >= request.max_tokens,
         )
+
+
+def attach_langfuse(env: Mapping[str, str] | None = None) -> bool:
+    """Send every model call to Langfuse, through LiteLLM's callback, but only when all three of
+    its variables are set. Otherwise nothing is attached and no tracing code is loaded."""
+    env = os.environ if env is None else env
+    if not all(env.get(name) for name in LANGFUSE_VARS):
+        return False
+    if "langfuse_otel" not in litellm.callbacks:
+        litellm.callbacks.append("langfuse_otel")
+    return True
