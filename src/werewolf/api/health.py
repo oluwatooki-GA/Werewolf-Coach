@@ -9,6 +9,7 @@ from sqlalchemy import text
 from werewolf.api.deps import DB, Settings
 from werewolf.api.play import current_verdict
 from werewolf.api.schemas import Health
+from werewolf.llm.faults import active_faults
 from werewolf.llm.transport import LiteLLMTransport
 from werewolf.runtime import KEY_FOR
 
@@ -37,5 +38,6 @@ def health(request: Request, db: DB, config: Settings) -> JSONResponse:
         provider=provider,
         play=play,
         active_games=len(request.app.state.play_tasks),
+        faults=active_faults(),
     )
     return JSONResponse(body.model_dump())

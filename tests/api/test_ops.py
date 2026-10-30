@@ -56,6 +56,7 @@ def test_health_with_play_not_set_up_is_ok_and_says_so(engine: Engine) -> None:
             "provider": "off",
             "play": "off",
             "active_games": 0,
+            "faults": [],
         }
 
 
@@ -107,6 +108,18 @@ def test_health_counts_the_games_being_played(engine: Engine) -> None:
         assert client.get("/health").json()["active_games"] == 1
 
 
+def test_health_names_the_fault_switches_that_are_on_so_production_can_be_checked(
+    engine: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("FAULTS", "timeout,bad_json")
+    monkeypatch.delenv("APP_ENV", raising=False)
+    with TestClient(app_for(engine)) as client:
+        assert client.get("/health").json()["faults"] == []  # set, but not a test process: off
+    monkeypatch.setenv("APP_ENV", "test")
+    with TestClient(app_for(engine)) as client:
+        assert client.get("/health").json()["faults"] == ["timeout", "bad_json"]
+
+
 def test_health_is_503_when_the_database_cannot_be_reached() -> None:
     broken = create_engine("sqlite:////no/such/folder/x.db")
     response = TestClient(create_app(broken)).get("/health")
@@ -115,6 +128,19 @@ def test_health_is_503_when_the_database_cannot_be_reached() -> None:
 
 
 # --- /metrics ----------------------------------------------------------------------------------
+
+TOKEN = "s3cret-admin-token"
+AUTH = {"Authorization": f"Bearer {TOKEN}"}
+
+
+def test_metrics_do_not_exist_without_a_token_set_and_need_it_when_set(engine: Engine) -> None:
+    with TestClient(app_for(engine)) as client:
+        assert client.get("/metrics").status_code == 404
+        assert client.get("/metrics", headers=AUTH).status_code == 404
+    with TestClient(app_for(engine, admin_token=TOKEN)) as client:
+        assert client.get("/metrics").status_code == 401
+        assert client.get("/metrics", headers={"Authorization": "Bearer wrong"}).status_code == 401
+        assert client.get("/metrics", headers=AUTH).status_code == 200
 
 
 def test_metrics_count_exactly_what_is_stored(tmp_path: Path) -> None:
@@ -130,10 +156,10 @@ def test_metrics_count_exactly_what_is_stored(tmp_path: Path) -> None:
         finish_session(conn, cut, "stopped", reason="budget", cost=0.1)
         add_spend(conn, "2026-10-28", 0.25)
         add_spend(conn, TODAY, 0.30)
-    with TestClient(app_for(engine)) as client:
+    with TestClient(app_for(engine, admin_token=TOKEN)) as client:
         with engine.begin() as conn:  # after start-up, which stops any game left running
             new_session(conn, {})
-        body = client.get("/metrics").json()
+        body = client.get("/metrics", headers=AUTH).json()
     assert body["games"]["total"] == 3
     assert body["games"]["by_status"] == {"finished": 3}
     assert body["games"]["unclean"] == 0
@@ -146,29 +172,29 @@ def test_metrics_count_exactly_what_is_stored(tmp_path: Path) -> None:
 def test_metrics_see_a_game_that_was_played_here(engine: Engine) -> None:
     import time
 
-    with TestClient(app_for(engine, play_model="fake")) as client:
+    with TestClient(app_for(engine, play_model="fake", admin_token=TOKEN)) as client:
         play_id = client.post("/play", json=play_body()).json()["id"]
         for _ in range(200):
             if client.get(f"/play/{play_id}").json()["status"] != "running":
                 break
             time.sleep(0.05)
-        body = client.get("/metrics").json()
+        body = client.get("/metrics", headers=AUTH).json()
     assert body["play"]["finished"] == 1 and body["play"]["running"] == 0
     assert body["games"]["by_source"] == {"play": 1}
 
 
 def test_metrics_on_an_empty_database_are_zeros_not_errors(engine: Engine) -> None:
-    with TestClient(app_for(engine)) as client:
-        body = client.get("/metrics").json()
+    with TestClient(app_for(engine, admin_token=TOKEN)) as client:
+        body = client.get("/metrics", headers=AUTH).json()
     assert body["games"] == {"total": 0, "by_status": {}, "by_source": {}, "unclean": 0}
     assert body["play"] == {"started": 0, "finished": 0, "stopped": 0, "running": 0}
     assert body["spend"] == {"today": 0.0, "total": 0.0, "by_day": {}}
 
 
 def test_metrics_hold_no_secrets_and_no_visitor_data(engine: Engine) -> None:
-    with TestClient(app_for(engine, play_model="fake")) as client:
+    with TestClient(app_for(engine, play_model="fake", admin_token=TOKEN)) as client:
         client.post("/play", json=play_body())
-        text = client.get("/metrics").text
+        text = client.get("/metrics", headers=AUTH).text
     assert "cards" not in text and "reason" not in text and "wolf.lie_low" not in text
 
 
@@ -244,8 +270,6 @@ def test_a_game_that_stops_logs_why(engine: Engine) -> None:
 
 
 # --- admin -------------------------------------------------------------------------------------
-
-TOKEN = "s3cret-admin-token"
 
 
 def test_admin_does_not_exist_unless_a_token_is_set(engine: Engine) -> None:

@@ -20,6 +20,7 @@ class Health(BaseModel):
     provider: Literal["ok", "missing_key", "off"] = "off"  # the play model's key; never its value
     play: Literal["open", "paused", "off"] = "off"
     active_games: int = 0  # games being played right now
+    faults: list[str] = []  # test-only fault switches that are on: always empty in production
 
 
 class GameCounts(BaseModel):

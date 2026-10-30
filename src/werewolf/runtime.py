@@ -6,6 +6,7 @@ from pathlib import Path
 
 from werewolf.llm.cache import FileCache
 from werewolf.llm.client import LLMClient
+from werewolf.llm.faults import with_faults
 from werewolf.llm.ledger import Ledger
 from werewolf.llm.transport import FREE_PROVIDERS, LiteLLMTransport, attach_langfuse
 
@@ -69,7 +70,7 @@ def build_client(
     if requests_per_minute is not None:
         pace[provider] = requests_per_minute
     return LLMClient(
-        transport,
+        with_faults(transport),  # test processes only: see llm/faults.py
         Ledger(root / "data" / "ledger.json"),
         FileCache(root / "data" / "cache" / "llm"),
         max_concurrency=max_concurrency,
