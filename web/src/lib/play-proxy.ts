@@ -10,8 +10,13 @@ export function isPlayId(id: string): boolean {
  * included. The browser talks to the site and never to the API, so the API's address stays on the
  * server; the visitor's address is passed along so the API's rate limit counts visitors, not us.
  */
-export async function forwardToApi(path: string, request: Request, method: "GET" | "POST"): Promise<Response> {
-  const headers = new Headers({ "content-type": "application/json" });
+export async function forwardToApi(
+  path: string,
+  request: Request,
+  method: "GET" | "POST",
+  extra: Record<string, string> = {},
+): Promise<Response> {
+  const headers = new Headers({ "content-type": "application/json", ...extra });
   const visitor = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip");
   if (visitor) headers.set("x-forwarded-for", visitor);
   try {

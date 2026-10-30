@@ -45,6 +45,13 @@ describe("forwardToApi", () => {
     expect(init.body).toBeUndefined();
   });
 
+  it("passes on the extra headers it is given, such as the admin token", async () => {
+    fetchMock.mockResolvedValue(new Response("{}", { status: 200 }));
+    await forwardToApi("/admin/overview", asked("{}"), "GET", { authorization: "Bearer abc" });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(new Headers(init.headers).get("authorization")).toBe("Bearer abc");
+  });
+
   it("says so plainly when the API is not answering", async () => {
     fetchMock.mockRejectedValue(new Error("ECONNREFUSED"));
     const response = await forwardToApi("/play", asked("{}"), "POST");

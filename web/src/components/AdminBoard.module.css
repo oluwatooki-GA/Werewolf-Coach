@@ -1,0 +1,120 @@
+.form {
+  display: grid;
+  gap: var(--s3);
+  max-width: 22rem;
+  padding: var(--s4);
+  border-radius: 12px;
+  background: var(--bubble);
+}
+
+.form label {
+  display: grid;
+  gap: var(--s1);
+  color: var(--dim);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.form input {
+  padding: 0.5rem var(--s3);
+  border: 0;
+  border-radius: 8px;
+  background: var(--raise);
+  color: var(--text);
+  font: inherit;
+  outline: 1px solid var(--raise-2);
+}
+
+.form button {
+  width: fit-content;
+  padding: 0.5rem var(--s5);
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.form button:disabled {
+  background: var(--raise-2);
+  color: var(--dim);
+  cursor: not-allowed;
+}
+
+.form p {
+  margin: 0;
+  color: var(--text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--s3);
+  padding: var(--s3);
+}
+
+.line {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text);
+}
+
+.card {
+  padding: var(--s4);
+  border-radius: 12px;
+  background: var(--bubble);
+}
+
+.card:last-child {
+  grid-column: 1 / -1;
+}
+
+.card h2 {
+  margin: 0 0 var(--s2);
+  color: var(--strong);
+  font-size: 1rem;
+}
+
+.card dl,
+.card ul {
+  display: grid;
+  gap: var(--s1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.card dt {
+  color: var(--dim);
+}
+
+.card dd {
+  margin: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.card li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  color: var(--dim);
+  font-size: 0.875rem;
+}
+
+.card li b {
+  color: var(--text);
+}
+
+.card li em {
+  color: var(--text);
+  font-style: normal;
+}
