@@ -1,0 +1,29 @@
+# The API on Render's free plan, built from the same Dockerfile as `docker compose up`.
+# The site is on Vercel and the database on Neon. Keys marked `sync: false` are asked for in the
+# Render dashboard when the blueprint is first applied; none is ever written in this file.
+# Other settings the API reads can be added there later: ANTHROPIC_API_KEY, PLAY_GAME_BUDGET,
+# PLAY_GAME_ESTIMATE, PLAY_DAILY_CAP, PLAY_TOTAL_CAP, PLAY_REQUESTS_PER_MINUTE, and the three
+# LANGFUSE_ variables (all three or none).
+services:
+  - type: web
+    name: werewolf-coach-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: false  # a release (a v* tag) asks Render to deploy, through the deploy hook
+    envVars:
+      - key: PORT  # the port the image serves on
+        value: "8000"
+      - key: FORWARDED_ALLOW_IPS  # the site passes each visitor's address on for the rate limit
+        value: "*"
+      - key: DATABASE_URL  # the Neon connection string
+        sync: false
+      - key: WEB_ORIGIN  # the Vercel address of the site, the one origin allowed to call the API
+        sync: false
+      - key: OPENAI_API_KEY  # a key made for this site, with a spend limit set at OpenAI
+        sync: false
+      - key: PLAY_MODEL  # the model the agents use, for example gpt-4o-mini; empty turns play off
+        sync: false
+      - key: ADMIN_TOKEN  # opens /metrics and the admin page; none means neither exists
+        sync: false
