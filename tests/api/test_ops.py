@@ -112,3 +112,61 @@ def test_health_is_503_when_the_database_cannot_be_reached() -> None:
     response = TestClient(create_app(broken)).get("/health")
     assert response.status_code == 503
     assert (response.json()["status"], response.json()["database"]) == ("down", "down")
+
+
+# --- /metrics ----------------------------------------------------------------------------------
+
+
+def test_metrics_count_exactly_what_is_stored(tmp_path: Path) -> None:
+    from api_support import build, played
+
+    from werewolf.store.play import finish_session, new_session
+
+    engine = build(tmp_path, [played(1), played(2), played(3)])
+    with engine.begin() as conn:
+        done = new_session(conn, {})
+        finish_session(conn, done, "finished", game_id="1-x", cost=0.2)
+        cut = new_session(conn, {})
+        finish_session(conn, cut, "stopped", reason="budget", cost=0.1)
+        add_spend(conn, "2026-10-28", 0.25)
+        add_spend(conn, TODAY, 0.30)
+    with TestClient(app_for(engine)) as client:
+        with engine.begin() as conn:  # after start-up, which stops any game left running
+            new_session(conn, {})
+        body = client.get("/metrics").json()
+    assert body["games"]["total"] == 3
+    assert body["games"]["by_status"] == {"finished": 3}
+    assert body["games"]["unclean"] == 0
+    assert body["play"] == {"started": 3, "finished": 1, "stopped": 1, "running": 1}
+    assert body["spend"]["today"] == pytest.approx(0.30)
+    assert body["spend"]["total"] == pytest.approx(0.55)
+    assert body["spend"]["by_day"] == {"2026-10-28": 0.25, TODAY: 0.30}
+
+
+def test_metrics_see_a_game_that_was_played_here(engine: Engine) -> None:
+    import time
+
+    with TestClient(app_for(engine, play_model="fake")) as client:
+        play_id = client.post("/play", json=play_body()).json()["id"]
+        for _ in range(200):
+            if client.get(f"/play/{play_id}").json()["status"] != "running":
+                break
+            time.sleep(0.05)
+        body = client.get("/metrics").json()
+    assert body["play"]["finished"] == 1 and body["play"]["running"] == 0
+    assert body["games"]["by_source"] == {"play": 1}
+
+
+def test_metrics_on_an_empty_database_are_zeros_not_errors(engine: Engine) -> None:
+    with TestClient(app_for(engine)) as client:
+        body = client.get("/metrics").json()
+    assert body["games"] == {"total": 0, "by_status": {}, "by_source": {}, "unclean": 0}
+    assert body["play"] == {"started": 0, "finished": 0, "stopped": 0, "running": 0}
+    assert body["spend"] == {"today": 0.0, "total": 0.0, "by_day": {}}
+
+
+def test_metrics_hold_no_secrets_and_no_visitor_data(engine: Engine) -> None:
+    with TestClient(app_for(engine, play_model="fake")) as client:
+        client.post("/play", json=play_body())
+        text = client.get("/metrics").text
+    assert "cards" not in text and "reason" not in text and "wolf.lie_low" not in text

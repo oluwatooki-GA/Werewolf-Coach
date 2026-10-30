@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine
 
-from werewolf.api import cards, coach, coach_runs, games, health, play
+from werewolf.api import cards, coach, coach_runs, games, health, ops, play
 from werewolf.api.deps import ApiSettings
 from werewolf.engine.state import GameState
 from werewolf.store import make_engine
@@ -39,6 +39,6 @@ def create_app(engine: Engine | None = None, settings: ApiSettings | None = None
     app.add_middleware(
         CORSMiddleware, allow_origins=[settings.web_origin], allow_methods=["GET", "POST"]
     )
-    for router in (health, games, cards, coach, coach_runs, play):
+    for router in (health, ops, games, cards, coach, coach_runs, play):
         app.include_router(router.router)
     return app

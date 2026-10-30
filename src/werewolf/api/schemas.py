@@ -22,6 +22,32 @@ class Health(BaseModel):
     active_games: int = 0  # games being played right now
 
 
+class GameCounts(BaseModel):
+    total: int
+    by_status: dict[str, int]
+    by_source: dict[str, int]  # "play" are games visitors started here
+    unclean: int  # games where a model call failed and fell back to a default
+
+
+class PlayCounts(BaseModel):
+    started: int
+    finished: int
+    stopped: int
+    running: int
+
+
+class SpendCounts(BaseModel):
+    today: float  # dollars, in the day play counts in (UTC)
+    total: float
+    by_day: dict[str, float]
+
+
+class Metrics(BaseModel):
+    games: GameCounts
+    play: PlayCounts
+    spend: SpendCounts
+
+
 class GameSummary(BaseModel):
     """One row of the games list: everything except the log itself."""
 
