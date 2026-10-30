@@ -1,10 +1,20 @@
 """Counters for whoever runs it, read from the database. No visitor data and no secrets."""
 
-from fastapi import APIRouter, Request
+import secrets
+from typing import Annotated
+
+from fastapi import APIRouter, Header, HTTPException, Request
 from sqlalchemy import Connection, func, select
 
-from werewolf.api.deps import DB
-from werewolf.api.schemas import GameCounts, Metrics, PlayCounts, SpendCounts
+from werewolf.api.deps import DB, Settings
+from werewolf.api.schemas import (
+    AdminOverview,
+    AdminPlay,
+    GameCounts,
+    Metrics,
+    PlayCounts,
+    SpendCounts,
+)
 from werewolf.store.tables import games, play_sessions, play_spend
 
 router = APIRouter(tags=["ops"])
@@ -43,3 +53,45 @@ def read_metrics(conn: Connection, today: str) -> Metrics:
 def metrics(request: Request, db: DB) -> Metrics:
     with db.connect() as conn:
         return read_metrics(conn, request.app.state.play_day())
+
+
+RECENT = 20
+
+
+@router.get("/admin/overview")
+def admin_overview(
+    request: Request,
+    db: DB,
+    config: Settings,
+    authorization: Annotated[str | None, Header()] = None,
+) -> AdminOverview:
+    """What the owner looks at: the counts and the latest games visitors started. It does not
+    exist unless ADMIN_TOKEN is set, and then it needs `Authorization: Bearer <token>`."""
+    if not config.admin_token:
+        raise HTTPException(404, "Not Found")
+    scheme, _, given = (authorization or "").partition(" ")
+    if scheme != "Bearer" or not secrets.compare_digest(
+        given.encode(), config.admin_token.encode()
+    ):
+        raise HTTPException(401, "A valid admin token is needed.", {"WWW-Authenticate": "Bearer"})
+    with db.connect() as conn:
+        rows = conn.execute(
+            select(play_sessions).order_by(play_sessions.c.created_at.desc()).limit(RECENT)
+        ).all()
+        metrics = read_metrics(conn, request.app.state.play_day())
+    return AdminOverview(
+        metrics=metrics,
+        recent=[
+            AdminPlay(
+                id=r.id,
+                status=r.status,
+                reason=r.reason or "",
+                cost=r.cost,
+                created_at=r.created_at,
+                game_id=r.game_id,
+            )
+            for r in rows
+        ],
+        active_games=len(request.app.state.play_tasks),
+        play_model=config.play_model,
+    )

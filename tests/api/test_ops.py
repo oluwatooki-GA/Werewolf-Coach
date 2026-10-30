@@ -241,3 +241,56 @@ def test_a_game_that_stops_logs_why(engine: Engine) -> None:
     last = json.loads(out.getvalue().splitlines()[-1])
     assert last["message"] == "play stopped" and last["reason"] == "the run budget is used up"
     assert last["cost"] == 0.2
+
+
+# --- admin -------------------------------------------------------------------------------------
+
+TOKEN = "s3cret-admin-token"
+
+
+def test_admin_does_not_exist_unless_a_token_is_set(engine: Engine) -> None:
+    with TestClient(app_for(engine)) as client:
+        assert client.get("/admin/overview").status_code == 404
+        assert (
+            client.get("/admin/overview", headers={"Authorization": "Bearer "}).status_code == 404
+        )
+
+
+def test_admin_needs_the_token(engine: Engine) -> None:
+    with TestClient(app_for(engine, admin_token=TOKEN)) as client:
+        assert client.get("/admin/overview").status_code == 401
+        for wrong in (f"Bearer {TOKEN}x", "Bearer wrong", TOKEN, "Basic " + TOKEN, "Bearer"):
+            response = client.get("/admin/overview", headers={"Authorization": wrong})
+            assert response.status_code == 401, wrong
+        assert TOKEN not in client.get("/admin/overview").text
+        ok = client.get("/admin/overview", headers={"Authorization": f"Bearer {TOKEN}"})
+        assert ok.status_code == 200
+
+
+def test_admin_shows_the_counts_and_the_latest_games_played_here(engine: Engine) -> None:
+    import time
+
+    with TestClient(app_for(engine, admin_token=TOKEN, play_model="fake")) as client:
+        for _ in range(2):
+            play_id = client.post("/play", json=play_body()).json()["id"]
+            for _ in range(200):
+                if client.get(f"/play/{play_id}").json()["status"] != "running":
+                    break
+                time.sleep(0.05)
+        body = client.get("/admin/overview", headers={"Authorization": f"Bearer {TOKEN}"}).json()
+    assert body["metrics"]["play"]["finished"] == 2
+    assert body["play_model"] == "fake" and body["active_games"] == 0
+    assert [p["status"] for p in body["recent"]] == ["finished", "finished"]
+    assert set(body["recent"][0]) == {"id", "status", "reason", "cost", "created_at", "game_id"}
+    assert body["recent"][0]["created_at"] >= body["recent"][1]["created_at"]  # newest first
+
+
+def test_admin_lists_at_most_the_latest_twenty(engine: Engine) -> None:
+    from werewolf.store.play import new_session
+
+    with TestClient(app_for(engine, admin_token=TOKEN)) as client:
+        with engine.begin() as conn:
+            for _ in range(25):
+                new_session(conn, {})
+        body = client.get("/admin/overview", headers={"Authorization": f"Bearer {TOKEN}"}).json()
+    assert len(body["recent"]) == 20

@@ -81,6 +81,7 @@ def test_play_mode_is_off_by_default_and_the_api_trusts_the_site_to_name_the_vis
     )  # empty unless someone turns it on: spends nothing
     assert env["PLAY_GAME_BUDGET"] == "${PLAY_GAME_BUDGET:-0.40}"  # defaults match the API's own
     assert env["PLAY_GAME_ESTIMATE"] == "${PLAY_GAME_ESTIMATE:-0.30}"
+    assert env["ADMIN_TOKEN"] == "${ADMIN_TOKEN:-}"  # no admin page unless one is set
     # the site passes each visitor's address on; without this the rate limit would count the
     # site as one visitor and every real one would share a single allowance
     assert env["FORWARDED_ALLOW_IPS"] == "*"

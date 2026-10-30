@@ -28,6 +28,7 @@ class ApiSettings:
     play_daily_cap: Decimal = Decimal("1.00")  # dollars a day, all visitors together
     play_total_cap: Decimal = Decimal("10.00")  # dollars in all
     play_requests_per_minute: int = 10  # starts a single address may attempt in a minute
+    admin_token: str = ""  # empty: there is no admin page at all
 
     @classmethod
     def from_env(cls) -> "ApiSettings":
@@ -43,6 +44,7 @@ class ApiSettings:
             play_requests_per_minute=int(
                 os.environ.get("PLAY_REQUESTS_PER_MINUTE", cls.play_requests_per_minute)
             ),
+            admin_token=os.environ.get("ADMIN_TOKEN", cls.admin_token),
         )
 
 

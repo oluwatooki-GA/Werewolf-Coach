@@ -48,6 +48,22 @@ class Metrics(BaseModel):
     spend: SpendCounts
 
 
+class AdminPlay(BaseModel):
+    id: str
+    status: str
+    reason: str
+    cost: float
+    created_at: float  # seconds since 1970
+    game_id: str | None
+
+
+class AdminOverview(BaseModel):
+    metrics: Metrics
+    recent: list[AdminPlay]  # the latest games visitors started, newest first
+    active_games: int
+    play_model: str
+
+
 class GameSummary(BaseModel):
     """One row of the games list: everything except the log itself."""
 

@@ -33,6 +33,8 @@ services:
       # dollars one game may spend, and what a game is assumed to cost when counting the daily cap
       PLAY_GAME_BUDGET: ${PLAY_GAME_BUDGET:-0.40}
       PLAY_GAME_ESTIMATE: ${PLAY_GAME_ESTIMATE:-0.30}
+      # the owner's admin page: empty means there is none
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       # the site passes each visitor's address on, so the rate limit counts visitors, not the site
       FORWARDED_ALLOW_IPS: "*"
     volumes:
