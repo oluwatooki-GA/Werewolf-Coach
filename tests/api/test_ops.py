@@ -170,3 +170,74 @@ def test_metrics_hold_no_secrets_and_no_visitor_data(engine: Engine) -> None:
         client.post("/play", json=play_body())
         text = client.get("/metrics").text
     assert "cards" not in text and "reason" not in text and "wolf.lie_low" not in text
+
+
+# --- logs --------------------------------------------------------------------------------------
+
+
+def test_a_game_played_here_writes_json_lines_that_all_carry_its_id(engine: Engine) -> None:
+    import io
+    import json
+    import logging
+    import time
+
+    from werewolf.logs import JsonFormatter
+
+    out = io.StringIO()
+    handler = logging.StreamHandler(out)
+    handler.setFormatter(JsonFormatter())
+    log = logging.getLogger("werewolf.api.play")
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
+    try:
+        with TestClient(app_for(engine, play_model="fake")) as client:
+            play_id = client.post("/play", json=play_body()).json()["id"]
+            for _ in range(200):
+                state = client.get(f"/play/{play_id}").json()
+                if state["status"] != "running":
+                    break
+                time.sleep(0.05)
+    finally:
+        log.removeHandler(handler)
+    lines = [json.loads(line) for line in out.getvalue().splitlines()]
+    assert [line["message"] for line in lines] == ["play started", "play finished"]
+    assert all(line["play_id"] == play_id for line in lines)
+    done = lines[-1]
+    assert done["status"] == "finished" and done["cost"] == 0.0
+    assert done["game_id"] == state["game_id"]  # the id the replay opens with
+    assert "wolf.lie_low" not in out.getvalue()  # what the visitor picked is not logged
+
+
+def test_a_game_that_stops_logs_why(engine: Engine) -> None:
+    import io
+    import json
+    import logging
+    import time
+    from decimal import Decimal
+
+    from werewolf.logs import JsonFormatter
+    from werewolf.play.service import VisitorGame
+
+    async def stops(*args: object) -> VisitorGame:
+        return VisitorGame("stopped", None, Decimal("0.2"), reason="the run budget is used up")
+
+    out = io.StringIO()
+    handler = logging.StreamHandler(out)
+    handler.setFormatter(JsonFormatter())
+    log = logging.getLogger("werewolf.api.play")
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
+    app = app_for(engine, play_model="fake")
+    app.state.play_run = stops
+    try:
+        with TestClient(app) as client:
+            play_id = client.post("/play", json=play_body()).json()["id"]
+            for _ in range(200):
+                if client.get(f"/play/{play_id}").json()["status"] != "running":
+                    break
+                time.sleep(0.05)
+    finally:
+        log.removeHandler(handler)
+    last = json.loads(out.getvalue().splitlines()[-1])
+    assert last["message"] == "play stopped" and last["reason"] == "the run budget is used up"
+    assert last["cost"] == 0.2

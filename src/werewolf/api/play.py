@@ -121,7 +121,8 @@ async def _play(request: Request, play_id: str, seed: int, picks: Mapping[str, s
     engine, config = request.app.state.engine, request.app.state.settings
     run: RunGame = request.app.state.play_run
 
-    def finish(game: VisitorGame | None, reason: str) -> None:
+    def finish(game: VisitorGame | None, reason: str) -> str | None:
+        """Store the game and close the session; gives the stored game's id, if there is one."""
         with engine.begin() as conn:
             stored = None
             if game is not None and game.log is not None:
@@ -137,19 +138,31 @@ async def _play(request: Request, play_id: str, seed: int, picks: Mapping[str, s
                 reason=reason,
                 cost=float(game.cost) if game is not None else 0.0,
             )
+        return stored if status == "finished" else None
 
     live: dict[str, GameState] = request.app.state.play_live
+    log.info("play started", extra={"play_id": play_id, "seed": seed})
     try:
         try:
             game = await run(seed, picks, config, lambda state: live.__setitem__(play_id, state))
         except Exception:  # a game must end as stopped, never as a row that says running forever
-            log.exception("play game %s crashed", play_id)
+            log.exception("play game crashed", extra={"play_id": play_id})
             await asyncio.to_thread(finish, None, "the game could not be played; try again later")
             return
         try:
-            await asyncio.to_thread(finish, game, game.reason or "")
+            stored = await asyncio.to_thread(finish, game, game.reason or "")
+            log.info(
+                f"play {game.status}",
+                extra={
+                    "play_id": play_id,
+                    "status": game.status,
+                    "cost": float(game.cost),
+                    "reason": game.reason or "",
+                    "game_id": stored,
+                },
+            )
         except Exception:  # played but not stored: say so rather than leave it running
-            log.exception("play game %s could not be saved", play_id)
+            log.exception("play game could not be saved", extra={"play_id": play_id})
             await asyncio.to_thread(finish, None, "the game was played but could not be saved")
     finally:
         live.pop(play_id, None)  # after the row says it is over, so a reader never sees a gap

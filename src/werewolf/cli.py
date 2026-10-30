@@ -482,9 +482,13 @@ def _app_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
     from werewolf.api.app import create_app
+    from werewolf.logs import setup_logging
     from werewolf.store import make_engine
 
-    uvicorn.run(create_app(make_engine(args.database)), host=args.host, port=args.port)
+    setup_logging()
+    uvicorn.run(
+        create_app(make_engine(args.database)), host=args.host, port=args.port, log_config=None
+    )
     return 0
 
 
