@@ -21,6 +21,7 @@ from werewolf.engine.log import GameLog, replay, to_log
 from werewolf.engine.roles import Role
 from werewolf.engine.setup import new_game
 from werewolf.engine.state import Settings, SpeakingMode
+from werewolf.llm.types import CHEAP_MODEL
 
 
 def _bounded(low: int, high: int) -> Callable[[str], int]:
@@ -781,7 +782,7 @@ def main(argv: list[str] | None = None) -> int:
     coach_run.add_argument(
         "--evidence", nargs="+", required=True, help="folders of games the coach reads"
     )
-    coach_run.add_argument("--player-model", default="gpt-4.1-nano")
+    coach_run.add_argument("--player-model", default=CHEAP_MODEL)
     coach_run.add_argument("--coach-model", default="claude-sonnet-5-5")
     coach_run.add_argument("--check-model", default="claude-haiku-5-5")
     coach_run.add_argument("--max-spend-players", help="dollars; required for paid models")

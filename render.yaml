@@ -1,20 +1,23 @@
-# The API on Render's free plan, built from the same Dockerfile as `docker compose up`.
+# The API on Render's free plan, as a Python service built with uv from the lock file.
 # The site is on Vercel and the database on Neon. Keys marked `sync: false` are asked for in the
 # Render dashboard when the blueprint is first applied; none is ever written in this file.
 # Other settings the API reads can be added there later: ANTHROPIC_API_KEY, PLAY_GAME_BUDGET,
 # PLAY_GAME_ESTIMATE, PLAY_DAILY_CAP, PLAY_TOTAL_CAP, PLAY_REQUESTS_PER_MINUTE, and the three
 # LANGFUSE_ variables (all three or none).
+# The Dockerfile is for `docker compose` and CI; Render does not use it.
 services:
   - type: web
     name: werewolf-coach-api
-    runtime: docker
+    runtime: python
     plan: free
-    dockerfilePath: ./Dockerfile
+    buildCommand: uv sync --frozen --no-dev
+    # --frozen and --no-dev: `uv run` must not install the dev tools again on every start
+    startCommand: uv run --frozen --no-dev python -m werewolf.cli app serve --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    autoDeploy: false  # a release (a v* tag) asks Render to deploy, through the deploy hook
+    autoDeploy: true  # a push to the repository deploys it; no hook is needed
     envVars:
-      - key: PORT  # the port the image serves on
-        value: "8000"
+      - key: PYTHON_VERSION  # the project needs 3.12 or newer, and pins 3.12 in .python-version
+        value: "3.12.10"
       - key: FORWARDED_ALLOW_IPS  # the site passes each visitor's address on for the rate limit
         value: "*"
       - key: DATABASE_URL  # the Neon connection string

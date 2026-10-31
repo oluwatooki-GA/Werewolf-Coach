@@ -19,6 +19,9 @@ class UnknownPrice(LedgerBlocked):
     """The model has no known price, so its cost cannot be limited. Refused."""
 
 
+CHEAP_MODEL = "gpt-4o-mini"  # the default for runs that need many cheap games, and for play
+
+
 class Request(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 

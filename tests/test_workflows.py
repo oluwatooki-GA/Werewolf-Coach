@@ -84,22 +84,32 @@ def test_the_deploy_waits_for_the_checks_and_the_eval_check() -> None:
     assert doc["jobs"]["checks"]["uses"] == "./.github/workflows/ci.yml"
 
 
-def test_the_database_is_prepared_before_the_api_is_deployed_and_health_is_checked_after() -> None:
+def test_the_database_is_prepared_then_the_live_api_is_checked_then_the_release_is_written() -> (
+    None
+):
     names = [str(s.get("name", "")) for s in steps(load("release.yml"), "deploy")]
     order = [
         next(i for i, n in enumerate(names) if n.startswith(start))
-        for start in ("Prepare the database", "Deploy the API", "Wait for the new API", "Mark")
+        for start in ("Prepare the database", "Check the live API", "Mark")
     ]
     assert order == sorted(order)
 
 
-def test_the_release_refuses_to_finish_if_a_fault_switch_is_on_in_production() -> None:
-    wait = next(
-        s
+def test_the_release_does_not_call_a_deploy_hook_because_render_and_vercel_deploy_themselves() -> (
+    None
+):
+    assert "DEPLOY_HOOK" not in text("release.yml") and "curl" not in "".join(
+        str(s.get("run", ""))
         for s in steps(load("release.yml"), "deploy")
-        if "Wait for the new API" in s.get("name", "")
+        if "Check" not in s.get("name", "")
     )
-    assert '"faults":\\[\\]' in wait["run"]
+
+
+def test_the_release_refuses_to_finish_if_a_fault_switch_is_on_in_production() -> None:
+    check = next(
+        s for s in steps(load("release.yml"), "deploy") if "Check the live API" in s.get("name", "")
+    )
+    assert '"faults":\[\]' in check["run"]
 
 
 def test_a_release_marks_the_deploy_and_only_it_may_write() -> None:
@@ -113,7 +123,7 @@ def test_a_release_marks_the_deploy_and_only_it_may_write() -> None:
 
 
 def test_every_secret_a_workflow_uses_comes_from_the_actions_secrets() -> None:
-    allowed = {"DATABASE_URL", "RENDER_DEPLOY_HOOK_URL", "VERCEL_DEPLOY_HOOK_URL"}
+    allowed = {"DATABASE_URL"}
     used = set()
     for path in WORKFLOWS.glob("*.yml"):
         used |= set(re.findall(r"secrets\.([A-Z_]+)", path.read_text(encoding="utf-8")))
