@@ -9,7 +9,7 @@ import { ChatAvatar } from "./ChatAvatar";
 import { ChatHeader } from "./ChatHeader";
 import { Chips } from "./Chips";
 import { CoachThoughts } from "./CoachThoughts";
-import { Back, Close } from "./Icons";
+import { Close } from "./Icons";
 import { IntervalBar } from "./IntervalBar";
 import { INFO_DEFAULT, INFO_KEY, INFO_MAX, INFO_MIN, Splitter, useWidth } from "./Splitter";
 import styles from "./CoachBoard.module.css";
@@ -82,10 +82,19 @@ function CardInfo({
   );
 }
 
+/** The card the page opens on: the one the coach started from, else the first it could start from. */
+function firstRoot(cards: Card[], generations: Generation[]): string | null {
+  const written = new Set(generations.map((g) => g.challenger_card));
+  const available = cards.filter((c) => !written.has(ref(c)));
+  const start = generations[0]?.champion_before ?? null;
+  const first = available.find((c) => ref(c) === start) ?? available[0];
+  return first ? ref(first) : null;
+}
+
 /**
- * The coach, as cards. First the cards it can start from; pick one and the cards the coach built
- * from it appear as a family tree; pick any card and its details open on the side, with the
- * coach's own thoughts when the coach wrote it.
+ * The coach, as cards. The cards it can start from sit in a rail, and the cards the coach built
+ * from the picked one show beside it as a family tree. The page opens on the starting card. Pick
+ * any card and its details open on the side, with the coach's own thoughts when the coach wrote it.
  */
 export function CoachBoard({
   side,
@@ -95,7 +104,7 @@ export function CoachBoard({
   generations,
   results,
 }: Props) {
-  const [root, setRoot] = useState<string | null>(null);
+  const [root, setRoot] = useState<string | null>(() => firstRoot(cards, generations));
   const [picked, setPicked] = useState<Picked | null>(null);
 
   const byRef = new Map(cards.map((c) => [ref(c), c]));
@@ -174,7 +183,7 @@ export function CoachBoard({
                               className={styles.tile}
                               data-champion={ref(c) === champion || undefined}
                               aria-pressed={root === null ? undefined : ref(c) === root}
-                              onClick={() => (ref(c) === root ? setRoot(null) : choose(c))}
+                              onClick={() => choose(c)}
                             >
                               <b>{cardParts(c.id).name}</b>
                               <small>version {c.version}</small>
@@ -196,16 +205,6 @@ export function CoachBoard({
 
             {root !== null ? (
               <div className={styles.tree}>
-                <button
-                  type="button"
-                  className={styles.back}
-                  onClick={() => {
-                    setRoot(null);
-                    setPicked(null);
-                  }}
-                >
-                  <Back size={18} /> All cards
-                </button>
                 {root === start && generations.length > 0 ? (
                   <CardGraph generations={generations} picked={picked?.id ?? null} onPick={(node) => setPicked(node)} />
                 ) : (

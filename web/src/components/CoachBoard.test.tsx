@@ -67,46 +67,42 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("the coach's cards", () => {
-  it("starts with just the cards the coach can start from, not the ones it wrote", () => {
+  it("lists only the cards the coach can start from in the rail, not the ones it wrote", () => {
     open();
-    expect(screen.getByRole("button", { name: /accuse early/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /lie low/ })).toBeInTheDocument();
-    expect(screen.queryByText("coach smoke g1")).toBeNull();
+    expect(screen.getByRole("button", { name: /^accuse early version 2/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^lie low version 1/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^coach smoke g1 version/ })).toBeNull();
   });
 
-  it("shows no thoughts, no details and no tree until you pick something", () => {
+  it("opens on the champion's family tree, with no details or thoughts until you pick a card", () => {
     open();
+    expect(screen.getByRole("group", { name: /family tree/ })).toBeInTheDocument();
     expect(screen.getByLabelText("Details")).toHaveAttribute("hidden");
     expect(screen.queryByText(/The coach's thoughts/)).toBeNull();
-    expect(screen.queryByRole("group", { name: /family tree/ })).toBeNull();
   });
 
   it("rings the current champion and says how much the coach built from each card", () => {
     open();
-    const tile = screen.getByRole("button", { name: /accuse early/ });
+    const tile = screen.getByRole("button", { name: /^accuse early version 2/ });
     expect(tile).toHaveAttribute("data-champion");
     expect(tile).toHaveTextContent("Current champion. The coach built 1 card from it.");
-    expect(screen.getByRole("button", { name: /lie low/ })).toHaveTextContent("The coach has not built on it yet.");
+    expect(screen.getByRole("button", { name: /^lie low version 1/ })).toHaveTextContent("The coach has not built on it yet.");
   });
 
-  it("shows the cards built from the one you pick as a tree", () => {
+  it("shows the cards built from the first card as a tree, without picking anything", () => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: /accuse early/ }));
-    expect(screen.getByRole("group", { name: /family tree/ })).toBeInTheDocument();
     expect(screen.getByText("coach smoke g1")).toBeInTheDocument();
     expect(screen.getByText("Cards built from accuse early")).toBeInTheDocument();
   });
 
-  it("goes back to all the cards", () => {
+  it("has no way back to a list of all the cards, since the rail is always there", () => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: /accuse early/ }));
-    fireEvent.click(screen.getByRole("button", { name: "All cards" }));
-    expect(screen.getByRole("button", { name: /lie low/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "All cards" })).toBeNull();
   });
 
   it("says plainly when the coach has not built on a card yet", () => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: /lie low/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^lie low version 1/ }));
     expect(screen.getByText(/The coach has not built on this card yet/)).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: /family tree/ })).toBeNull();
   });
@@ -115,7 +111,6 @@ describe("the coach's cards", () => {
 describe("a card's details", () => {
   const pick = (name: RegExp) => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: /accuse early/ }));
     fireEvent.click(screen.getByRole("button", { name }));
   };
 
@@ -142,7 +137,6 @@ describe("a card's details", () => {
 describe("the coach's thoughts", () => {
   const pickCoachCard = () => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: /accuse early/ }));
     fireEvent.click(screen.getByRole("button", { name: /^coach smoke g1, version 1\./ }));
   };
 
@@ -187,27 +181,27 @@ describe("the coach's thoughts", () => {
 });
 
 describe("the layout", () => {
-  it("keeps the cards in the page when one is picked, folded to a rail beside the tree", () => {
+  it("keeps the cards in the page as a rail beside the tree from the start", () => {
     const { container } = open();
-    expect(container.querySelector("[data-folded]")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /accuse early/ }));
     expect(container.querySelector("[data-folded]")).not.toBeNull();
     expect(screen.getByRole("button", { name: /lie low/ })).toBeInTheDocument();
   });
 
   it("marks the picked card in the rail, and picking another moves the tree to it", () => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: /^accuse early version 2/ }));
     expect(screen.getByRole("button", { name: /^accuse early version 2/ })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: /^lie low version 1/ }));
+    // the card shows twice now: in the rail, and on its own in place of a tree
+    const [inRail] = screen.getAllByRole("button", { name: /^lie low version 1/ });
+    expect(inRail).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Cards built from lie low")).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: /family tree/ })).toBeNull();
   });
 
-  it("unfolds the rail again when you tap the picked card a second time", () => {
+  it("keeps the tree when the picked card is tapped again", () => {
     const { container } = open();
     fireEvent.click(screen.getByRole("button", { name: /^accuse early version 2/ }));
-    fireEvent.click(screen.getByRole("button", { name: /^accuse early version 2/ }));
-    expect(container.querySelector("[data-folded]")).toBeNull();
+    expect(container.querySelector("[data-folded]")).not.toBeNull();
+    expect(screen.getByRole("group", { name: /family tree/ })).toBeInTheDocument();
   });
 });
