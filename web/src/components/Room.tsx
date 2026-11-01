@@ -22,6 +22,7 @@ import { PlayersProvider } from "./PlayersContext";
 import { Poll } from "./Poll";
 import { Playback } from "./Playback";
 import { Post } from "./Post";
+import { INFO_DEFAULT, INFO_KEY, INFO_MAX, INFO_MIN, Splitter, useWidth } from "./Splitter";
 import { Thoughts } from "./Thoughts";
 import { Typing } from "./Typing";
 import { WolfChat } from "./WolfChat";
@@ -66,7 +67,7 @@ type Props = {
 type Selectable = ReplayLine | ReplayVote;
 
 export function Room({
-  entries,
+  entries: all,
   players,
   title,
   subtitle,
@@ -83,11 +84,16 @@ export function Room({
   const feed = useRef<HTMLDivElement>(null);
   const menuBox = useRef<HTMLDivElement>(null);
   const stick = useRef(true); // keep the newest message in view, unless the reader scrolled away
+  const [speed, setSpeed] = useState<Speed>("normal");
+  // In a game still being played the newest message is held back until the one after it arrives.
+  // That way the chat knows who is writing, and can say so, instead of waiting with no name.
+  const last = all.at(-1);
+  const held = growing && speed !== "instant" && last && talks(last) ? last : undefined;
+  const entries = held ? all.slice(0, -1) : all;
   const total = entries.length;
 
   const [shown, setShown] = useState(autoplay ? 0 : total);
   const [playing, setPlaying] = useState(autoplay);
-  const [speed, setSpeed] = useState<Speed>("normal");
   const [typingAt, setTypingAt] = useState<number | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [roles, setRoles] = useState(true);
@@ -103,6 +109,12 @@ export function Room({
   const [pop, setPop] = useState<"sides" | "options" | null>(null);
   const [panel, setPanel] = useState<"message" | "players" | "player" | null>(
     story || !startAt ? null : "message",
+  );
+  const [infoWidth, setInfoWidth, resetInfoWidth] = useWidth(
+    INFO_KEY,
+    INFO_DEFAULT,
+    INFO_MIN,
+    INFO_MAX,
   );
   const [person, setPerson] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(
@@ -205,11 +217,13 @@ export function Room({
     const wait = delayFor(next, speed, hidden);
     const timers: number[] = [];
     if (talks(next) && !hidden && wait > 0) {
+      // a live game has already been waiting, so the writer shows as typing at once
+      const lead = growing ? 0 : wait * 0.4;
       timers.push(
         window.setTimeout(() => {
           stick.current = farFromEnd() < 400;
           setTypingAt(shown);
-        }, wait * 0.4),
+        }, lead),
       );
     }
     timers.push(
@@ -219,7 +233,7 @@ export function Room({
       }, wait),
     );
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [playing, speed, shown, total, entries, showRoles, moves]);
+  }, [playing, speed, shown, total, entries, showRoles, moves, growing]);
 
   // follow the newest message while the reader is at the bottom, gliding rather than jumping
   const glide = useRef(0);
@@ -407,8 +421,11 @@ export function Room({
         ? `Round 1 of ${lastRound}`
         : `Round ${nowRound} of ${lastRound}`
       : `${count} of ${total}`;
-  const typist = typing ? speakerOf(typing) : null;
-  const voting = typing?.kind === "vote";
+  // the writer of the held-back message counts as typing while the chat waits for it
+  const coming = waiting && held && !isHidden(held, showRoles) ? held : undefined;
+  const upNext = typing ?? coming;
+  const typist = upNext ? speakerOf(upNext) : null;
+  const voting = upNext?.kind === "vote";
 
   return (
     <PlayersProvider
@@ -417,7 +434,11 @@ export function Room({
         show: showRoles,
       }}
     >
-      <div className={styles.room} data-panel={open ? "open" : "closed"}>
+      <div
+        className={styles.room}
+        data-panel={open ? "open" : "closed"}
+        style={{ "--info-width": `${infoWidth}px` } as React.CSSProperties}
+      >
         <section className={styles.channel} aria-label={label}>
           <ChatHeader
             avatar={avatar}
@@ -425,7 +446,7 @@ export function Room({
             subtitle={
               typist ? (
                 <em>
-                  {typist} {voting ? "voting" : "typing"}…
+                  {typist} is {voting ? "voting" : "typing"}…
                 </em>
               ) : (
                 names
@@ -750,6 +771,16 @@ export function Room({
 
         {story ? null : (
           <aside className={styles.info} aria-label="Details" hidden={!open}>
+            <Splitter
+              label="Details width"
+              grow="left"
+              value={infoWidth}
+              min={INFO_MIN}
+              max={INFO_MAX}
+              onChange={setInfoWidth}
+              onReset={resetInfoWidth}
+              className={styles.edge}
+            />
             <header className={styles.infohead}>
               {panel === "player" ? (
                 <button

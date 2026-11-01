@@ -41,19 +41,15 @@ button.identity {
 }
 
 .who h1 {
-  overflow: hidden;
   font-size: 1.0625rem;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .sub {
-  overflow: hidden;
   color: var(--dim);
   font-size: 0.8125rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .sub em {

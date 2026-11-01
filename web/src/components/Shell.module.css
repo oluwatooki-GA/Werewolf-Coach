@@ -1,9 +1,14 @@
+/* the list never takes more than 40% of a narrow window, so the open chat always keeps room */
 .shell {
   display: grid;
-  grid-template-columns: var(--list-width) minmax(0, 1fr);
+  grid-template-columns: min(var(--list-width), 40vw) minmax(0, 1fr);
   position: relative;
   height: 100dvh;
   overflow: hidden;
+}
+
+.edge {
+  left: calc(min(var(--list-width), 40vw) - 0.3125rem);
 }
 
 .main {

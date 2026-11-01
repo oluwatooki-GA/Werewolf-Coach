@@ -1,0 +1,39 @@
+/* a wide invisible grip over the border between two panels; a line shows when it is used */
+.handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 25;
+  width: 0.625rem;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  translate: -50% 0;
+  background: transparent;
+  transition: background-color 120ms var(--ease-out);
+}
+
+.handle:hover::after,
+.handle:focus-visible::after,
+.handle:active::after {
+  background: var(--accent);
+}
+
+.handle:focus-visible {
+  outline: none;
+}
+
+/* on a phone a panel takes the whole screen, so there is nothing to drag */
+@media (max-width: 52rem) {
+  .handle {
+    display: none;
+  }
+}

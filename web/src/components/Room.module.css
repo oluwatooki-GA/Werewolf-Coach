@@ -6,7 +6,7 @@
 }
 
 .room[data-panel="open"] {
-  grid-template-columns: minmax(0, 1fr) var(--info-width);
+  grid-template-columns: minmax(0, 1fr) min(var(--info-width), 55vw);
 }
 
 .channel {
@@ -206,8 +206,14 @@
   background: var(--bar);
 }
 
+/* the grip on the info column's left edge, for changing its width */
+.edge {
+  left: -0.3125rem;
+}
+
 /* the info column on the right: Message info, or the players */
 .info {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -240,8 +246,8 @@
   overflow-y: auto;
 }
 
-/* on a narrower laptop the info column slides over the chat instead of squeezing it */
-@media (max-width: 80rem) {
+/* on a phone the info column covers the chat; on anything wider the chat makes room for it */
+@media (max-width: 52rem) {
   .room[data-panel="open"] {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -251,7 +257,7 @@
     right: 0;
     bottom: 0;
     z-index: 20;
-    width: min(var(--info-width), 100%);
+    width: 100%;
   }
 }
 

@@ -76,19 +76,15 @@
 }
 
 .text b {
-  overflow: hidden;
   color: var(--strong);
   font-size: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .text > span {
-  overflow: hidden;
   color: var(--dim);
   font-size: 0.875rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .note {

@@ -11,6 +11,7 @@ import { Chips } from "./Chips";
 import { CoachThoughts } from "./CoachThoughts";
 import { Back, Close } from "./Icons";
 import { IntervalBar } from "./IntervalBar";
+import { INFO_DEFAULT, INFO_KEY, INFO_MAX, INFO_MIN, Splitter, useWidth } from "./Splitter";
 import styles from "./CoachBoard.module.css";
 
 type Props = {
@@ -109,6 +110,12 @@ export function CoachBoard({
   const roles = ROLE_ORDER.filter((r) => available.some((c) => c.role === r));
   const rootCard = root ? byRef.get(root) : undefined;
   const open = picked !== null;
+  const [infoWidth, setInfoWidth, resetInfoWidth] = useWidth(
+    INFO_KEY,
+    INFO_DEFAULT,
+    INFO_MIN,
+    INFO_MAX,
+  );
   const gen =
     picked?.gen != null
       ? generations.find((g) => g.number === picked.gen)
@@ -121,7 +128,11 @@ export function CoachBoard({
   }
 
   return (
-    <div className={styles.board} data-panel={open ? "open" : "closed"}>
+    <div
+      className={styles.board}
+      data-panel={open ? "open" : "closed"}
+      style={{ "--info-width": `${infoWidth}px` } as React.CSSProperties}
+    >
       <section className={styles.main} aria-label="The coach's cards">
         <ChatHeader
           avatar={<ChatAvatar kind="coach" size={40} />}
@@ -225,6 +236,16 @@ export function CoachBoard({
       </section>
 
       <aside className={styles.info} aria-label="Details" hidden={!open}>
+        <Splitter
+          label="Details width"
+          grow="left"
+          value={infoWidth}
+          min={INFO_MIN}
+          max={INFO_MAX}
+          onChange={setInfoWidth}
+          onReset={resetInfoWidth}
+          className={styles.edge}
+        />
         <header className={styles.infohead}>
           <button
             type="button"

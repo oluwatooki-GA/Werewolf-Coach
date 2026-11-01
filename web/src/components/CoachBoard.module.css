@@ -6,7 +6,7 @@
 }
 
 .board[data-panel="open"] {
-  grid-template-columns: minmax(0, 1fr) var(--info-width);
+  grid-template-columns: minmax(0, 1fr) min(var(--info-width), 55vw);
 }
 
 .main {
@@ -120,11 +120,9 @@
 }
 
 .tile b {
-  overflow: hidden;
   color: var(--strong);
   font-size: 1.0625rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .tile small {
@@ -187,8 +185,14 @@
   font-size: 0.875rem;
 }
 
+/* the grip on the info column's left edge, for changing its width */
+.edge {
+  left: -0.3125rem;
+}
+
 /* the info column: a card's details, then the coach's thoughts */
 .info {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -305,7 +309,7 @@
   }
 }
 
-@media (max-width: 80rem) {
+@media (max-width: 52rem) {
   .board[data-panel="open"] {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -315,7 +319,7 @@
     right: 0;
     bottom: 0;
     z-index: 20;
-    width: min(var(--info-width), 100%);
+    width: 100%;
   }
 }
 

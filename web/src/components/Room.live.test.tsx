@@ -241,8 +241,24 @@ describe("a game that is still being played", () => {
     render(room({ growing: true }));
     wait(15000);
     expect(screen.queryByRole("button", { name: "Watch again" })).toBeNull();
-    expect(screen.getByText("Someone is typing")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Hal is typing");
     expect(screen.queryByText(/Waiting for the next message/)).toBeNull();
+  });
+
+  it("holds the newest message back until the next one arrives, and names who is writing it", () => {
+    const view = render(room({ growing: true }));
+    wait(15000);
+    expect(document.getElementById("R1-1")).toBeNull(); // Hal's line is the newest, so it waits
+    expect(screen.getByText("Hal is typing…")).toBeInTheDocument(); // in the header too
+    view.rerender(room({ growing: true, entries: replay.entries.slice(0, 8) }));
+    wait(15000);
+    expect(document.getElementById("R1-1")).toBeInTheDocument();
+  });
+
+  it("does not name anyone when the newest entry is not a message", () => {
+    render(room({ growing: true, entries: replay.entries.slice(0, 5) }));
+    wait(15000);
+    expect(screen.getByRole("status")).toHaveTextContent("Someone is typing");
   });
 
   it("carries on with the entries that arrive later", () => {
@@ -252,7 +268,7 @@ describe("a game that is still being played", () => {
     view.rerender(room({ growing: true, entries: replay.entries.slice(0, 12) }));
     wait(15000);
     expect(posted()).toBeGreaterThan(before);
-    expect(screen.getByText(/ of 12$/)).toBeInTheDocument();
+    expect(screen.getByText(/ of 11$/)).toBeInTheDocument();
   });
 
   it("shows later entries at once when the reader has chosen Instant", () => {
@@ -270,6 +286,8 @@ describe("a game that is still being played", () => {
     wait(15000);
     expect(screen.queryByText("The end note")).toBeNull();
     view.rerender(room({ growing: false, after: end }));
+    expect(screen.queryByText("The end note")).toBeNull(); // the held-back last message comes first
+    wait(15000);
     expect(screen.getByRole("button", { name: "Watch again" })).toBeInTheDocument();
     expect(screen.getByText("The end note")).toBeInTheDocument();
   });

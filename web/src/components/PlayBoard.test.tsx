@@ -347,7 +347,7 @@ describe("watching the game as it is played", () => {
     serve([running(4), page("running", 4, [])]); // then nothing new, as a real server would say
     await begin();
     for (let i = 0; i < 150; i++) await tick(100); // in small steps: each message waits for a render
-    expect(screen.getByText("Someone is typing")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/ is typing$/);
     expect(screen.queryByRole("link", { name: "Watch the full replay" })).toBeNull();
   });
 
