@@ -237,11 +237,12 @@ describe("a game that is still being played", () => {
     />
   );
 
-  it("is not finished when it has shown everything so far, and says it is waiting", () => {
+  it("is not finished when it has shown everything so far, and shows a typing bubble, not a notice", () => {
     render(room({ growing: true }));
     wait(15000);
     expect(screen.queryByRole("button", { name: "Watch again" })).toBeNull();
-    expect(screen.getByText(/Waiting for the next message/)).toBeInTheDocument();
+    expect(screen.getByText("Someone is typing")).toBeInTheDocument();
+    expect(screen.queryByText(/Waiting for the next message/)).toBeNull();
   });
 
   it("carries on with the entries that arrive later", () => {

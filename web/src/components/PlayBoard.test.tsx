@@ -343,11 +343,11 @@ describe("watching the game as it is played", () => {
     expect(link).toHaveAttribute("href", "/games/1-abcd1234");
   });
 
-  it("says it is waiting while the game goes on, and has no link yet", async () => {
+  it("shows a typing bubble while the game goes on, and has no link yet", async () => {
     serve([running(4), page("running", 4, [])]); // then nothing new, as a real server would say
     await begin();
     for (let i = 0; i < 150; i++) await tick(100); // in small steps: each message waits for a render
-    expect(screen.getByText(/Waiting for the next message/)).toBeInTheDocument();
+    expect(screen.getByText("Someone is typing")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Watch the full replay" })).toBeNull();
   });
 

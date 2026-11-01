@@ -709,11 +709,7 @@ export function Room({
                 );
               })}
               {typist && !voting ? <Typing name={typist} /> : null}
-              {waiting && !typist ? (
-                <div role="status">
-                  <Pill tone="system">Waiting for the next message…</Pill>
-                </div>
-              ) : null}
+              {waiting && !typist ? <Typing /> : null}
               {finished && after ? <div className={styles.after}>{after}</div> : null}
             </div>
 
