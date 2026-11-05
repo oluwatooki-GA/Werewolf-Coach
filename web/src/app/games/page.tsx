@@ -12,14 +12,14 @@ export const metadata: Metadata = { title: "Games" };
 
 /** On a laptop the list is already on the left, so this is the empty chat window beside it. */
 export default async function GamesPage() {
-  const { total } = await api<GameList>("/games?limit=1&players=ai");
+  const list = await api<GameList>("/games?limit=1&players=ai").catch(() => null); // asleep: say it without a count
   return (
     <div className={styles.idle}>
       <ChatAvatar kind="welcome" size={72} />
       <h1>Pick a game</h1>
       <p>
-        {plural(total, "game")} played by AI agents are saved. Open one from the list to watch it play like a
-        live chat.
+        {list ? `${plural(list.total, "game")} played by AI agents are saved. ` : ""}Open one from the list to watch
+        it play like a live chat.
       </p>
     </div>
   );

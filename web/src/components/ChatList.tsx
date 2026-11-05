@@ -8,12 +8,13 @@ import { plural } from "@/lib/format";
 import { modelLabel, modelsIn, SORTS, sortGames, type SortId } from "@/lib/models";
 import { ChatAvatar } from "./ChatAvatar";
 import { TeamMark } from "./TeamMark";
+import { Waker } from "./Waker";
 import styles from "./ChatList.module.css";
 
 type Props = {
   games: GameSummary[];
   total: number;
-  /** The API did not answer, so the list of games is empty for that reason, not for lack of games. */
+  /** The API did not answer, so `games` is the hand-picked set saved in the site, not the whole list. */
   down?: boolean;
 };
 
@@ -58,6 +59,12 @@ export function ChatList({ games, total, down = false }: Props) {
       </header>
 
       <nav aria-label="Chats">
+        {down ? (
+          <Waker>
+            These {games.length} hand-picked games are saved in the site, so you can read them while you wait. The
+            full list appears by itself.
+          </Waker>
+        ) : null}
         <ul className={styles.rows}>
           {PINNED.map((chat) => (
             <li key={chat.href}>
@@ -108,9 +115,7 @@ export function ChatList({ games, total, down = false }: Props) {
           </div>
         </div>
 
-        {down ? (
-          <p className={styles.empty}>The games could not be loaded. The API may be starting up.</p>
-        ) : shown.length === 0 ? (
+        {shown.length === 0 ? (
           <p className={styles.empty}>No saved games match.</p>
         ) : (
           <ul className={styles.rows}>

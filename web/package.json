@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "gen:api": "openapi-typescript ${API_URL:-http://localhost:8000}/openapi.json -o src/lib/api-types.ts"
+    "featured": "node scripts/snapshot-featured.mjs",
+    "gen:api":"openapi-typescript ${API_URL:-http://localhost:8000}/openapi.json -o src/lib/api-types.ts"
   },
   "dependencies": {
     "next": "16.4.2",

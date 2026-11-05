@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameSummary } from "@/lib/api";
 import { ChatList } from "./ChatList";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/", useRouter: () => ({ refresh: vi.fn() }) }));
 
 const game = (id: string, model: string, winner: "Wolves" | "Village") =>
   ({ id, model, winner, rounds: 3, cards: {}, rule_version: "v1" }) as unknown as GameSummary;
@@ -147,5 +147,31 @@ describe("sorting the games", () => {
     fireEvent.click(screen.getByRole("button", { name: /GPT-4.1 mini/ }));
     sortBy("Most rounds");
     expect(ids()).toEqual(["2-bbb", "2-aaa", "2-eee"]);
+  });
+});
+describe("ChatList while the API is waking up", () => {
+  beforeEach(() => vi.stubGlobal("fetch", () => new Promise(() => {}))); // the site never answers in these tests
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("says the API is waking up, and still lists the games it was given", () => {
+    render(<ChatList games={games} total={4} down />);
+    expect(screen.getByRole("status")).toHaveTextContent(/waking up/i);
+    expect(rows()).toHaveLength(4);
+  });
+
+  it("does not say the games could not be loaded, or that it is showing the latest of a longer list", () => {
+    render(<ChatList games={games} total={99} down />);
+    expect(screen.queryByText(/could not be loaded/)).toBeNull();
+    expect(screen.queryByText(/Showing the latest/)).toBeNull();
+  });
+
+  it("says these are hand-picked, so the short list is not mistaken for all the games", () => {
+    render(<ChatList games={games} total={4} down />);
+    expect(screen.getByRole("status")).toHaveTextContent(/hand-picked/i);
+  });
+
+  it("shows no waking notice when the API answered", () => {
+    render(<ChatList games={games} total={4} />);
+    expect(screen.queryByRole("status")).toBeNull();
   });
 });

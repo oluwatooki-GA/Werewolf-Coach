@@ -1,11 +1,23 @@
 import { Room } from "@/components/Room";
-import { apiOrNull } from "@/lib/api";
+import { apiOrNull, isAsleep } from "@/lib/api";
 import type { Featured, Replay } from "@/lib/api";
+import { bundledReplay, featured as saved } from "@/lib/featured";
 import { BOT_NAME, type BotNote, type Playable } from "@/lib/playback";
 import { excerpt, welcomeNotes } from "@/lib/replay";
 import { ChatAvatar } from "./ChatAvatar";
 
 const note = (text: string): BotNote => ({ kind: "bot", text, round: 0 });
+
+/** The moment to play: from the API, or from the copy saved in the site while the API is asleep. */
+async function pickMoment(): Promise<{ featured: Featured | null; replay: Replay | null }> {
+  try {
+    const live = await apiOrNull<Featured>("/featured");
+    return { featured: live, replay: live ? await apiOrNull<Replay>(`/games/${live.game_id}/replay`) : null };
+  } catch (error) {
+    if (!isAsleep(error)) throw error;
+    return { featured: saved.welcome, replay: await bundledReplay(saved.welcome.game_id) };
+  }
+}
 
 /**
  * The first chat a visitor sees. The Werewolf Coach bot says what this is, plays one real moment
@@ -13,8 +25,7 @@ const note = (text: string): BotNote => ({ kind: "bot", text, round: 0 });
  * featured line of a stored game, so nothing here is made up.
  */
 export async function Welcome() {
-  const featured = await apiOrNull<Featured>("/featured");
-  const replay = featured ? await apiOrNull<Replay>(`/games/${featured.game_id}/replay`) : null;
+  const { featured, replay } = await pickMoment();
 
   if (!replay || !featured) {
     return (

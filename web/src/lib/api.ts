@@ -31,14 +31,24 @@ export class ApiError extends Error {
   }
 }
 
+/** No answer, or a server error from a service that is still starting: the API is asleep or waking. */
+export const isAsleep = (error: unknown): boolean =>
+  error instanceof ApiError && (error.status === 0 || error.status >= 500);
+
 export const apiBase = () => process.env.API_URL ?? "http://localhost:8000";
 const base = apiBase;
 
+/**
+ * How long a page waits for the API. A free-plan API that has gone to sleep takes up to a minute
+ * to wake, longer than a page may take to render, so a page gives up early and shows what it has.
+ */
+export const API_TIMEOUT_MS = 3000;
+
 /** Fetch from the API on the server. The site never calls it from the browser. */
-export async function api<T>(path: string): Promise<T> {
+export async function api<T>(path: string, timeoutMs = API_TIMEOUT_MS): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${base()}${path}`, { cache: "no-store" });
+    response = await fetch(`${base()}${path}`, { cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
   } catch {
     throw new ApiError(0, "The API is not answering.");
   }
@@ -49,9 +59,9 @@ export async function api<T>(path: string): Promise<T> {
 }
 
 /** Like `api`, but a 404 becomes null so a page can call notFound(). */
-export async function apiOrNull<T>(path: string): Promise<T | null> {
+export async function apiOrNull<T>(path: string, timeoutMs = API_TIMEOUT_MS): Promise<T | null> {
   try {
-    return await api<T>(path);
+    return await api<T>(path, timeoutMs);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;

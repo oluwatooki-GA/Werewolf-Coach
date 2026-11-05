@@ -3,6 +3,7 @@ import { Figtree } from "next/font/google";
 import { Shell } from "@/components/Shell";
 import { api } from "@/lib/api";
 import type { GameList } from "@/lib/api";
+import { featured } from "@/lib/featured";
 import "./globals.css";
 
 const figtree = Figtree({
@@ -25,6 +26,7 @@ export const viewport: Viewport = { themeColor: "#182a2f", colorScheme: "dark" }
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // an API that is asleep takes up to a minute to answer: show the hand-picked games meanwhile
   const list = await api<GameList>("/games?limit=200&players=ai").catch(() => null);
   return (
     <html lang="en" className={figtree.variable}>
@@ -32,7 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="skip">
           Skip to the chat
         </a>
-        <Shell games={list?.games ?? []} total={list?.total ?? 0} down={!list}>
+        <Shell games={list?.games ?? featured.games} total={list?.total ?? featured.games.length} down={!list}>
           {children}
         </Shell>
       </body>

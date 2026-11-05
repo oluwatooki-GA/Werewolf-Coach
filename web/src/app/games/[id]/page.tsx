@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ChatAvatar } from "@/components/ChatAvatar";
+import { ChatPage } from "@/components/ChatPage";
+import { Post } from "@/components/Post";
 import { Room } from "@/components/Room";
-import { api, apiOrNull } from "@/lib/api";
-import type { Card, Replay } from "@/lib/api";
+import { Waker } from "@/components/Waker";
+import type { Replay } from "@/lib/api";
 import { cardParts, plural } from "@/lib/format";
+import { loadGame } from "@/lib/game-source";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -33,9 +36,20 @@ function matchup(replay: Replay): string {
 
 export default async function ReplayPage({ params }: Props) {
   const { id } = await params;
-  const replay = await apiOrNull<Replay>(`/games/${id}/replay`);
-  if (!replay) notFound();
-  const cards = Object.fromEntries((await api<Card[]>("/strategies")).map((c) => [`${c.id}@${c.version}`, c]));
+  const loaded = await loadGame(id);
+  if (loaded === null) notFound();
+  if (loaded === "waking") {
+    return (
+      <ChatPage avatar={<ChatAvatar kind="welcome" size={40} />} title={`Game ${id}`}>
+        <Post name="Lab" bot>
+          <p>This game is read from the server, which is waking up. It will open here by itself.</p>
+        </Post>
+        <Waker />
+      </ChatPage>
+    );
+  }
+  const { replay } = loaded;
+  const cards = Object.fromEntries(loaded.cards.map((c) => [`${c.id}@${c.version}`, c]));
   return (
     <Room
       entries={replay.entries}
