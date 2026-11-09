@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { Back } from "./Icons";
+import { Back, Github } from "./Icons";
 import styles from "./ChatHeader.module.css";
+
+const REPO = "https://github.com/oluwatooki-GA/Werewolf-Coach";
 
 type Props = {
   avatar: React.ReactNode;
@@ -38,6 +40,15 @@ export function ChatHeader({ avatar, title, subtitle, actions, onInfo, infoLabel
         <div className={styles.identity}>{who}</div>
       )}
       {actions ? <div className={styles.actions}>{actions}</div> : null}
+      <a
+        href={REPO}
+        className={styles.github}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Werewolf Coach on GitHub (opens in a new tab)"
+      >
+        <Github />
+      </a>
     </header>
   );
 }

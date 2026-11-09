@@ -65,6 +65,24 @@ button.identity {
   flex: none;
 }
 
+/* the link to the repository, at the right end of every top bar */
+.github {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--dim);
+  transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out);
+}
+
+.github:hover,
+.github:focus-visible {
+  background: var(--raise);
+  color: var(--strong);
+}
+
 @media (max-width: 52rem) {
   .bar {
     padding-inline: var(--s3);
