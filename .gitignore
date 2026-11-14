@@ -13,8 +13,8 @@ __pycache__/
 .coverage
 coverage.xml
 
-# Project
-data/
+# Project (the root folder only: web/src/data holds the site's own saved games)
+/data/
 
 # Web (M7)
 node_modules/

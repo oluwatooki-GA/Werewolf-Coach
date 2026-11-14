@@ -1,0 +1,565 @@
+{
+ "games": [
+  {
+   "id": "1-845496ae",
+   "seed": 1,
+   "winner": "Village",
+   "rounds": 3,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Bo": "villager.quiet_observer@2",
+    "Cy": "villager.quiet_observer@2",
+    "Eve": "villager.quiet_observer@2",
+    "Fay": "wolf.fake_seer@2",
+    "Gus": "villager.quiet_observer@2",
+    "Hal": "wolf.fake_seer@2"
+   },
+   "cost": 0.0233374,
+   "clean": true,
+   "rule_version": "v1",
+   "source": "e1/fake_seer__quiet_observer",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "14786-a02806f1",
+   "seed": 14786,
+   "winner": "Wolves",
+   "rounds": 4,
+   "model": "gpt-4o-mini",
+   "cards": {
+    "Cy": "wolf.fake_seer@2",
+    "Bo": "seer.reveal_to_save@2",
+    "Ada": "villager.ask_questions@2",
+    "Eve": "villager.track_votes@2",
+    "Hal": "doctor.protect_seer@2",
+    "Di": "wolf.distance_from_partner@1",
+    "Fay": "villager.quiet_observer@2",
+    "Gus": "villager.ask_questions@2"
+   },
+   "cost": 0.0589068,
+   "clean": false,
+   "rule_version": "v3",
+   "source": "play",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "475024-62244f4a",
+   "seed": 475024,
+   "winner": "Village",
+   "rounds": 6,
+   "model": "gpt-4o-mini",
+   "cards": {},
+   "cost": 0.06489165,
+   "clean": true,
+   "rule_version": "v3",
+   "source": "play",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "13-8f572fbb",
+   "seed": 13,
+   "winner": "Village",
+   "rounds": 2,
+   "model": "claude-sonnet-5-5",
+   "cards": {
+    "Ada": "seer.reveal_now@3",
+    "Bo": "wolf.accuse_early@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "villager.ask_questions@2",
+    "Eve": "doctor.protect_self@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "wolf.accuse_early@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 1.8203605,
+   "clean": false,
+   "rule_version": "v1",
+   "source": "sonnet",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "13-8f74fd33",
+   "seed": 13,
+   "winner": "Village",
+   "rounds": 3,
+   "model": "gpt-4.1",
+   "cards": {
+    "Ada": "seer.reveal_now@2",
+    "Bo": "wolf.accuse_early@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "villager.ask_questions@2",
+    "Eve": "doctor.protect_self@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "wolf.accuse_early@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 0.50788,
+   "clean": true,
+   "rule_version": "v1",
+   "source": "expensive",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "13-b578cd68",
+   "seed": 13,
+   "winner": "Wolves",
+   "rounds": 5,
+   "model": "gpt-4.1-mini",
+   "cards": {
+    "Ada": "seer.reveal_now@3",
+    "Bo": "wolf.accuse_early@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "villager.ask_questions@2",
+    "Eve": "doctor.protect_self@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "wolf.accuse_early@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 0.2546288,
+   "clean": true,
+   "rule_version": "v2",
+   "source": "v2mini",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "22-41bc3253",
+   "seed": 22,
+   "winner": "Wolves",
+   "rounds": 4,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Ada": "wolf.accuse_early@2",
+    "Bo": "villager.ask_questions@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "seer.reveal_now@3",
+    "Eve": "wolf.accuse_early@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "doctor.protect_self@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 0.0520355,
+   "clean": true,
+   "rule_version": "v2",
+   "source": "v2d",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "21-b3697c2f",
+   "seed": 21,
+   "winner": "Village",
+   "rounds": 3,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Ada": "seer.reveal_now@3",
+    "Bo": "wolf.accuse_early@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "villager.ask_questions@2",
+    "Eve": "doctor.protect_self@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "wolf.accuse_early@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 0.0552409,
+   "clean": true,
+   "rule_version": "v2",
+   "source": "v2c",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "25-01dd45ac",
+   "seed": 25,
+   "winner": "Wolves",
+   "rounds": 4,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Ada": "seer.reveal_now@3",
+    "Bo": "villager.ask_questions@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "doctor.protect_self@2",
+    "Eve": "wolf.accuse_early@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "wolf.accuse_early@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 0.0453554,
+   "clean": true,
+   "rule_version": "v2",
+   "source": "v2c",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "23-bb15efe7",
+   "seed": 23,
+   "winner": "Wolves",
+   "rounds": 3,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Ada": "villager.ask_questions@2",
+    "Bo": "villager.ask_questions@2",
+    "Cy": "seer.reveal_now@3",
+    "Di": "wolf.accuse_early@2",
+    "Eve": "villager.ask_questions@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "wolf.accuse_early@2",
+    "Hal": "doctor.protect_self@2"
+   },
+   "cost": 0.04037,
+   "clean": true,
+   "rule_version": "v2",
+   "source": "v2d",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "22-1cc27c3e",
+   "seed": 22,
+   "winner": "Wolves",
+   "rounds": 3,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Ada": "wolf.accuse_early@2",
+    "Bo": "villager.ask_questions@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "seer.reveal_now@3",
+    "Eve": "wolf.accuse_early@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "doctor.protect_self@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 0.038502,
+   "clean": true,
+   "rule_version": "v2",
+   "source": "v2c",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "25-7155a3e5",
+   "seed": 25,
+   "winner": "Village",
+   "rounds": 2,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Ada": "seer.reveal_now@3",
+    "Bo": "villager.ask_questions@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "doctor.protect_self@2",
+    "Eve": "wolf.accuse_early@2",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "wolf.accuse_early@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 0.0340254,
+   "clean": true,
+   "rule_version": "v2",
+   "source": "v2d",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "26-de3aefd6",
+   "seed": 26,
+   "winner": "Wolves",
+   "rounds": 3,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Ada": "wolf.accuse_early@2",
+    "Bo": "villager.ask_questions@2",
+    "Cy": "villager.ask_questions@2",
+    "Di": "wolf.accuse_early@2",
+    "Eve": "seer.reveal_now@3",
+    "Fay": "villager.ask_questions@2",
+    "Gus": "doctor.protect_self@2",
+    "Hal": "villager.ask_questions@2"
+   },
+   "cost": 0.0337095,
+   "clean": true,
+   "rule_version": "v2",
+   "source": "v2d",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "4-489bad0b",
+   "seed": 4,
+   "winner": "Wolves",
+   "rounds": 2,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Bo": "villager.track_votes@2",
+    "Cy": "wolf.fake_seer@2",
+    "Di": "wolf.fake_seer@2",
+    "Fay": "villager.track_votes@2",
+    "Gus": "villager.track_votes@2",
+    "Hal": "villager.track_votes@2"
+   },
+   "cost": 0.0240404,
+   "clean": true,
+   "rule_version": "v1",
+   "source": "e1/fake_seer__track_votes",
+   "status": "finished",
+   "human_seat": null
+  },
+  {
+   "id": "5-30835861",
+   "seed": 5,
+   "winner": "Village",
+   "rounds": 2,
+   "model": "gpt-4.1-nano",
+   "cards": {
+    "Bo": "villager.track_votes@2",
+    "Cy": "villager.track_votes@2",
+    "Di": "villager.track_votes@2",
+    "Eve": "wolf.fake_seer@2",
+    "Fay": "wolf.fake_seer@2",
+    "Gus": "villager.track_votes@2"
+   },
+   "cost": 0.0259229,
+   "clean": true,
+   "rule_version": "v1",
+   "source": "e1/fake_seer__track_votes",
+   "status": "finished",
+   "human_seat": null
+  }
+ ],
+ "welcome": {
+  "game_id": "1-845496ae",
+  "focus": "R1-1"
+ },
+ "cards": [
+  {
+   "id": "doctor.protect_loud",
+   "version": 2,
+   "role": "Doctor",
+   "source": "General Mafia advice (wolves silence the most useful voices); Nerdist on keeping the table talking",
+   "summary": "Protect the loudest helpful villager.",
+   "instructions": "Protect the loudest helpful villager: the player who talks most, asks the best questions and votes against suspicious players. The wolves will want to silence them. If that player is removed, move to the next most useful voice. In the day, bid 2, play like an ordinary villager and keep your role hidden.\n",
+   "expected_moves": [
+    "vouch",
+    "probe",
+    "rally"
+   ],
+   "parent": null
+  },
+  {
+   "id": "doctor.protect_seer",
+   "version": 2,
+   "role": "Doctor",
+   "source": "Werewolf rules sheets (a Doctor who finds the Seer can keep them alive); AGI-thon team write-ups on protecting likely Seers",
+   "summary": "Protect whoever claims to be the Seer.",
+   "instructions": "Protect whoever claims to be the Seer, since the wolves will go for them. If nobody has claimed, protect the player whose accusations seem best informed. Vary your pick so the wolves cannot predict it. In the day, bid 1 or 2, play like an ordinary villager and keep your role hidden.\n",
+   "expected_moves": [
+    "vouch",
+    "record_check",
+    "probe"
+   ],
+   "parent": null
+  },
+  {
+   "id": "doctor.protect_self",
+   "version": 2,
+   "role": "Doctor",
+   "source": "AGI-thon team write-ups (a Doctor bot that only protects itself); reasoning from the rules, where the Doctor may protect itself",
+   "summary": "Protect yourself every night.",
+   "instructions": "Protect yourself every night: you are the one player you know is on the village side, and the village needs you alive. In the day, bid 1 or 2 and play like an ordinary villager, ask questions, and keep your role hidden unless you are about to be voted out.\n",
+   "expected_moves": [
+    "probe",
+    "hedge",
+    "self_defend"
+   ],
+   "parent": null
+  },
+  {
+   "id": "seer.hidden_hints",
+   "version": 2,
+   "role": "Seer",
+   "source": "Nerdist, 'How to be the best Werewolf player ever' (wolves hunt special roles early, so hiding has value)",
+   "summary": "Stay hidden and steer with hints.",
+   "instructions": "Stay hidden. Never say you are the Seer. Bid 1 or 2 and use your checks to steer the table: push toward players you found to be wolves, with reasons taken from the log, and speak well of players you cleared. If you are accused, defend yourself with your record.\n",
+   "expected_moves": [
+    "accuse_reasoned",
+    "vouch",
+    "self_defend"
+   ],
+   "parent": null
+  },
+  {
+   "id": "seer.reveal_now",
+   "version": 3,
+   "role": "Seer",
+   "source": "Werewolf rules sheets (the Seer may reveal and use results in the open); AGI-thon team write-ups on early reveals",
+   "summary": "Reveal right away and share every result.",
+   "instructions": "Reveal yourself as the Seer on day 1 and bid 2 to get the floor, which leaves tokens to answer. Report each check clearly: who you checked and what you found. Tell the village whom to vote for based on your results. The wolves will come for you, so share everything you know early, every day.\n",
+   "expected_moves": [
+    "role_claim",
+    "result_claim",
+    "rally"
+   ],
+   "parent": null
+  },
+  {
+   "id": "seer.reveal_to_save",
+   "version": 2,
+   "role": "Seer",
+   "source": "AGI-thon team write-ups (Seer shares once it has found a wolf); general Mafia advice",
+   "summary": "Reveal only when a checked wolf is about to escape.",
+   "instructions": "Keep quiet about being the Seer and bid 0 or 1 until it matters. Reveal only when a player you found to be a wolf is about to escape the vote, or when you are about to be voted out. Then bid 3, say whom you checked and what you found, and ask everyone to vote for that wolf.\n",
+   "expected_moves": [
+    "role_claim",
+    "result_claim",
+    "rally",
+    "hedge"
+   ],
+   "parent": null
+  },
+  {
+   "id": "villager.ask_questions",
+   "version": 2,
+   "role": "Villager",
+   "source": "Nerdist, 'How to be the best Werewolf player ever' (ask lots of questions, a quiet village helps the wolves)",
+   "summary": "Keep people talking with pointed questions.",
+   "instructions": "Get people talking: bid 2 or 3 on most turns. Each time, ask one player a pointed question about something they said or a vote they cast, and ask why. Compare the answer with what they said before. A quiet village helps the wolves, so never let the table go silent.\n",
+   "expected_moves": [
+    "probe",
+    "record_check"
+   ],
+   "parent": null
+  },
+  {
+   "id": "villager.quiet_observer",
+   "version": 2,
+   "role": "Villager",
+   "source": "Team Liquid, 'A general guide to Mafia' (read the thread before posting); general Mafia advice",
+   "summary": "Watch first, speak when you have something.",
+   "instructions": "Watch before you speak. Bid 0 or 1 early and notice who talks, who stays quiet and how people vote. Once you see something in the log, such as a changed vote, bid 2 and quote the line. Vote on the evidence you have, not with the crowd.\n",
+   "expected_moves": [
+    "record_check",
+    "hedge",
+    "accuse_reasoned"
+   ],
+   "parent": null
+  },
+  {
+   "id": "villager.track_votes",
+   "version": 2,
+   "role": "Villager",
+   "source": "Team Liquid, 'A general guide to Mafia' (reading votes and the thread); general Mafia advice",
+   "summary": "Track who changes votes.",
+   "instructions": "Keep track of the votes and bid 1 or 2 to speak about them. Note who voted for whom each day and who switched at the last moment. Point out changes and contradictions by quoting the lines, and vote for the player whose votes have helped the wolves most.\n",
+   "expected_moves": [
+    "record_check",
+    "accuse_reasoned"
+   ],
+   "parent": null
+  },
+  {
+   "id": "wolf.accuse_early",
+   "version": 2,
+   "role": "Werewolf",
+   "source": "Nerdist, 'How to be the best Werewolf player ever' (back accusations with reasons, eagerness looks evil); general Mafia advice",
+   "summary": "Take the lead and accuse early, with reasons.",
+   "instructions": "Take the lead and speak often: bid 2 or 3 on most turns. As soon as someone has said or voted something, accuse one player who is not your partner and back it with a reason from the log. Press again in later turns and call for a vote on them. Always give a reason. Never mention the wolf chat in public.\n",
+   "expected_moves": [
+    "accuse_reasoned",
+    "rally",
+    "record_check"
+   ],
+   "parent": null
+  },
+  {
+   "id": "wolf.coach_smoke_g1",
+   "version": 1,
+   "role": "Werewolf",
+   "source": "the coach, generation 1, wolf side",
+   "summary": "Wolves agree on one kill and one suspect, never turn on each other, open with a question, and accuse only with a concrete fact.",
+   "instructions": "In wolf chat before day, agree on the kill and one public suspect, a villager-seeming player. Never accuse or vote your partner, even to look independent. In round 1 bid 1 or 2 once and ask a pointed question; do not push hard. Accuse only with a concrete fact from the log, a specific vote or claim, never silence. Later bid 2 or 3 and press the player others already suspect. Never mention wolf chat.",
+   "expected_moves": [
+    "probe",
+    "accuse_reasoned",
+    "redirect"
+   ],
+   "parent": null
+  },
+  {
+   "id": "wolf.coach_sonnetgame_g1",
+   "version": 1,
+   "role": "Werewolf",
+   "source": "the coach, generation 1, wolf side",
+   "summary": "A wolf named by a claimed Seer defends once calmly while the partner stays out or gives only light doubt, and the wolves kill the Seer at night instead of voting her.",
+   "instructions": "If a claimed Seer names you, defend once with a calm denial and a question, bidding 2, then stay quiet. If your partner is named, bid 0 or 1 and offer only light doubt; never repeat their arguments or vote their target. At night, kill the claimed Seer rather than voting her out. Never vote for someone you plan to kill that night. Spend the remaining tokens on one reasoned question about another player.",
+   "expected_moves": [
+    "self_defend",
+    "hedge",
+    "probe"
+   ],
+   "parent": null
+  },
+  {
+   "id": "wolf.distance_from_partner",
+   "version": 1,
+   "role": "Werewolf",
+   "source": "the coach, generation 1, wolf side",
+   "summary": "Wolves split their play so the second wolf stays quiet or follows the majority in round 1, never pushes the partner's target, and picks a night kill that does not punish anyone they pushed.",
+   "instructions": "Play to win for your team. Think about who is telling the truth and who is lying. Never push the same target as your partner or repeat his wording. If your partner is accused or exposed, bid 0 or 1 and vote with the majority in round 1; do not defend him. Speak at most once, bidding 2, and give one reason of your own. Pick the night kill so it does not punish a player you pushed or voted against; prefer a quiet villager or the Doctor. Be ready to explain why wolves would kill that target.",
+   "expected_moves": [
+    "accuse_reasoned",
+    "self_defend",
+    "redirect",
+    "hedge"
+   ],
+   "parent": "wolf.default@1"
+  },
+  {
+   "id": "wolf.fake_seer",
+   "version": 2,
+   "role": "Werewolf",
+   "source": "Werewolf AGI-thon team write-ups (bots that always claim Seer), openagi.discourse.group; Nerdist on bold false claims",
+   "summary": "Falsely claim to be the Seer.",
+   "instructions": "Claim to be the Seer on day 1 and bid 3 to get the floor. Name a player you say you checked last night. Call a villager a wolf to get them voted out, or clear one to gain trust, but never call your partner a wolf. If the real Seer disagrees, stay calm, repeat your result, and ask the village whom they trust.\n",
+   "expected_moves": [
+    "role_claim",
+    "result_claim",
+    "rally"
+   ],
+   "parent": null
+  },
+  {
+   "id": "wolf.lie_low",
+   "version": 1,
+   "role": "Werewolf",
+   "source": "Nerdist, 'How to be the best Werewolf player ever' (wolves stay unnoticed and use rational-sounding reasons); general Mafia advice",
+   "summary": "Stay unnoticed and follow the majority.",
+   "instructions": "Keep a low profile. Bid 0 or 1 on most turns and speak only to agree with whoever most players already suspect. Never accuse first. If someone accuses you, stay calm, point to your votes so far, and ask them for their reason. Do not push for any vote that makes you stand out.\n",
+   "expected_moves": [
+    "hedge",
+    "self_defend",
+    "record_check"
+   ],
+   "parent": null
+  },
+  {
+   "id": "wolf.quiet_lead_wolf",
+   "version": 1,
+   "role": "Werewolf",
+   "source": "the coach, generation 2, wolf side",
+   "summary": "One wolf leads with measured bids and accuses only with a concrete reason, while the other stays low-key, and neither wolf names or defends the partner.",
+   "instructions": "Bid 1 or 2 on most turns; bid 3 only to answer an accusation. In round 1, do not accuse unless a real vote or statement gives a concrete reason. Silence or a question is not a reason. If you accuse, name one player who is not your partner, quote the log, and call for a vote. Never name, question or defend your partner. If your partner leads, stay low-key and vote with the likely majority. Never mention the wolf chat in public.",
+   "expected_moves": [
+    "accuse_reasoned",
+    "hedge",
+    "self_defend",
+    "rally"
+   ],
+   "parent": "wolf.accuse_early@2"
+  }
+ ]
+}
