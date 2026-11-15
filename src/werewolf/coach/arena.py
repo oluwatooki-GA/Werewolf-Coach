@@ -91,8 +91,9 @@ async def play_arm(
 
 
 def decide(champion: Arm, challenger: Arm) -> Verdict:
-    """Promote the challenger only if it won at least 30 points more often on the same seeds and
-    its games were all played and clean. Otherwise keep the champion and say why."""
+    """Promote the challenger only if it won at least 30 points more often on the same seeds, its
+    games were all played and clean, and the champion's games were all played too. Otherwise keep
+    the champion and say why."""
     if champion.seeds != challenger.seeds:
         raise ValueError("the two arms must play the same seeds")
     if challenger.stopped:
@@ -100,6 +101,10 @@ def decide(champion: Arm, challenger: Arm) -> Verdict:
     if challenger.games < len(challenger.seeds):
         return Verdict(
             False, f"only {challenger.games} of {len(challenger.seeds)} challenger games finished"
+        )
+    if champion.games < len(champion.seeds):  # fewer games than seeds is not the same test
+        return Verdict(
+            False, f"only {champion.games} of {len(champion.seeds)} champion games finished"
         )
     if not challenger.clean:
         return Verdict(False, "a challenger game needed a fallback answer, so it is not counted")

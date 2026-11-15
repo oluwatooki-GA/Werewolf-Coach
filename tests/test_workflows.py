@@ -109,7 +109,7 @@ def test_the_release_refuses_to_finish_if_a_fault_switch_is_on_in_production() -
     check = next(
         s for s in steps(load("release.yml"), "deploy") if "Check the live API" in s.get("name", "")
     )
-    assert '"faults":\[\]' in check["run"]
+    assert r'"faults":\[\]' in check["run"]
 
 
 def test_a_release_marks_the_deploy_and_only_it_may_write() -> None:

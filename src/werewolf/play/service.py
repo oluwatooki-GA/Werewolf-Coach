@@ -6,6 +6,7 @@ rules. `check_picks` turns the choices into cards or refuses them in plain words
 `play_visitor_game` plays the game on the v3 rules and says whether it finished or had to stop.
 """
 
+import logging
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -24,7 +25,9 @@ from werewolf.engine.state import GameState, Settings
 from werewolf.llm.client import LLMClient
 from werewolf.strategies.cards import CARDS_DIR, load_card
 
+logger = logging.getLogger(__name__)
 DEFAULT = "default"
+CRASHED = "the game could not be played; try again later"
 SEEDS = 1_000_000  # a table is dealt from a seed in 0..SEEDS-1
 WOLF_CHAT_MESSAGES = 5
 # More than this share of answers falling back to a default means the model was not really
@@ -137,6 +140,9 @@ async def play_visitor_game(
         state = await play_game(seed, settings, players, on_start=on_start)
     except FatalAgentError as exc:
         return VisitorGame("stopped", None, _spent(client), reason=str(exc))
+    except Exception:  # a crash half way has still cost money: say so, so the caps count it
+        logger.exception("play game crashed")
+        return VisitorGame("stopped", None, _spent(client), reason=CRASHED)
     log = to_log(state, run_id=run_id, model=model if client is not None else "")
     cost = max(log.stats.cost, _spent(client))  # the client's own count is the one money follows
     failed = sum(1 for call in log.calls if call.failed)

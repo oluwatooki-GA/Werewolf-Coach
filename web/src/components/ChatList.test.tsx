@@ -159,10 +159,10 @@ describe("ChatList while the API is waking up", () => {
     expect(rows()).toHaveLength(4);
   });
 
-  it("does not say the games could not be loaded, or that it is showing the latest of a longer list", () => {
+  it("does not say the games could not be loaded, or that it is showing part of a longer list", () => {
     render(<ChatList games={games} total={99} down />);
     expect(screen.queryByText(/could not be loaded/)).toBeNull();
-    expect(screen.queryByText(/Showing the latest/)).toBeNull();
+    expect(screen.queryByText(/Showing \d+ of/)).toBeNull();
   });
 
   it("says these are hand-picked, so the short list is not mistaken for all the games", () => {

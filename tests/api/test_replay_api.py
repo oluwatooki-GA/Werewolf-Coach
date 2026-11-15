@@ -195,6 +195,29 @@ def test_beliefs_are_read_in_the_form_real_games_store_them() -> None:
     assert beliefs == {WOLF_A: (0.8, "lied"), V2: (0.1, "")}
 
 
+def test_a_rejected_answer_of_the_wrong_shape_does_not_break_the_replay() -> None:
+    """A stored answer the rules rejected can hold anything; the replay keeps what it can read."""
+    log, tags = game()
+    answer = {
+        "bid": 2, "message": "Nobody sleeps that well.", "intent": 7, "target": {"a": 1},
+        "note": "suspicious",
+        "beliefs": [
+            {"player": WOLF_A, "suspicion": "high"}, {"player": V2, "suspicion": None},
+            {"player": V1, "suspicion": 0.4},
+        ],
+    }  # fmt: skip
+    call = CallRecord(
+        round=1, player=V1, task={"kind": "bid", "max_bid": 4}, responses=[json.dumps(answer)],
+        errors=[], rejected=0, failed=False,
+    )  # fmt: skip
+    for beliefs in (answer["beliefs"], 5):
+        odd = call.model_copy(update={"responses": [json.dumps({**answer, "beliefs": beliefs})]})
+        said = lines(build_replay("g1", log.model_copy(update={"calls": [odd]}), tags))[1]
+        assert said.subtext is not None and said.subtext.note == "suspicious"
+        assert said.subtext.target is None and said.subtext.intent is None
+        assert [b.player for b in said.subtext.beliefs] == ([V1] if beliefs != 5 else [])
+
+
 def dumped(entries):  # type: ignore[no-untyped-def]
     return [e.model_dump() for e in entries]
 

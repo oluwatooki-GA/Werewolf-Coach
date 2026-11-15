@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Card, PlayStatus, PlayTable, ReplayEntry, ReplayPlayer } from "@/lib/api";
 import { cardParts, plural } from "@/lib/format";
@@ -39,6 +40,7 @@ export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; stat
   const playing = phase.name === "playing" ? phase.id : null;
   const [entries, setEntries] = useState<ReplayEntry[]>([]);
   const got = useRef(0); // how many entries of this game the page has
+  const router = useRouter();
 
   // while a game is being played, ask for what is new once a second until it is over
   useEffect(() => {
@@ -61,10 +63,13 @@ export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; stat
         got.current = after + live.entries.length;
         setEntries((now) => (now.length === after ? [...now, ...live.entries] : now));
       }
+      // a game that is over has changed the games left today and the list of games: read them again
       if (live.status === "finished" && live.game_id) {
         setPhase({ name: "finished", gameId: live.game_id });
+        router.refresh();
       } else if (live.status === "stopped") {
         setPhase({ name: "stopped", reason: live.reason ?? "The game stopped." });
+        router.refresh();
       } else {
         timer = window.setTimeout(poll, POLL_MS);
       }
@@ -74,7 +79,7 @@ export function PlayBoard({ cards, status, table: dealt }: { cards: Card[]; stat
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [playing]);
+  }, [playing, router]);
 
   async function start() {
     got.current = 0;

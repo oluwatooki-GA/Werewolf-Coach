@@ -2,6 +2,11 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Card, PlayStatus, PlayTable, Replay } from "@/lib/api";
 import fixture from "../test/replay.fixture.json";
+
+const refresh = vi.fn();
+const router = { refresh }; // one object, as the real router is, so effects that depend on it do not restart
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
+
 import { PlayBoard } from "./PlayBoard";
 
 const card = (id: string, version: string, role: string, summary: string) =>
@@ -50,6 +55,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const calls = () => fetchMock.mock.calls.map(([url, init]) => [url, (init as RequestInit | undefined)?.method ?? "GET"]);
 
 beforeEach(() => {
+  refresh.mockReset();
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   vi.useFakeTimers();
@@ -341,6 +347,7 @@ describe("watching the game as it is played", () => {
     expect(screen.getByText(`${entries.length} of ${entries.length}`)).toBeInTheDocument();
     const link = screen.getByRole("link", { name: "Watch the full replay" });
     expect(link).toHaveAttribute("href", "/games/1-abcd1234");
+    expect(refresh).toHaveBeenCalledTimes(1); // so the games left today and the list are read again
   });
 
   it("shows a typing bubble while the game goes on, and has no link yet", async () => {

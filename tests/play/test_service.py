@@ -165,6 +165,15 @@ def test_a_game_stopped_by_its_budget_reports_what_it_had_spent() -> None:
     assert game.status == "stopped" and game.cost == Decimal("0.38")
 
 
+def test_a_game_that_crashes_half_way_still_reports_what_it_had_spent() -> None:
+    def crash(state: object) -> None:
+        raise RuntimeError("something broke")
+
+    game = play(agents=table(), client=Spent("0.12"), on_start=crash)
+    assert game.status == "stopped" and game.log is None and game.cost == Decimal("0.12")
+    assert game.reason is not None and "could not be played" in game.reason
+
+
 def test_a_finished_game_costs_at_least_what_the_client_paid() -> None:
     game = play(client=Spent("0.27"), agents=table())
     assert game.status == "finished" and game.cost == Decimal("0.27")

@@ -141,7 +141,7 @@ export function ChatList({ games, total, down = false }: Props) {
         )}
         {games.length < total && !down ? (
           <p className={styles.empty}>
-            Showing the latest {games.length} of {total} games.
+            Showing {games.length} of {total} games.
           </p>
         ) : null}
       </nav>

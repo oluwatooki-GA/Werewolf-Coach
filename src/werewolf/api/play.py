@@ -40,6 +40,7 @@ from werewolf.engine.log import GameLog
 from werewolf.engine.state import GameState
 from werewolf.play.budget import Caps, Verdict, check
 from werewolf.play.service import (
+    CRASHED,
     SEEDS,
     PickError,
     VisitorGame,
@@ -169,7 +170,7 @@ async def _play(request: Request, play_id: str, seed: int, picks: Mapping[str, s
             game = await run(seed, picks, config, lambda state: live.__setitem__(play_id, state))
         except Exception:  # a game must end as stopped, never as a row that says running forever
             log.exception("play game crashed", extra={"play_id": play_id})
-            await asyncio.to_thread(finish, None, "the game could not be played; try again later")
+            await asyncio.to_thread(finish, None, CRASHED)
             return
         try:
             stored = await asyncio.to_thread(finish, game, game.reason or "")

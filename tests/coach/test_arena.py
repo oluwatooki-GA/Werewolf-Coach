@@ -58,6 +58,11 @@ def test_an_unclean_or_stopped_or_short_challenger_arm_is_never_promoted() -> No
     assert not decide(arm(2), arm(9, games=8, seeds=list(range(10)))).promote  # games missing
 
 
+def test_a_champion_arm_that_is_short_of_games_is_not_beaten_on_fewer_games() -> None:
+    verdict = decide(arm(0, games=3, seeds=list(range(10))), arm(3))
+    assert not verdict.promote and "champion games finished" in verdict.reason
+
+
 def test_arms_on_different_seeds_cannot_be_compared() -> None:
     with pytest.raises(ValueError, match="same seeds"):
         decide(arm(5, seeds=list(range(10))), arm(8, seeds=list(range(1, 11))))

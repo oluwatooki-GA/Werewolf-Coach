@@ -197,23 +197,33 @@ def _subtext(answer: dict[str, Any]) -> Subtext | None:
         [{"player": k, **v} for k, v in raw.items() if isinstance(v, dict)]
         if isinstance(raw, dict)
         else [b for b in raw if isinstance(b, dict)]
+        if isinstance(raw, list)
+        else []
     )
-    beliefs = [
-        BeliefOut(
-            player=str(b.get("player", "")),
-            suspicion=float(b.get("suspicion", 0)),
-            reason=str(b.get("reason", "")),
+    # An answer the rules rejected is stored as it came, so a field can hold anything: a belief
+    # with no readable number is left out, and an intent or target that is not text is dropped.
+    beliefs = []
+    for b in items:
+        try:
+            suspicion = float(b.get("suspicion", 0))
+        except (TypeError, ValueError):
+            continue
+        beliefs.append(
+            BeliefOut(
+                player=str(b.get("player", "")),
+                suspicion=suspicion,
+                reason=str(b.get("reason", "")),
+            )
         )
-        for b in items
-    ]
     bid = answer.get("bid")
     if not note and not beliefs and bid is None:
         return None
+    intent, target = answer.get("intent"), answer.get("target")
     return Subtext(
         note=note,
         bid=int(bid) if isinstance(bid, int) else None,
-        intent=(answer.get("intent") or None) if answer.get("intent") != "none" else None,
-        target=answer.get("target") or None,
+        intent=intent if isinstance(intent, str) and intent not in ("", "none") else None,
+        target=target if isinstance(target, str) and target else None,
         beliefs=beliefs,
     )
 
