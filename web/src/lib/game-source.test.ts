@@ -27,12 +27,18 @@ describe("loadGame", () => {
     expect(await loadGame("7-gone")).toBeNull();
   });
 
-  it("opens a hand-picked game from the site's own copy while the API is asleep", async () => {
+  it("opens a hand-picked game from the site's own copy without asking the API", async () => {
     apiOrNull.mockRejectedValue(new ApiError(0, "The API is not answering."));
     const loaded = await loadGame(chosen);
-    expect(loaded).not.toBeNull();
-    expect(loaded).not.toBe("waking");
     expect((loaded as { replay: { id: string } }).replay.id).toBe(chosen);
+    expect(apiOrNull).not.toHaveBeenCalled(); // no 3 s wait, and no 404 for a game the database lacks
+  });
+
+  it("opens every hand-picked game, whatever the API says", async () => {
+    apiOrNull.mockResolvedValue(null);
+    for (const game of featured.games) {
+      expect(await loadGame(game.id)).toMatchObject({ replay: { id: game.id } });
+    }
   });
 
   it("says the API is waking for any other game, and does not throw", async () => {
